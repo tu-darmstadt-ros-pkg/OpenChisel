@@ -264,13 +264,13 @@ namespace chisel
             if (voxelID >= 0 && voxelID < chunk->GetTotalNumVoxels())
             {
               //Apply the old data to the fitting voxel
-              DistVoxel distVoxel = c.second->GetDistVoxel(i);
+              const DistVoxel& distVoxel = c.second->GetDistVoxel(i);
               chunk->GetDistVoxelMutable(voxelID).SetSDF(distVoxel.GetSDF());
               chunk->GetDistVoxelMutable(voxelID).SetWeight(distVoxel.GetWeight());
 
               if (useColor)
               {
-                ColorVoxel colorVoxel = c.second->GetColorVoxel(i);
+                const ColorVoxel& colorVoxel = c.second->GetColorVoxel(i);
                 chunk->GetColorVoxelMutable(voxelID).SetRed(colorVoxel.GetRed());
                 chunk->GetColorVoxelMutable(voxelID).SetGreen(colorVoxel.GetGreen());
                 chunk->GetColorVoxelMutable(voxelID).SetBlue(colorVoxel.GetBlue());
@@ -279,7 +279,7 @@ namespace chisel
             }
             else
             {
-              fprintf(stderr," \n Number of voxel: %d from %dvoxelPos total voxels in this chunk \n", i, (int) c.second->GetTotalNumVoxels());
+              fprintf(stderr," \n Number of voxel: %d from %d total voxels in this chunk \n", i, (int) c.second->GetTotalNumVoxels());
               fprintf(stderr,"ChunkID %d %d %d and Worldposition %.16f %.16f %.16f \n", chunkID(0),chunkID(1),chunkID(2), worldPosition(0), worldPosition(1), worldPosition(2) );
               fprintf(stderr,"VoxelID %d", voxelID);
               Point3 p = chunk->GetVoxelCoords(relPosition);
@@ -362,9 +362,9 @@ namespace chisel
     if(voxel == nullptr)
       return false;
 
-    const float x = voxelPos(0);
-    const float y = voxelPos(1);
-    const float z = voxelPos(2);
+    const float& x = voxelPos(0);
+    const float& y = voxelPos(1);
+    const float& z = voxelPos(2);
 
     ChunkID  startChunkID = sourceChunkManager.GetIDAt(voxelPos);
 
