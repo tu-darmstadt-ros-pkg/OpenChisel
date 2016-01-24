@@ -118,7 +118,7 @@ namespace chisel
 
 
       for (size_t i = 0; i < centroids.size(); i++)
-       // parallel_for(indexes.begin(), indexes.end(), [&](const size_t& i)
+        //parallel_for(centroids.begin(), centroids.end(), [&](const size_t& i)
         {
           Color<ColorType> color;
           Vec3 voxelCenter = centroids[i] + origin;
@@ -155,7 +155,7 @@ namespace chisel
                       int c = static_cast<int>(colorCameraPos(0));
                       colorImage->At(r, c, &color);
 
-                      colorVoxel.Integrate(color.red, color.green, color.blue, 1);
+                      colorVoxel.Integrate(color.red, color.green, color.blue, 2);
                     }
                 }
 
@@ -176,7 +176,7 @@ namespace chisel
 
 
         }
-     // );
+      //);
 
       return updated;
     }
