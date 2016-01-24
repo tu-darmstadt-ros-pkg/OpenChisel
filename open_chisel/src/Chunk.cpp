@@ -77,14 +77,6 @@ namespace chisel
       float y = std::round(worldCoords(1)*1000) / voxelResolutionMeters;
       float z = std::round(worldCoords(2)*1000) / voxelResolutionMeters;
 
-
-        //const float roundingFactorX = 1.0f / (voxelResolutionMeters);
-       // const float roundingFactorY = 1.0f / (voxelResolutionMeters);
-        //const float roundingFactorZ = 1.0f / (voxelResolutionMeters);
-
-       /* return Point3( static_cast<int>(std::floor(worldCoords(0) * roundingFactorX)),
-                       static_cast<int>(std::floor(worldCoords(1) * roundingFactorY)),
-                       static_cast<int>(std::floor(worldCoords(2) * roundingFactorZ)));*/
       return Point3(static_cast<int>(std::floor(x)),static_cast<int>(std::floor(y)),static_cast<int>(std::floor(z)));
     }
 
