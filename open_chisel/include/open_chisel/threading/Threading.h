@@ -30,7 +30,7 @@
 namespace chisel
 {
     template<typename Iterator, class Function>
-    void parallel_for(const Iterator& first, const Iterator& last, Function&& f, const int nthreads = 16, const int threshold = 1000)
+    void parallel_for(const Iterator& first, const Iterator& last, Function&& f, const int nthreads = 5, const int threshold = 1000)
     {
         const auto group = std::max(std::max(ptrdiff_t(1), ptrdiff_t(std::abs(threshold))), ((last-first))/std::abs(nthreads));
         std::vector<std::thread> threads;
