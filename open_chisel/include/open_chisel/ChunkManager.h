@@ -127,6 +127,7 @@ namespace chisel
             const DistVoxel* GetDistanceVoxel(const Vec3& pos);
             DistVoxel* GetDistanceVoxelMutable(const Vec3& pos);
             const ColorVoxel* GetColorVoxel(const Vec3& pos);
+            ColorVoxel* GetColorVoxelMutable(const Vec3& pos);
 
             void GetChunkIDsIntersecting(const AABB& box, ChunkIDList* chunkList);
             void GetChunkIDsIntersecting(const Frustum& frustum, ChunkIDList* chunkList);

@@ -45,20 +45,11 @@ namespace chisel
   {
     chunkManager.Reset();
     meshesToUpdate.clear();
+    latestChunks.clear();
   }
 
   void Chisel::UpdateMeshes()
   {
-    latestChunks = meshesToUpdate;
-
-    for(auto iter=latestChunks.begin(); iter!=latestChunks.end(); iter++)
-    {
-      if(!iter->second)
-      {
-        latestChunks.erase(iter);
-      }
-    }
-
     chunkManager.RecomputeMeshes(latestChunks);
     meshesToUpdate.clear();
   }
@@ -111,6 +102,7 @@ namespace chisel
 
   void Chisel::IntegratePointCloud(const ProjectionIntegrator& integrator, const PointCloud& cloud, const Transform& extrinsic, float truncation, float maxDist)
   {
+    latestChunks.clear();
     clock_t begin = clock();
     ChunkIDList chunksIntersecting;
     chunkManager.GetChunkIDsIntersecting(cloud, extrinsic, truncation, maxDist, &chunksIntersecting);
@@ -137,6 +129,7 @@ namespace chisel
         mutex.lock();
         if (needsUpdate)
           {
+            latestChunks[chunkID] = true;
             for (int dx = -1; dx <= 1; dx++)
               {
                 for (int dy = -1; dy <= 1; dy++)
@@ -155,6 +148,7 @@ namespace chisel
           }
         mutex.unlock();
       });
+
     GarbageCollect(garbageChunks);
     //  chunkManager.PrintMemoryStatistics();
 
@@ -165,6 +159,7 @@ namespace chisel
 
   void Chisel::IntegrateChunks(const ProjectionIntegrator& integrator,  ChunkManager& sourceChunkManager)
   {
+    latestChunks.clear();
     clock_t begin = clock();
     printf("CHISEL: Integrating chunks \n");
 
@@ -203,32 +198,8 @@ namespace chisel
           Vec3 minPosition(origin(0) - std::fmod(origin(0), mapResolution), origin(1) - std::fmod(origin(1), mapResolution), origin(2) - std::fmod(origin(2), mapResolution));
           Vec3 maxPosition(maxChunkPos(0) - std::fmod(maxChunkPos(0), mapResolution), maxChunkPos(1) - std::fmod(maxChunkPos(1), mapResolution), maxChunkPos(2) - std::fmod(maxChunkPos(2), mapResolution));
 
-          ChunkPtr chunk;
-          ChunkID targetChunkID;
-
-          for (float x = minPosition(0); x < maxPosition(0); x+=mapResolution)
-          {
-            for (float y = minPosition(1); y < maxPosition(1); y+=mapResolution)
-            {
-              for (float z = minPosition(2); z < maxPosition(2); z+=mapResolution)
-              {
-                Vec3 voxelPosition(x,y,z);
-                targetChunkID = tempTargetChunkManager.GetIDAt(voxelPosition);
-
-                if (tempTargetChunkManager.HasChunk(targetChunkID))
-                {
-                  chunk = tempTargetChunkManager.GetChunk(targetChunkID);
-                }
-                else
-                {
-                  tempTargetChunkManager.CreateChunk(targetChunkID);
-                  chunk = tempTargetChunkManager.GetChunk(targetChunkID);
-                }
-
-                interpolateDistVoxel(voxelPosition, sourceChunkManager, tempTargetChunkManager.GetDistanceVoxelMutable(voxelPosition));
-              }
-            }
-          }
+          //interpolateGridTrilinear(minPosition, maxPosition, mapResolution, sourceChunkManager, tempTargetChunkManager, useColor);
+          interpolateGridNearestNeighbour(minPosition, maxPosition, mapResolution, sourceChunkManager, tempTargetChunkManager, useColor);
         }
       }
       else
@@ -254,36 +225,20 @@ namespace chisel
             }
 
             chisel::Vec3 relPosition = (worldPosition - chunk->GetOrigin());
-
-            //Prevent getting -0.0 and wrong voxelIDs with abs(pos)
-            relPosition(0) = std::abs(relPosition(0));
-            relPosition(1) = std::abs(relPosition(1));
-            relPosition(2) = std::abs(relPosition(2));
-
             VoxelID voxelID = chunk->GetVoxelID(relPosition);
-            if (voxelID >= 0 && voxelID < chunk->GetTotalNumVoxels())
-            {
-              //Apply the old data to the fitting voxel
-              const DistVoxel& distVoxel = c.second->GetDistVoxel(i);
-              chunk->GetDistVoxelMutable(voxelID).SetSDF(distVoxel.GetSDF());
-              chunk->GetDistVoxelMutable(voxelID).SetWeight(distVoxel.GetWeight());
 
-              if (useColor)
-              {
-                const ColorVoxel& colorVoxel = c.second->GetColorVoxel(i);
-                chunk->GetColorVoxelMutable(voxelID).SetRed(colorVoxel.GetRed());
-                chunk->GetColorVoxelMutable(voxelID).SetGreen(colorVoxel.GetGreen());
-                chunk->GetColorVoxelMutable(voxelID).SetBlue(colorVoxel.GetBlue());
-                chunk->GetColorVoxelMutable(voxelID).SetWeight(colorVoxel.GetWeight());
-              }
-            }
-            else
+            //Apply the old data to the fitting voxel
+            const DistVoxel& distVoxel = c.second->GetDistVoxel(i);
+            chunk->GetDistVoxelMutable(voxelID).SetSDF(distVoxel.GetSDF());
+            chunk->GetDistVoxelMutable(voxelID).SetWeight(distVoxel.GetWeight());
+
+            if (useColor)
             {
-              fprintf(stderr," \n Number of voxel: %d from %d total voxels in this chunk \n", i, (int) c.second->GetTotalNumVoxels());
-              fprintf(stderr,"ChunkID %d %d %d and Worldposition %.16f %.16f %.16f \n", chunkID(0),chunkID(1),chunkID(2), worldPosition(0), worldPosition(1), worldPosition(2) );
-              fprintf(stderr,"VoxelID %d", voxelID);
-              Point3 p = chunk->GetVoxelCoords(relPosition);
-              fprintf(stderr,"Coordinates %d %d %d \n", p(0), p(1), p(2));
+              const ColorVoxel& colorVoxel = c.second->GetColorVoxel(i);
+              chunk->GetColorVoxelMutable(voxelID).SetRed(colorVoxel.GetRed());
+              chunk->GetColorVoxelMutable(voxelID).SetGreen(colorVoxel.GetGreen());
+              chunk->GetColorVoxelMutable(voxelID).SetBlue(colorVoxel.GetBlue());
+              chunk->GetColorVoxelMutable(voxelID).SetWeight(colorVoxel.GetWeight());
             }
           }
         }
@@ -302,53 +257,55 @@ namespace chisel
 
     std::mutex mutex;
     ChunkIDList garbageChunks;
-
+    //int i = 0;
     for(int i = 0; i< chunksIntersecting.size();i++ )
-      //    parallel_for(chunksIntersecting.begin(), chunksIntersecting.end(), [&](const ChunkID& chunkID)
-      {
-        ChunkID chunkID = chunksIntersecting.at(i);
-        bool chunkNew = false;
+    //parallel_for(chunksIntersecting.begin(), chunksIntersecting.end(), [&](const ChunkID& chunkID)
+    {
+      ChunkID chunkID = chunksIntersecting.at(i);
+      bool chunkNew = false;
 
-        mutex.lock();
-        if (!chunkManager.HasChunk(chunkID))
-          {
-            chunkNew = true;
-            chunkManager.CreateChunk(chunkID);
-          }
+      mutex.lock();
+      if (!chunkManager.HasChunk(chunkID))
+        {
+          chunkNew = true;
+          chunkManager.CreateChunk(chunkID);
+        }
 
-        ChunkPtr chunk = chunkManager.GetChunk(chunkID);
-        mutex.unlock();
+      ChunkPtr chunk = chunkManager.GetChunk(chunkID);
+      mutex.unlock();
 
-        bool needsUpdate = false;
+      bool needsUpdate = false;
 
-        if(useColor)
-          needsUpdate = integrator.IntegrateColorChunk(chunksToIntegrate.at(i).get(), chunk.get());
-        else
-          needsUpdate = integrator.IntegrateChunk(chunksToIntegrate.at(i).get(), chunk.get());
+      if(useColor)
+        needsUpdate = integrator.IntegrateColorChunk(chunksToIntegrate.at(i).get(), chunk.get());
+      else
+        needsUpdate = integrator.IntegrateChunk(chunksToIntegrate.at(i).get(), chunk.get());
 
-        mutex.lock();
-        if (needsUpdate)
-          {
-            for (int dx = -1; dx <= 1; dx++)
-              {
-                for (int dy = -1; dy <= 1; dy++)
-                  {
-                    for (int dz = -1; dz <= 1; dz++)
-                      {
-                        meshesToUpdate[chunkID + ChunkID(dx, dy, dz)] = true;
-                      }
-                  }
-              }
-          }
-        else if(chunkNew)
-          {
-            garbageChunks.push_back(chunkID);
-          }
-        mutex.unlock();
-      }
+      mutex.lock();
+      if (needsUpdate)
+        {
+          latestChunks[chunkID] = true;
+          for (int dx = -1; dx <= 1; dx++)
+            {
+              for (int dy = -1; dy <= 1; dy++)
+                {
+                  for (int dz = -1; dz <= 1; dz++)
+                    {
+                      meshesToUpdate[chunkID + ChunkID(dx, dy, dz)] = true;
+                    }
+                }
+            }
+        }
+      else if(chunkNew)
+        {
+          garbageChunks.push_back(chunkID);
+        }
+      mutex.unlock();
+      //i++;
+    }
     //);
-    printf("CHISEL: Done with chunks");
-    //GarbageCollect(garbageChunks);
+    printf("CHISEL: Done with chunks \n");
+    GarbageCollect(garbageChunks);
     //chunkManager.PrintMemoryStatistics();
 
     clock_t end = clock();
@@ -356,78 +313,199 @@ namespace chisel
     printf("\n \n  Time needed: %f  ms  \n \n", elapsed_secs*1000);
   }
 
+ const DistVoxel* getValidDistVoxel(const DistVoxel* voxel, const DistVoxel* defaultVoxel)
+ {
+   if (!voxel)
+    return defaultVoxel;
+   else
+    return voxel;
+ }
 
-  bool Chisel::interpolateDistVoxel(const Vec3& voxelPos, ChunkManager& sourceChunkManager, DistVoxel* voxel)
+ const ColorVoxel* getValidColorVoxel(const ColorVoxel* voxel, const ColorVoxel* defaultVoxel)
+ {
+   if (!voxel)
+     return defaultVoxel;
+   else
+     return voxel;
+ }
+
+  bool Chisel::interpolateGridTrilinear(const Vec3& startPos, const Vec3& endPos, const float& resolution, ChunkManager& sourceChunkManager, ChunkManager& targetChunkManager, const bool &useColor)
   {
-    if(voxel == nullptr)
-      return false;
+    const float sourceResolution = sourceChunkManager.GetResolution();
+    DistVoxel defaultVoxel;
+    defaultVoxel.SetSDF(0.0f);
+    defaultVoxel.SetWeight(0.0f);
 
-    const float& x = voxelPos(0);
-    const float& y = voxelPos(1);
-    const float& z = voxelPos(2);
+    ColorVoxel defaultColorVoxel;
+    defaultColorVoxel.SetBlue(150);
+    defaultColorVoxel.SetGreen(150);
+    defaultColorVoxel.SetRed(150);
 
-    ChunkID  startChunkID = sourceChunkManager.GetIDAt(voxelPos);
 
-    if (!sourceChunkManager.HasChunk(startChunkID))
+
+    for (float x = startPos(0); x < endPos(0); x+=resolution)
     {
-      return false;
-    }
+      for (float y = startPos(1); y < endPos(1); y+=resolution)
+      {
+        for (float z = startPos(2); z < endPos(2); z+=resolution)
+        {
+          Vec3 voxelPosition(x, y, z);
 
-    ChunkPtr startChunk = sourceChunkManager.GetChunk(startChunkID);
-    Point3 startVoxelID = startChunk->GetVoxelCoords( voxelPos- startChunk->GetOrigin());
+          if(!targetChunkManager.HasChunk(targetChunkManager.GetIDAt(voxelPosition)))
+            targetChunkManager.CreateChunk(targetChunkManager.GetIDAt(voxelPosition));
 
-    const float resolution = sourceChunkManager.GetResolution();
-    const Point3 chunkSize = sourceChunkManager.GetChunkSize();
+          DistVoxel* voxel = targetChunkManager.GetDistanceVoxelMutable(voxelPosition);
+          if(voxel == nullptr)
+            continue;
 
-    const Vec3 startPos = resolution * (startChunkID.cwiseProduct(chunkSize)).cast<float>() + resolution * startVoxelID.cast<float>();
-    const Vec3 endPos = startPos + resolution * Vec3::Ones();
+          const Vec3 firstCorner(x - std::fmod(x, sourceResolution), y - std::fmod(y, resolution), z - std::fmod(z, sourceResolution));
+          const Vec3 lastCorner = firstCorner + sourceResolution * Vec3::Ones();
 
-    const float x_0 = startPos(0);
-    const float y_0 = startPos(1);
-    const float z_0 = startPos(2);
-    const float x_1 = endPos(0);
-    const float y_1 = endPos(1);
-    const float z_1 = endPos(2);
+          const float x_0 = firstCorner(0);
+          const float y_0 = firstCorner(1);
+          const float z_0 = firstCorner(2);
+          const float x_1 = lastCorner(0);
+          const float y_1 = lastCorner(1);
+          const float z_1 = lastCorner(2);
 
-    const DistVoxel* v_000 = sourceChunkManager.GetDistanceVoxel(startPos);
-    const DistVoxel* v_001 = sourceChunkManager.GetDistanceVoxel(startPos + Vec3(0, 0, resolution));
-    const DistVoxel* v_011 = sourceChunkManager.GetDistanceVoxel(startPos + Vec3(0, resolution, resolution));
-    const DistVoxel* v_111 = sourceChunkManager.GetDistanceVoxel(endPos);
-    const DistVoxel* v_110 = sourceChunkManager.GetDistanceVoxel(startPos + Vec3(resolution, resolution, 0));
-    const DistVoxel* v_100 = sourceChunkManager.GetDistanceVoxel(startPos + Vec3(resolution, 0, 0));
-    const DistVoxel* v_010 = sourceChunkManager.GetDistanceVoxel(startPos + Vec3(0, resolution, 0));
-    const DistVoxel* v_101 = sourceChunkManager.GetDistanceVoxel(startPos + Vec3(resolution, 0, resolution));
+          const DistVoxel* v_000 = getValidDistVoxel(sourceChunkManager.GetDistanceVoxel(firstCorner), &defaultVoxel);
+          const DistVoxel* v_001 = getValidDistVoxel(sourceChunkManager.GetDistanceVoxel(firstCorner + Vec3(0, 0, sourceResolution)), &defaultVoxel);
+          const DistVoxel* v_011 = getValidDistVoxel(sourceChunkManager.GetDistanceVoxel(firstCorner + Vec3(0, sourceResolution, sourceResolution)), &defaultVoxel);
+          const DistVoxel* v_111 = getValidDistVoxel(sourceChunkManager.GetDistanceVoxel(lastCorner), &defaultVoxel);
+          const DistVoxel* v_110 = getValidDistVoxel(sourceChunkManager.GetDistanceVoxel(firstCorner + Vec3(sourceResolution, sourceResolution, 0)), &defaultVoxel);
+          const DistVoxel* v_100 = getValidDistVoxel(sourceChunkManager.GetDistanceVoxel(firstCorner + Vec3(sourceResolution, 0, 0)), &defaultVoxel);
+          const DistVoxel* v_010 = getValidDistVoxel(sourceChunkManager.GetDistanceVoxel(firstCorner + Vec3(0, sourceResolution, 0)), &defaultVoxel);
+          const DistVoxel* v_101 = getValidDistVoxel(sourceChunkManager.GetDistanceVoxel(firstCorner + Vec3(sourceResolution, 0, sourceResolution)), &defaultVoxel);
 
-    if(!v_000 || !v_001 || !v_011 || !v_111 || !v_110 || !v_100 || !v_010 || !v_101)
-    {
-      return false;
-    }
+          float xd = (x - x_0) / (x_1 - x_0);
+          float yd = (y - y_0) / (y_1 - y_0);
+          float zd = (z - z_0) / (z_1 - z_0);
 
-    float xd = (x - x_0) / (x_1 - x_0);
-    float yd = (y - y_0) / (y_1 - y_0);
-    float zd = (z - z_0) / (z_1 - z_0);
+          {
+            float sdf_00 = v_000->GetSDF() * (1 - xd) + v_100->GetSDF() * xd;
+            float sdf_10 = v_010->GetSDF() * (1 - xd) + v_110->GetSDF() * xd;
+            float sdf_01 = v_001->GetSDF() * (1 - xd) + v_101->GetSDF() * xd;
+            float sdf_11 = v_011->GetSDF() * (1 - xd) + v_111->GetSDF() * xd;
+            float sdf_0 = sdf_00 * (1 - yd) + sdf_10 * yd;
+            float sdf_1 = sdf_01 * (1 - yd) + sdf_11 * yd;
+            voxel->SetSDF(sdf_0 * (1 - zd) + sdf_1 * zd);
+          }
 
-    {
-      float sdf_00 = v_000->GetSDF() * (1 - xd) + v_100->GetSDF() * xd;
-      float sdf_10 = v_010->GetSDF() * (1 - xd) + v_110->GetSDF() * xd;
-      float sdf_01 = v_001->GetSDF() * (1 - xd) + v_101->GetSDF() * xd;
-      float sdf_11 = v_011->GetSDF() * (1 - xd) + v_111->GetSDF() * xd;
-      float sdf_0 = sdf_00 * (1 - yd) + sdf_10 * yd;
-      float sdf_1 = sdf_01 * (1 - yd) + sdf_11 * yd;
-      voxel->SetSDF(sdf_0 * (1 - zd) + sdf_1 * zd);
-    }
+          {
+            float weight_00 = v_000->GetWeight() * (1 - xd) + v_100->GetWeight() * xd;
+            float weight_10 = v_010->GetWeight() * (1 - xd) + v_110->GetWeight() * xd;
+            float weight_01 = v_001->GetWeight() * (1 - xd) + v_101->GetWeight() * xd;
+            float weight_11 = v_011->GetWeight() * (1 - xd) + v_111->GetWeight() * xd;
+            float weight_0 = weight_00 * (1 - yd) + weight_10 * yd;
+            float weight_1 = weight_01 * (1 - yd) + weight_11 * yd;
+            voxel->SetWeight(weight_0 * (1 - zd) + weight_1 * zd);
+          }
 
-    {
-      float weight_00 = v_000->GetWeight() * (1 - xd) + v_100->GetWeight() * xd;
-      float weight_10 = v_010->GetWeight() * (1 - xd) + v_110->GetWeight() * xd;
-      float weight_01 = v_001->GetWeight() * (1 - xd) + v_101->GetWeight() * xd;
-      float weight_11 = v_011->GetWeight() * (1 - xd) + v_111->GetWeight() * xd;
-      float weight_0 = weight_00 * (1 - yd) + weight_10 * yd;
-      float weight_1 = weight_01 * (1 - yd) + weight_11 * yd;
-      voxel->SetWeight(weight_0 * (1 - zd) + weight_1 * zd);
+          if (useColor)
+          {
+            ColorVoxel* colorVoxel = targetChunkManager.GetColorVoxelMutable(voxelPosition);
+            if(voxel == nullptr)
+              continue;
+
+            const ColorVoxel* clrVxl_000 = getValidColorVoxel(sourceChunkManager.GetColorVoxel(firstCorner), &defaultColorVoxel);
+            const ColorVoxel* clrVxl_001 = getValidColorVoxel(sourceChunkManager.GetColorVoxel(firstCorner + Vec3(0, 0, sourceResolution)), &defaultColorVoxel);
+            const ColorVoxel* clrVxl_011 = getValidColorVoxel(sourceChunkManager.GetColorVoxel(firstCorner + Vec3(0, sourceResolution, sourceResolution)), &defaultColorVoxel);
+            const ColorVoxel* clrVxl_111 = getValidColorVoxel(sourceChunkManager.GetColorVoxel(lastCorner), &defaultColorVoxel);
+            const ColorVoxel* clrVxl_110 = getValidColorVoxel(sourceChunkManager.GetColorVoxel(firstCorner + Vec3(sourceResolution, sourceResolution, 0)), &defaultColorVoxel);
+            const ColorVoxel* clrVxl_100 = getValidColorVoxel(sourceChunkManager.GetColorVoxel(firstCorner + Vec3(sourceResolution, 0, 0)), &defaultColorVoxel);
+            const ColorVoxel* clrVxl_010 = getValidColorVoxel(sourceChunkManager.GetColorVoxel(firstCorner + Vec3(0, sourceResolution, 0)), &defaultColorVoxel);
+            const ColorVoxel* clrVxl_101 = getValidColorVoxel(sourceChunkManager.GetColorVoxel(firstCorner + Vec3(sourceResolution, 0, sourceResolution)), &defaultColorVoxel);
+
+            float red_00 = clrVxl_000->GetRed() * (1 - xd) + clrVxl_100->GetRed() * xd;
+            float red_10 = clrVxl_010->GetRed() * (1 - xd) + clrVxl_110->GetRed() * xd;
+            float red_01 = clrVxl_001->GetRed() * (1 - xd) + clrVxl_101->GetRed() * xd;
+            float red_11 = clrVxl_011->GetRed() * (1 - xd) + clrVxl_111->GetRed() * xd;
+            float red_0 = red_00 * (1 - yd) + red_10 * yd;
+            float red_1 = red_01 * (1 - yd) + red_11 * yd;
+            colorVoxel->SetRed(red_0 * (1 - zd) + red_1 * zd);
+
+            float green_00 = clrVxl_000->GetGreen() * (1 - xd) + clrVxl_100->GetGreen() * xd;
+            float green_10 = clrVxl_010->GetGreen() * (1 - xd) + clrVxl_110->GetGreen() * xd;
+            float green_01 = clrVxl_001->GetGreen() * (1 - xd) + clrVxl_101->GetGreen() * xd;
+            float green_11 = clrVxl_011->GetGreen() * (1 - xd) + clrVxl_111->GetGreen() * xd;
+            float green_0 = green_00 * (1 - yd) + green_10 * yd;
+            float green_1 = green_01 * (1 - yd) + green_11 * yd;
+            colorVoxel->SetGreen(green_0 * (1 - zd) + green_1 * zd);
+
+            float blue_00 = clrVxl_000->GetBlue() * (1 - xd) + clrVxl_100->GetBlue() * xd;
+            float blue_10 = clrVxl_010->GetBlue() * (1 - xd) + clrVxl_110->GetBlue() * xd;
+            float blue_01 = clrVxl_001->GetBlue() * (1 - xd) + clrVxl_101->GetBlue() * xd;
+            float blue_11 = clrVxl_011->GetBlue() * (1 - xd) + clrVxl_111->GetBlue() * xd;
+            float blue_0 = blue_00 * (1 - yd) + blue_10 * yd;
+            float blue_1 = blue_01 * (1 - yd) + blue_11 * yd;
+            colorVoxel->SetBlue(blue_0 * (1 - zd) + blue_1 * zd);
+
+            colorVoxel->SetWeight(1);
+
+          }
+        }
+      }
     }
 
     return true;
+
+
+  }
+
+  bool Chisel::interpolateGridNearestNeighbour(const Vec3 &startPos, const Vec3 &endPos, const float &resolution, ChunkManager &sourceChunkManager, ChunkManager &targetChunkManager, const bool &useColor)
+  {
+    const float sourceResolution = sourceChunkManager.GetResolution();
+
+    for (float x = startPos(0); x < endPos(0); x+=resolution)
+    {
+      for (float y = startPos(1); y < endPos(1); y+=resolution)
+      {
+        for (float z = startPos(2); z < endPos(2); z+=resolution)
+        {
+          Vec3 voxelPosition(x, y, z);
+
+          if(!targetChunkManager.HasChunk(targetChunkManager.GetIDAt(voxelPosition)))
+            targetChunkManager.CreateChunk(targetChunkManager.GetIDAt(voxelPosition));
+
+          DistVoxel* targetVoxel = targetChunkManager.GetDistanceVoxelMutable(voxelPosition);
+          if(targetVoxel == nullptr)
+            continue;
+
+          Vec3 sourceVoxelPosition;
+
+          for (int i = 0; i<3; i++)
+          {
+            float remainder = std::fmod(voxelPosition(i), sourceResolution);
+            if (remainder < 0.5 * sourceResolution)
+              sourceVoxelPosition(i) = voxelPosition(i)-remainder;
+            else
+              sourceVoxelPosition(i) = voxelPosition(i) +remainder;
+
+          }
+
+          const DistVoxel* sourceVoxel = sourceChunkManager.GetDistanceVoxel(sourceVoxelPosition);
+
+          if(sourceVoxel == nullptr)
+              continue;
+
+          targetVoxel->SetSDF(sourceVoxel->GetSDF());
+          targetVoxel->SetWeight(sourceVoxel->GetWeight());
+
+          if (useColor)
+          {
+              const ColorVoxel* sourceColorVoxel = sourceChunkManager.GetColorVoxel(sourceVoxelPosition);
+              ColorVoxel* targetColorVoxel = targetChunkManager.GetColorVoxelMutable(voxelPosition);
+
+              targetColorVoxel->SetRed(sourceColorVoxel->GetRed());
+              targetColorVoxel->SetGreen(sourceColorVoxel->GetGreen());
+              targetColorVoxel->SetBlue(sourceColorVoxel->GetBlue());
+              targetColorVoxel->SetWeight(sourceColorVoxel->GetWeight());
+          }
+        }
+      }
+    }
+    return true;
+
   }
 
   Point3 Chisel::getVoxelCoordinates(VoxelID id, Eigen::Vector3i chunkSize)

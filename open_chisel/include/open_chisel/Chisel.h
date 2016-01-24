@@ -50,8 +50,10 @@ namespace chisel
 
             template <class DataType> void IntegrateDepthScan(const ProjectionIntegrator& integrator, const std::shared_ptr<const DepthImage<DataType> >& depthImage, const Transform& extrinsic, const PinholeCamera& camera)
             {
-                clock_t begin = clock();
-                printf("CHISEL: Integrating a scan\n");
+                    latestChunks.clear();
+
+                    clock_t begin = clock();
+                    printf("CHISEL: Integrating a scan\n");
 
                     Frustum frustum;
                     camera.SetupFrustum(extrinsic, &frustum);
@@ -81,6 +83,7 @@ namespace chisel
                         mutex.lock();
                         if (needsUpdate)
                         {
+                            latestChunks[chunkID] = true;
                             for (int dx = -1; dx <= 1; dx++)
                             {
                                 for (int dy = -1; dy <= 1; dy++)
@@ -110,6 +113,8 @@ namespace chisel
 
             template <class DataType, class ColorType> void IntegrateDepthScanColor(const ProjectionIntegrator& integrator, const std::shared_ptr<const DepthImage<DataType> >& depthImage,  const Transform& depthExtrinsic, const PinholeCamera& depthCamera, const std::shared_ptr<const ColorImage<ColorType> >& colorImage, const Transform& colorExtrinsic, const PinholeCamera& colorCamera)
             {
+                    latestChunks.clear();
+
                     clock_t begin = clock();
 
                     Frustum frustum;
@@ -141,6 +146,7 @@ namespace chisel
                         mutex.lock();
                         if (needsUpdate)
                         {
+                            latestChunks[chunkID] = true;
                             for (int dx = -1; dx <= 1; dx++)
                             {
                                 for (int dy = -1; dy <= 1; dy++)
@@ -183,6 +189,8 @@ namespace chisel
         private:
             Point3 getVoxelCoordinates(VoxelID id, Eigen::Vector3i chunkSize);
             bool interpolateDistVoxel(const Vec3& voxelPos, ChunkManager& sourceChunkManager, DistVoxel* voxel);
+            bool interpolateGridTrilinear(const Vec3& startPos, const Vec3& endPos, const float& resolution, ChunkManager& sourceChunkManager, ChunkManager& targetChunkManager, const bool& useColor);
+            bool interpolateGridNearestNeighbour(const Vec3& startPos, const Vec3& endPos, const float& resolution, ChunkManager& sourceChunkManager, ChunkManager& stargetChunkManager, const bool& useColor);
 
 
     };

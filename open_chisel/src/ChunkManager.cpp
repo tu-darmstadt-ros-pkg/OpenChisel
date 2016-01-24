@@ -139,10 +139,11 @@ namespace chisel
         std::mutex mutex;
 
         for(auto iter=chunkMeshes.begin(); iter!=chunkMeshes.end(); iter++)
-        //parallel_for(chunkMeshes.begin(), chunkMeshes.end(), [this, &mutex](const std::pair<ChunkID, bool>& iter)
+        //parallel_for(chunkMeshes.begin(), chunkMeshes.end(), [this, &mutex](const std::pair<ChunkID, bool>& id)
         {
-            this->RecomptueMesh(ChunkID(iter->first), mutex);
+            this->RecomptueMesh(iter->first, mutex);
         }
+        //);
     }
 
     void ChunkManager::CreateChunk(const ChunkID& id)
@@ -567,15 +568,19 @@ namespace chisel
         if(chunk.get())
         {
             Vec3 rel = (pos - chunk->GetOrigin());
-            const VoxelID& id = chunk->GetVoxelID(rel);
-            if (id >= 0 && id < chunk->GetTotalNumVoxels())
-            {
-                return &(chunk->GetColorVoxel(id));
-            }
-            else
-            {
-                return nullptr;
-            }
+            return &(chunk->GetColorVoxel(chunk->GetVoxelID(rel)));
+        }
+        else return nullptr;
+    }
+
+    ColorVoxel* ChunkManager::GetColorVoxelMutable(const Vec3& pos)
+    {
+        ChunkPtr chunk = GetChunkAt(pos);
+
+        if(chunk.get())
+        {
+            Vec3 rel = (pos - chunk->GetOrigin());
+            return &(chunk->GetColorVoxelMutable(chunk->GetVoxelID(rel)));
         }
         else return nullptr;
     }
