@@ -125,6 +125,8 @@ namespace chisel_ros
             void IntegrateLastDepthImage();
             void IntegrateLastPointCloud();
             void FillMarkerTopicWithMeshes(visualization_msgs::Marker* marker);
+            void FillNormalMarkerTopicWithMeshes(visualization_msgs::Marker* marker);
+
             inline void SetBaseTransform(const std::string& frameName) { baseTransform = frameName; }
 
             inline bool HasNewData() { return hasNewData; }
@@ -169,6 +171,7 @@ namespace chisel_ros
             std::string meshTopic;
             std::string chunkBoxTopic;
             ros::Publisher meshPublisher;
+            ros::Publisher normalPublisher;
             ros::Publisher chunkBoxPublisher;
             ros::Publisher latestChunkPublisher;
             ros::ServiceServer resetServer;

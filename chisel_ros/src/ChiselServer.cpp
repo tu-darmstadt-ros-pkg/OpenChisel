@@ -53,6 +53,7 @@ namespace chisel_ros
     {
         meshTopic = topic;
         meshPublisher = nh.advertise<visualization_msgs::Marker>(meshTopic, 1);
+        normalPublisher = nh.advertise<visualization_msgs::Marker>("chisel_normals", 1);
     }
 
     void ChiselServer::PublishMeshes()
@@ -62,6 +63,12 @@ namespace chisel_ros
 
         if(!marker.points.empty())
             meshPublisher.publish(marker);
+
+        visualization_msgs::Marker normalMarker;
+        FillNormalMarkerTopicWithMeshes(&normalMarker);
+
+        if(!normalMarker.points.empty())
+            normalPublisher.publish(normalMarker);
     }
 
 
@@ -644,5 +651,55 @@ namespace chisel_ros
 
         return true;
     }
+
+    void ChiselServer::FillNormalMarkerTopicWithMeshes(visualization_msgs::Marker* marker)
+    {
+        assert(marker != nullptr);
+        marker->header.stamp = ros::Time::now();
+        marker->header.frame_id = baseTransform;
+        marker->action = visualization_msgs::Marker::ADD;
+        marker->scale.x = 0.04;
+        marker->pose.orientation.x = 0;
+        marker->pose.orientation.y = 0;
+        marker->pose.orientation.z = 0;
+        marker->pose.orientation.w = 1;
+
+        marker->color.r=1;
+        marker->color.g=0;
+        marker->color.b=0;
+        marker->color.a=1;
+        marker->type = visualization_msgs::Marker::LINE_LIST;
+        const chisel::MeshMap& meshMap = chiselMap->GetChunkManager().GetAllMeshes();
+
+        if(meshMap.size() == 0)
+        {
+            return;
+        }
+
+        for (const std::pair<chisel::ChunkID, chisel::MeshPtr>& meshes : meshMap)
+        {
+            const chisel::MeshPtr& mesh = meshes.second;
+            for (size_t i = 0; i < mesh->vertices.size(); i+=300)
+            {
+                if(mesh->HasNormals())
+                {
+                const chisel::Vec3& vec = mesh->vertices[i];
+                geometry_msgs::Point pt;
+                pt.x = vec[0];
+                pt.y = vec[1];
+                pt.z = vec[2];
+                marker->points.push_back(pt);
+
+                const chisel::Vec3 endPoint = 0.3*mesh->normals[i] + vec;
+                geometry_msgs::Point pt2;
+                pt2.x = endPoint[0];
+                pt2.y = endPoint[1];
+                pt2.z = endPoint[2];
+                marker->points.push_back(pt2);
+                }
+            }
+        }
+    }
+
 
 } // namespace chisel 
