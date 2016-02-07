@@ -211,7 +211,7 @@ namespace chisel
 
           for (int i = 0; i < c.second->GetTotalNumVoxels(); i++)
           {
-            Vec3 worldPosition = c.second->GetOrigin() + chunkResolution * getVoxelCoordinates(i, chunkChunksize).cast<float>();
+            Vec3 worldPosition = c.second->GetOrigin() + chunkResolution * getVoxelCoordinates(i, chunkChunksize).cast<float>() + 0.5* chunkResolution * Vec3::Ones();
             ChunkID chunkID = tempTargetChunkManager.GetIDAt(worldPosition);
 
             if (tempTargetChunkManager.HasChunk(chunkID))
@@ -257,7 +257,6 @@ namespace chisel
 
     std::mutex mutex;
     ChunkIDList garbageChunks;
-    //int i = 0;
     for(int i = 0; i< chunksIntersecting.size();i++ )
     //parallel_for(chunksIntersecting.begin(), chunksIntersecting.end(), [&](const ChunkID& chunkID)
     {
@@ -301,13 +300,11 @@ namespace chisel
           garbageChunks.push_back(chunkID);
         }
       mutex.unlock();
-      //i++;
     }
     //);
     printf("CHISEL: Done with chunks \n");
     GarbageCollect(garbageChunks);
     //chunkManager.PrintMemoryStatistics();
-
     clock_t end = clock();
     double elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
     printf("\n \n  Time needed: %f  ms  \n \n", elapsed_secs*1000);
@@ -340,14 +337,13 @@ namespace chisel
     defaultColorVoxel.SetBlue(150);
     defaultColorVoxel.SetGreen(150);
     defaultColorVoxel.SetRed(150);
+    defaultColorVoxel.SetWeight(0);
 
-
-
-    for (float x = startPos(0); x < endPos(0); x+=resolution)
+    for (float x = startPos(0) + 0.5*resolution; x < endPos(0); x+=resolution)
     {
-      for (float y = startPos(1); y < endPos(1); y+=resolution)
+      for (float y = startPos(1) + 0.5*resolution; y < endPos(1); y+=resolution)
       {
-        for (float z = startPos(2); z < endPos(2); z+=resolution)
+        for (float z = startPos(2) + 0.5*resolution; z < endPos(2); z+=resolution)
         {
           Vec3 voxelPosition(x, y, z);
 
@@ -358,15 +354,17 @@ namespace chisel
           if(voxel == nullptr)
             continue;
 
-          const Vec3 firstCorner(x - std::fmod(x, sourceResolution), y - std::fmod(y, resolution), z - std::fmod(z, sourceResolution));
+          Vec3 firstCorner(x - std::fmod(x, sourceResolution), y - std::fmod(y, sourceResolution), z - std::fmod(z, sourceResolution));
+          firstCorner += 0.5* sourceResolution * Vec3::Ones();
+
           const Vec3 lastCorner = firstCorner + sourceResolution * Vec3::Ones();
 
-          const float x_0 = firstCorner(0);
-          const float y_0 = firstCorner(1);
-          const float z_0 = firstCorner(2);
-          const float x_1 = lastCorner(0);
-          const float y_1 = lastCorner(1);
-          const float z_1 = lastCorner(2);
+          const float& x_0 = firstCorner(0);
+          const float& y_0 = firstCorner(1);
+          const float& z_0 = firstCorner(2);
+          const float& x_1 = lastCorner(0);
+          const float& y_1 = lastCorner(1);
+          const float& z_1 = lastCorner(2);
 
           const DistVoxel* v_000 = getValidDistVoxel(sourceChunkManager.GetDistanceVoxel(firstCorner), &defaultVoxel);
           const DistVoxel* v_001 = getValidDistVoxel(sourceChunkManager.GetDistanceVoxel(firstCorner + Vec3(0, 0, sourceResolution)), &defaultVoxel);
@@ -404,7 +402,7 @@ namespace chisel
           if (useColor)
           {
             ColorVoxel* colorVoxel = targetChunkManager.GetColorVoxelMutable(voxelPosition);
-            if(voxel == nullptr)
+            if(colorVoxel == nullptr)
               continue;
 
             const ColorVoxel* clrVxl_000 = getValidColorVoxel(sourceChunkManager.GetColorVoxel(firstCorner), &defaultColorVoxel);
@@ -440,27 +438,29 @@ namespace chisel
             float blue_1 = blue_01 * (1 - yd) + blue_11 * yd;
             colorVoxel->SetBlue(blue_0 * (1 - zd) + blue_1 * zd);
 
-            colorVoxel->SetWeight(1);
-
+            float cweight_00 = clrVxl_000->GetWeight() * (1 - xd) + clrVxl_100->GetWeight() * xd;
+            float cweight_10 = clrVxl_010->GetWeight() * (1 - xd) + clrVxl_110->GetWeight() * xd;
+            float cweight_01 = clrVxl_001->GetWeight() * (1 - xd) + clrVxl_101->GetWeight() * xd;
+            float cweight_11 = clrVxl_011->GetWeight() * (1 - xd) + clrVxl_111->GetWeight() * xd;
+            float cweight_0 = cweight_00 * (1 - yd) + cweight_10 * yd;
+            float cweight_1 = cweight_01 * (1 - yd) + cweight_11 * yd;
+            colorVoxel->SetWeight(cweight_0 * (1 - zd) + cweight_1 * zd);
           }
         }
       }
     }
-
     return true;
-
-
   }
 
   bool Chisel::interpolateGridNearestNeighbour(const Vec3 &startPos, const Vec3 &endPos, const float &resolution, ChunkManager &sourceChunkManager, ChunkManager &targetChunkManager, const bool &useColor)
   {
     const float sourceResolution = sourceChunkManager.GetResolution();
 
-    for (float x = startPos(0); x < endPos(0); x+=resolution)
+    for (float x = startPos(0) + 0.5*resolution; x < endPos(0); x+=resolution)
     {
-      for (float y = startPos(1); y < endPos(1); y+=resolution)
+      for (float y = startPos(1) + 0.5*resolution; y < endPos(1); y+=resolution)
       {
-        for (float z = startPos(2); z < endPos(2); z+=resolution)
+        for (float z = startPos(2) + 0.5*resolution; z < endPos(2); z+=resolution)
         {
           Vec3 voxelPosition(x, y, z);
 
@@ -471,17 +471,21 @@ namespace chisel
           if(targetVoxel == nullptr)
             continue;
 
+
           Vec3 sourceVoxelPosition;
 
+          //search nearest neighbour
           for (int i = 0; i<3; i++)
           {
+            Vec3 voxelPosition(x,y,z);
             float remainder = std::fmod(voxelPosition(i), sourceResolution);
             if (remainder < 0.5 * sourceResolution)
               sourceVoxelPosition(i) = voxelPosition(i)-remainder;
             else
               sourceVoxelPosition(i) = voxelPosition(i) +remainder;
-
           }
+
+          sourceVoxelPosition += 0.5* sourceResolution * Vec3::Ones();
 
           const DistVoxel* sourceVoxel = sourceChunkManager.GetDistanceVoxel(sourceVoxelPosition);
 
@@ -505,7 +509,6 @@ namespace chisel
       }
     }
     return true;
-
   }
 
   Point3 Chisel::getVoxelCoordinates(VoxelID id, Eigen::Vector3i chunkSize)
