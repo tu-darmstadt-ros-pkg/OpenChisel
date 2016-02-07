@@ -71,13 +71,20 @@ namespace chisel
 
     Point3 Chunk::GetVoxelCoords(const Vec3& worldCoords) const
     {
-      float voxelResolutionMeters = std::round(this->voxelResolutionMeters*1000);
+      /*float voxelResolutionMeters = std::round(this->voxelResolutionMeters*1000);
 
       float x = std::round(worldCoords(0)*1000) / voxelResolutionMeters;
       float y = std::round(worldCoords(1)*1000) / voxelResolutionMeters;
       float z = std::round(worldCoords(2)*1000) / voxelResolutionMeters;
 
-      return Point3(static_cast<int>(std::floor(x)),static_cast<int>(std::floor(y)),static_cast<int>(std::floor(z)));
+      return Point3(static_cast<int>(std::floor(x)),static_cast<int>(std::floor(y)),static_cast<int>(std::floor(z)));*/
+
+      const float roundingFactor = 1.0f / (voxelResolutionMeters);
+
+
+              return Point3( static_cast<int>(std::floor(worldCoords(0) * roundingFactor)),
+                             static_cast<int>(std::floor(worldCoords(1) * roundingFactor)),
+                             static_cast<int>(std::floor(worldCoords(2) * roundingFactor)));
     }
 
     VoxelID Chunk::GetVoxelID(const Vec3& worldPos) const
