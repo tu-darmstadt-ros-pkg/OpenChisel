@@ -181,7 +181,7 @@ namespace chisel_ros
         {
             numChannels = 1;
         }
-        else if(image->encoding == "bgr8" || image->encoding == "rbg8")
+        else if(image->encoding == "bgr8" || image->encoding == "rgb8")
         {
             numChannels = 3;
         }
@@ -191,7 +191,7 @@ namespace chisel_ros
         }
         else
         {
-            ROS_ERROR("Unsupported color image format %s. Supported formats are mono8, rbg8, bgr8, and bgra8\n", image->encoding.c_str());
+            ROS_ERROR("Unsupported color image format %s. Supported formats are mono8, rgb8, bgr8, and bgra8\n", image->encoding.c_str());
         }
 
         chisel::ColorImage<DataType>* toReturn = new chisel::ColorImage<DataType>(image->width, image->height, numChannels);
