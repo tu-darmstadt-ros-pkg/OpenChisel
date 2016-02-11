@@ -55,7 +55,7 @@ namespace chisel
     {
       assert(chunk != nullptr);
 
-      Eigen::Vector3i numVoxels = chunk->GetNumVoxels();
+      //Eigen::Vector3i numVoxels = chunk->GetNumVoxels();
       float resolution = chunk->GetVoxelResolutionMeters();
       Vec3 origin = chunk->GetOrigin();
       float diag = 2.0 * sqrt(3.0f) * resolution;
