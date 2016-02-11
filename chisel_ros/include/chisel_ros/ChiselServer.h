@@ -110,6 +110,7 @@ namespace chisel_ros
             void PublishColorPose();
             void PublishDepthFrustum();
             void PublishColorFrustum();
+            void PublishTSDFMarkers();
 
             void SubscribeDepthImage(const std::string& depthImageTopic, const std::string& cameraInfoTopic, const std::string& transform);
             void DepthCameraInfoCallback(sensor_msgs::CameraInfoConstPtr cameraInfo);
@@ -172,6 +173,7 @@ namespace chisel_ros
             std::string chunkBoxTopic;
             ros::Publisher meshPublisher;
             ros::Publisher normalPublisher;
+            ros::Publisher tsdfPublisher;
             ros::Publisher chunkBoxPublisher;
             ros::Publisher latestChunkPublisher;
             ros::ServiceServer resetServer;

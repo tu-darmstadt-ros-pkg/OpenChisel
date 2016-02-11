@@ -149,9 +149,11 @@ int main(int argc, char** argv)
             }
 
             server->PublishMeshes();
-            server->PublishChunkBoxes();
+            //server->PublishChunkBoxes();
+            //server->PublishTSDFMarkers();
 
-            if(mode == chisel_ros::ChiselServer::FusionMode::DepthImage)
+
+            /*if(mode == chisel_ros::ChiselServer::FusionMode::DepthImage)
             {
                 server->PublishDepthPose();
                 server->PublishDepthFrustum();
@@ -161,7 +163,7 @@ int main(int argc, char** argv)
                     server->PublishColorPose();
                     server->PublishColorFrustum();
                 }
-            }
+            }*/
         }
     }
 

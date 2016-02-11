@@ -25,6 +25,7 @@
 #include <visualization_msgs/Marker.h>
 #include <open_chisel/truncation/QuadraticTruncator.h>
 #include <open_chisel/weighting/ConstantWeighter.h>
+#include <sensor_msgs/PointCloud2.h>
 
 namespace chisel_ros
 {
@@ -54,6 +55,7 @@ namespace chisel_ros
         meshTopic = topic;
         meshPublisher = nh.advertise<visualization_msgs::Marker>(meshTopic, 1);
         normalPublisher = nh.advertise<visualization_msgs::Marker>("chisel_normals", 1);
+        tsdfPublisher = nh.advertise<sensor_msgs::PointCloud2>("chisel_tsdf", 1);
     }
 
     void ChiselServer::PublishMeshes()
@@ -64,11 +66,12 @@ namespace chisel_ros
         if(!marker.points.empty())
             meshPublisher.publish(marker);
 
-        visualization_msgs::Marker normalMarker;
+       /* visualization_msgs::Marker normalMarker;
         FillNormalMarkerTopicWithMeshes(&normalMarker);
 
         if(!normalMarker.points.empty())
-            normalPublisher.publish(normalMarker);
+            normalPublisher.publish(normalMarker);*/
+
     }
 
 
@@ -424,8 +427,8 @@ namespace chisel_ros
                 chiselMap->IntegrateDepthScan<DepthData>(projectionIntegrator, lastDepthImage, depthCamera.lastPose, depthCamera.cameraModel);
             }
             printf("CHISEL: Done with scan\n");
-            PublishLatestChunkBoxes();
-            PublishDepthFrustum();
+            //PublishLatestChunkBoxes();
+            //PublishDepthFrustum();
 
             chiselMap->UpdateMeshes();
             hasNewData = false;
@@ -438,7 +441,7 @@ namespace chisel_ros
         {
             ROS_INFO("Integrating point cloud");
             chiselMap->IntegratePointCloud(projectionIntegrator, *lastPointCloud, pointcloudTopic.lastPose, 0.1f, farPlaneDist);
-            PublishLatestChunkBoxes();
+            //PublishLatestChunkBoxes();
             chiselMap->UpdateMeshes();;
             hasNewData = false;
         }
@@ -699,6 +702,64 @@ namespace chisel_ros
                 }
             }
         }
+    }
+
+    void ChiselServer::PublishTSDFMarkers()
+    {
+      const chisel::ChunkManager& chunkManager = chiselMap->GetChunkManager();
+      const float resolution = chunkManager.GetResolution();
+      pcl::PointCloud<pcl::PointXYZRGB> cloud;
+      cloud.clear();
+
+      int stepSize=1;
+
+      for (const std::pair<chisel::ChunkID, chisel::ChunkPtr>& pair : chunkManager.GetChunks())
+      {
+        const std::vector<chisel::DistVoxel>&  voxels = pair.second->GetVoxels();
+        chisel::Vec3 origin = pair.second->GetOrigin();
+
+        int voxelID = 0;
+
+        for (int z = 0; z < chunkManager.GetChunkSize()(2); z+=stepSize)
+        {
+          for (int y = 0; y < chunkManager.GetChunkSize()(1); y+=stepSize)
+          {
+            for (int x = 0; x < chunkManager.GetChunkSize()(0); x+=stepSize)
+            {
+              if(voxels[voxelID].GetWeight() > 0)
+              {
+
+                  float sdf = voxels[voxelID].GetSDF();
+
+                  if(sdf>0)
+                  {
+                    pcl::PointXYZRGB point = pcl::PointXYZRGB(0, 0, 255);
+                    point.x = origin.x() + x *resolution;
+                    point.y = origin.y() + y *resolution;
+                    point.z = origin.z() + z *resolution;
+                    cloud.points.insert(cloud.end(), point);
+                  }
+                  else
+                  {
+                    pcl::PointXYZRGB point = pcl::PointXYZRGB(255, 0, 0);
+                    point.x = origin.x() + x *resolution;
+                    point.y = origin.y() + y *resolution;
+                    point.z = origin.z() + z *resolution;
+                    cloud.points.insert(cloud.end(), point);
+                  }
+              }
+
+              voxelID+=stepSize;
+            }
+          }
+        }
+      }
+      sensor_msgs::PointCloud2 pc;
+
+      pcl::toROSMsg(cloud, pc);
+      pc.header.frame_id = baseTransform;
+      pc.header.stamp = ros::Time::now();
+      tsdfPublisher.publish(pc);
     }
 
 
