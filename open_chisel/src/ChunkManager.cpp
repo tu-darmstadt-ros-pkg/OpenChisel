@@ -199,8 +199,8 @@ namespace chisel
         ChunkMap map;
         Point3 minVal(-std::numeric_limits<int>::max(), -std::numeric_limits<int>::max(), -std::numeric_limits<int>::max());
         Point3 maxVal(std::numeric_limits<int>::max(), std::numeric_limits<int>::max(), std::numeric_limits<int>::max());
-        size_t numPoints = cloud.GetPoints().size();
-        size_t i = 0;
+        //size_t numPoints = cloud.GetPoints().size();
+        //size_t i = 0;
         for (const Vec3& point : cloud.GetPoints())
         {
             Vec3 end = cameraTransform * point;
