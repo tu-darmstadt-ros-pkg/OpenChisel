@@ -30,8 +30,8 @@ namespace chisel
     // TODO Auto-generated constructor stub
   }
 
-  Chisel::Chisel(const Eigen::Vector3i& chunkSize, float voxelResolution, bool useColor) :
-    chunkManager(chunkSize, voxelResolution, useColor)
+  Chisel::Chisel(const Eigen::Vector3i& chunkSize, float voxelResolution, bool useColor, int maxNumThreads) :
+    chunkManager(chunkSize, voxelResolution, useColor), maxThreads(maxNumThreads)
   {
 
   }
@@ -147,7 +147,7 @@ namespace chisel
             garbageChunks.push_back(chunkID);
           }
         mutex.unlock();
-      });
+      }, maxThreads);
 
     GarbageCollect(garbageChunks);
     //  chunkManager.PrintMemoryStatistics();
@@ -301,7 +301,7 @@ namespace chisel
         }
       mutex.unlock();
     }
-    //);
+    //, maxThreads);
     printf("CHISEL: Done with chunks \n");
     GarbageCollect(garbageChunks);
     //chunkManager.PrintMemoryStatistics();

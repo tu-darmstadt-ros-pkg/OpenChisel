@@ -86,7 +86,7 @@ namespace chisel_ros
             };
 
             ChiselServer();
-            ChiselServer(const ros::NodeHandle& nodeHanlde, int chunkSizeX, int chunkSizeY, int chunkSizeZ, float resolution, bool color, FusionMode fusionMode);
+            ChiselServer(const ros::NodeHandle& nodeHanlde, int chunkSizeX, int chunkSizeY, int chunkSizeZ, float resolution, bool color, FusionMode fusionMode, int maximumNumThreads);
             virtual ~ChiselServer();
 
             inline chisel::ChiselPtr GetChiselMap() { return chiselMap; }
@@ -191,6 +191,7 @@ namespace chisel_ros
             float farPlaneDist;
             bool isPaused;
             FusionMode mode;
+            int maxThreads;
 
     };
     typedef std::shared_ptr<ChiselServer> ChiselServerPtr;

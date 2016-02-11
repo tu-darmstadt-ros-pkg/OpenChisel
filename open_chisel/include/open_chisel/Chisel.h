@@ -38,7 +38,7 @@ namespace chisel
     {
         public:
             Chisel();
-            Chisel(const Eigen::Vector3i& chunkSize, float voxelResolution, bool useColor);
+            Chisel(const Eigen::Vector3i& chunkSize, float voxelResolution, bool useColor, int maxNumThreads);
             virtual ~Chisel();
 
             inline const ChunkManager& GetChunkManager() const { return chunkManager; }
@@ -100,7 +100,7 @@ namespace chisel
                             garbageChunks.push_back(chunkID);
                         }
                         mutex.unlock();
-                    }
+                    }, maxThreads
                     );
                     printf("CHISEL: Done with scan\n");
                     GarbageCollect(garbageChunks);
@@ -163,7 +163,7 @@ namespace chisel
                             garbageChunks.push_back(chunkID);
                         }
                         mutex.unlock();
-                    }
+                    }, maxThreads
                     );
 
                     GarbageCollect(garbageChunks);
@@ -186,6 +186,8 @@ namespace chisel
             ChunkManager chunkManager;
             ChunkSet meshesToUpdate;
             ChunkSet latestChunks;
+            int maxThreads;
+
         private:
             Point3 getVoxelCoordinates(VoxelID id, Eigen::Vector3i chunkSize);
             bool interpolateDistVoxel(const Vec3& voxelPos, ChunkManager& sourceChunkManager, DistVoxel* voxel);
