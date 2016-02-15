@@ -38,7 +38,7 @@ namespace chisel
     {
         public:
             Chisel();
-            Chisel(const Eigen::Vector3i& chunkSize, float voxelResolution, bool useColor, int maxNumThreads);
+            Chisel(const Eigen::Vector3i& chunkSize, float voxelResolution, bool useColor, int maxNumThreads, int threadTresh);
             virtual ~Chisel();
 
             inline const ChunkManager& GetChunkManager() const { return chunkManager; }
@@ -50,7 +50,7 @@ namespace chisel
 
             template <class DataType> void IntegrateDepthScan(const ProjectionIntegrator& integrator, const std::shared_ptr<const DepthImage<DataType> >& depthImage, const Transform& extrinsic, const PinholeCamera& camera)
             {
-                    latestChunks.clear();
+                    recentlyChangedChunks.clear();
 
                     clock_t begin = clock();
                     printf("CHISEL: Integrating a scan\n");
@@ -63,6 +63,7 @@ namespace chisel
 
                     std::mutex mutex;
                     ChunkIDList garbageChunks;
+
                     //for(const ChunkID& chunkID : chunksIntersecting)
                     parallel_for(chunksIntersecting.begin(), chunksIntersecting.end(), [&](const ChunkID& chunkID)
                     {
@@ -83,7 +84,7 @@ namespace chisel
                         mutex.lock();
                         if (needsUpdate)
                         {
-                            latestChunks[chunkID] = true;
+                            recentlyChangedChunks[chunkID] = true;
                             for (int dx = -1; dx <= 1; dx++)
                             {
                                 for (int dy = -1; dy <= 1; dy++)
@@ -98,9 +99,10 @@ namespace chisel
                         else if(chunkNew)
                         {
                             garbageChunks.push_back(chunkID);
+
                         }
                         mutex.unlock();
-                    }, maxThreads
+                    }, maxThreads, threadTreshold
                     );
                     printf("CHISEL: Done with scan\n");
                     GarbageCollect(garbageChunks);
@@ -113,7 +115,7 @@ namespace chisel
 
             template <class DataType, class ColorType> void IntegrateDepthScanColor(const ProjectionIntegrator& integrator, const std::shared_ptr<const DepthImage<DataType> >& depthImage,  const Transform& depthExtrinsic, const PinholeCamera& depthCamera, const std::shared_ptr<const ColorImage<ColorType> >& colorImage, const Transform& colorExtrinsic, const PinholeCamera& colorCamera)
             {
-                    latestChunks.clear();
+                    recentlyChangedChunks.clear();
 
                     clock_t begin = clock();
 
@@ -146,7 +148,7 @@ namespace chisel
                         mutex.lock();
                         if (needsUpdate)
                         {
-                            latestChunks[chunkID] = true;
+                            recentlyChangedChunks[chunkID] = true;
                             for (int dx = -1; dx <= 1; dx++)
                             {
                                 for (int dy = -1; dy <= 1; dy++)
@@ -161,9 +163,10 @@ namespace chisel
                         else if(chunkNew)
                         {
                             garbageChunks.push_back(chunkID);
+                            recentlyChangedChunks[chunkID] = false;
                         }
                         mutex.unlock();
-                    }, maxThreads
+                    }, maxThreads, threadTreshold
                     );
 
                     GarbageCollect(garbageChunks);
@@ -180,13 +183,14 @@ namespace chisel
             void Reset();
 
             const ChunkSet& GetMeshesToUpdate() const { return meshesToUpdate; }
-            const ChunkSet& GetLatestChunks() const {return latestChunks;}
+            const ChunkSet& GetRecentlyChangedChunks() const {return recentlyChangedChunks;}
 
         protected:
             ChunkManager chunkManager;
             ChunkSet meshesToUpdate;
-            ChunkSet latestChunks;
+            ChunkSet recentlyChangedChunks;
             int maxThreads;
+            int threadTreshold;
 
         private:
             Point3 getVoxelCoordinates(VoxelID id, Eigen::Vector3i chunkSize);

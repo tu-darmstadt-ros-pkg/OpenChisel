@@ -59,7 +59,7 @@ namespace chisel
     {
         public:
             ChunkManager();
-            ChunkManager(const Eigen::Vector3i& chunkSize, float voxelResolution, bool color);
+            ChunkManager(const Eigen::Vector3i& chunkSize, float voxelResolution, bool color,  int maxThreads, int threadTreshold);
             virtual ~ChunkManager();
 
             inline const ChunkMap& GetChunks() const { return chunks; }
@@ -173,6 +173,8 @@ namespace chisel
             Eigen::Matrix<int, 3, 8> cubeIndexOffsets;
             MeshMap allMeshes;
             bool useColor;
+            int maxThreads;
+            int threadTreshold;
     };
 
     typedef std::shared_ptr<ChunkManager> ChunkManagerPtr;

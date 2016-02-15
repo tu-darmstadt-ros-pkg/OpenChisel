@@ -31,7 +31,7 @@ namespace chisel_ros
 {
 
     ChiselServer::ChiselServer() :
-            useColor(false), hasNewData(false), nearPlaneDist(0.05), farPlaneDist(5), isPaused(false), mode(FusionMode::DepthImage), maxThreads(4)
+            useColor(false), hasNewData(false), nearPlaneDist(0.05), farPlaneDist(5), isPaused(false), mode(FusionMode::DepthImage), maxThreads(4),threadTreshold(500)
     {
 
     }
@@ -194,10 +194,10 @@ namespace chisel_ros
     }
 
 
-    ChiselServer::ChiselServer(const ros::NodeHandle& nodeHanlde, int chunkSizeX, int chunkSizeY, int chunkSizeZ, float resolution, bool color, FusionMode fusionMode, int maximumNumThreads) :
-            nh(nodeHanlde), useColor(color), hasNewData(false), isPaused(false), mode(fusionMode), maxThreads(maximumNumThreads)
+    ChiselServer::ChiselServer(const ros::NodeHandle& nodeHanlde, int chunkSizeX, int chunkSizeY, int chunkSizeZ, float resolution, bool color, FusionMode fusionMode, int maximumNumThreads, int threadTresh) :
+            nh(nodeHanlde), useColor(color), hasNewData(false), isPaused(false), mode(fusionMode), maxThreads(maximumNumThreads), threadTreshold(threadTresh)
     {
-        chiselMap.reset(new chisel::Chisel(Eigen::Vector3i(chunkSizeX, chunkSizeY, chunkSizeZ), resolution, color, maximumNumThreads));
+        chiselMap.reset(new chisel::Chisel(Eigen::Vector3i(chunkSizeX, chunkSizeY, chunkSizeZ), resolution, color, maximumNumThreads, threadTresh));
     }
 
     bool ChiselServer::TogglePaused(chisel_msgs::PauseService::Request& request, chisel_msgs::PauseService::Response& response)
@@ -634,7 +634,7 @@ namespace chisel_ros
     {
 
         const chisel::ChunkManager& chunkManager = chiselMap->GetChunkManager();
-        const chisel::ChunkSet& latestChunks = chiselMap->GetLatestChunks();
+        const chisel::ChunkSet& latestChunks = chiselMap->GetRecentlyChangedChunks();
 
         int i = 0;
 

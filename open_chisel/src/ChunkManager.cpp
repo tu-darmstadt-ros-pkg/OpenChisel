@@ -42,8 +42,8 @@ namespace chisel
 
     }
 
-    ChunkManager::ChunkManager(const Eigen::Vector3i& size, float res, bool color) :
-            chunkSize(size), voxelResolutionMeters(res), useColor(color)
+    ChunkManager::ChunkManager(const Eigen::Vector3i& size, float res, bool color,  int maxThreads, int threadTreshold) :
+            chunkSize(size), voxelResolutionMeters(res), useColor(color), maxThreads(maxThreads), threadTreshold(threadTreshold)
     {
         CacheCentroids();
     }

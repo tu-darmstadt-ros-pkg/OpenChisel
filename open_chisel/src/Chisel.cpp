@@ -30,8 +30,8 @@ namespace chisel
     // TODO Auto-generated constructor stub
   }
 
-  Chisel::Chisel(const Eigen::Vector3i& chunkSize, float voxelResolution, bool useColor, int maxNumThreads) :
-    chunkManager(chunkSize, voxelResolution, useColor), maxThreads(maxNumThreads)
+  Chisel::Chisel(const Eigen::Vector3i& chunkSize, float voxelResolution, bool useColor, int maxNumThreads, int threadTresh) :
+    chunkManager(chunkSize, voxelResolution, useColor, maxNumThreads, threadTresh), maxThreads(maxNumThreads), threadTreshold(threadTresh)
   {
 
   }
@@ -45,12 +45,12 @@ namespace chisel
   {
     chunkManager.Reset();
     meshesToUpdate.clear();
-    latestChunks.clear();
+    recentlyChangedChunks.clear();
   }
 
   void Chisel::UpdateMeshes()
   {
-    chunkManager.RecomputeMeshes(latestChunks);
+    chunkManager.RecomputeMeshes(recentlyChangedChunks);
     meshesToUpdate.clear();
   }
 
@@ -102,7 +102,7 @@ namespace chisel
 
   void Chisel::IntegratePointCloud(const ProjectionIntegrator& integrator, const PointCloud& cloud, const Transform& extrinsic, float truncation, float maxDist)
   {
-    latestChunks.clear();
+    recentlyChangedChunks.clear();
     clock_t begin = clock();
     ChunkIDList chunksIntersecting;
     chunkManager.GetChunkIDsIntersecting(cloud, extrinsic, truncation, maxDist, &chunksIntersecting);
@@ -129,7 +129,7 @@ namespace chisel
         mutex.lock();
         if (needsUpdate)
           {
-            latestChunks[chunkID] = true;
+            recentlyChangedChunks[chunkID] = true;
             for (int dx = -1; dx <= 1; dx++)
               {
                 for (int dy = -1; dy <= 1; dy++)
@@ -144,6 +144,7 @@ namespace chisel
           }
         else if(chunkNew)
           {
+            recentlyChangedChunks[chunkID] = false;
             garbageChunks.push_back(chunkID);
           }
         mutex.unlock();
@@ -159,7 +160,7 @@ namespace chisel
 
   void Chisel::IntegrateChunks(const ProjectionIntegrator& integrator,  ChunkManager& sourceChunkManager)
   {
-    latestChunks.clear();
+    recentlyChangedChunks.clear();
     clock_t begin = clock();
     printf("CHISEL: Integrating chunks \n");
 
@@ -172,7 +173,7 @@ namespace chisel
     Eigen::Vector3i chunkChunksize = sourceChunkManager.GetChunkSize();
 
     const bool useColor = sourceChunkManager.GetUseColor();
-    ChunkManager tempTargetChunkManager(mapChunksize, mapResolution, useColor);
+    ChunkManager tempTargetChunkManager(mapChunksize, mapResolution, useColor, maxThreads, threadTreshold);
 
     if(std::fabs(mapResolution - chunkResolution) < 0.0001 && mapChunksize == chunkChunksize)
     {
@@ -283,7 +284,7 @@ namespace chisel
       mutex.lock();
       if (needsUpdate)
         {
-          latestChunks[chunkID] = true;
+          recentlyChangedChunks[chunkID] = true;
           for (int dx = -1; dx <= 1; dx++)
             {
               for (int dy = -1; dy <= 1; dy++)
