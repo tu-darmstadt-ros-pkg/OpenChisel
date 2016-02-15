@@ -61,7 +61,6 @@ namespace chisel
     Point3 chunkMax = chunk->GetNumVoxels();
     bool updated = false;
     Vec3 startCamera = cameraPose.translation();
-    Transform inversePose = cameraPose.inverse();
     for (const Vec3& point : cloud.GetPoints())
       {
         Vec3 worldPoint = cameraPose * point;
@@ -85,7 +84,7 @@ namespace chisel
             VoxelID id = chunk->GetVoxelID(voxelCoords);
             DistVoxel& distVoxel = chunk->GetDistVoxelMutable(id);
             const Vec3& centroid = centroids[id] + chunk->GetOrigin();
-            float u = depth - (inversePose * centroid - startCamera).norm();
+            float u = depth - (centroid - startCamera).norm();
             float weight = weighter->GetWeight(u, truncation);
             if (fabs(u) < truncation)
               {
