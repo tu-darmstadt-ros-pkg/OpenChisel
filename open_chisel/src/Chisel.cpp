@@ -50,7 +50,7 @@ namespace chisel
 
   void Chisel::UpdateMeshes()
   {
-    chunkManager.RecomputeMeshes(recentlyChangedChunks);
+    chunkManager.RecomputeMeshes(meshesToUpdate);
     meshesToUpdate.clear();
   }
 
@@ -144,7 +144,6 @@ namespace chisel
           }
         else if(chunkNew)
           {
-            recentlyChangedChunks[chunkID] = false;
             garbageChunks.push_back(chunkID);
           }
         mutex.unlock();
@@ -158,9 +157,8 @@ namespace chisel
     printf("\n \n  ~ %f HZ     \n \n", 1/elapsed_secs);
   }
 
-  void Chisel::IntegrateChunks(const ProjectionIntegrator& integrator,  ChunkManager& sourceChunkManager)
+  void Chisel::IntegrateChunks(const ProjectionIntegrator& integrator,  ChunkManager& sourceChunkManager, ChunkSet& changedChunks)
   {
-    recentlyChangedChunks.clear();
     clock_t begin = clock();
     printf("CHISEL: Integrating chunks \n");
 
@@ -178,10 +176,10 @@ namespace chisel
     if(std::fabs(mapResolution - chunkResolution) < 0.0001 && mapChunksize == chunkChunksize)
     {
       printf("Chunk Size and chunk Resolution fit for source and target chunks! \n");
-      for (const std::pair<chisel::ChunkID, ChunkPtr>& c : sourceChunkManager.GetChunks())
+      for (const std::pair<chisel::ChunkID, bool>& c : changedChunks)
       {
         chunksIntersecting.push_back(c.first);
-        chunksToIntegrate.push_back(c.second);
+        chunksToIntegrate.push_back(sourceChunkManager.GetChunk(c.first));
       }
     }
     else
@@ -522,5 +520,14 @@ namespace chisel
     int z = (fraction-y)/chunkSize(2);
 
     return Point3(x,y,z);
+  }
+
+  void Chisel::DeleteChunks(ChunkSet &chunks)
+  {
+    for (std::pair<ChunkID,bool> chunk: chunks)
+    {
+      chunkManager.RemoveChunk(chunk.first);
+      chunkManager.GetAllMutableMeshes().erase(chunk.first);
+    }
   }
 } // namespace chisel 

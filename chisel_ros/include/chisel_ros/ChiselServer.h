@@ -27,6 +27,7 @@
 #include <chisel_msgs/SaveMeshService.h>
 #include <chisel_msgs/GetAllChunksService.h>
 #include <chisel_msgs/GetLatestChunksService.h>
+#include <chisel_msgs/GetDeletedChunksService.h>
 
 #include <memory>
 #include <open_chisel/Chisel.h>
@@ -142,6 +143,7 @@ namespace chisel_ros
             bool SaveMesh(chisel_msgs::SaveMeshService::Request& request, chisel_msgs::SaveMeshService::Response& response);
             bool GetAllChunks(chisel_msgs::GetAllChunksService::Request& request, chisel_msgs::GetAllChunksService::Response& response);
             bool GetLatestChunks(chisel_msgs::GetLatestChunksService::Request& request, chisel_msgs::GetLatestChunksService::Response& response);
+            bool GetDeletedChunks(chisel_msgs::GetDeletedChunksService::Request& request, chisel_msgs::GetDeletedChunksService::Response& response);
 
             inline bool IsPaused() { return isPaused; }
             inline void SetPaused(bool paused) { isPaused = paused; }
@@ -181,6 +183,7 @@ namespace chisel_ros
             ros::ServiceServer saveMeshServer;
             ros::ServiceServer getAllChunksServer;
             ros::ServiceServer getLatestChunksServer;
+            ros::ServiceServer getDeletedChunksServer;
 
             RosCameraTopic depthCamera;
             RosCameraTopic colorCamera;

@@ -46,7 +46,8 @@ namespace chisel
             inline void SetChunkManager(const ChunkManager& manager) { chunkManager = manager; }
 
             void IntegratePointCloud(const ProjectionIntegrator& integrator, const PointCloud& cloud, const Transform& extrinsic, float truncation, float maxDist);
-            void IntegrateChunks(const ProjectionIntegrator& integrator, ChunkManager &sourceChunkManager);
+            void IntegrateChunks(const ProjectionIntegrator& integrator, ChunkManager &sourceChunkManager, ChunkSet &changedChunks);
+            void DeleteChunks(ChunkSet &chunks);
 
             template <class DataType> void IntegrateDepthScan(const ProjectionIntegrator& integrator, const std::shared_ptr<const DepthImage<DataType> >& depthImage, const Transform& extrinsic, const PinholeCamera& camera)
             {
@@ -99,7 +100,6 @@ namespace chisel
                         else if(chunkNew)
                         {
                             garbageChunks.push_back(chunkID);
-
                         }
                         mutex.unlock();
                     }, maxThreads, threadTreshold
@@ -124,7 +124,6 @@ namespace chisel
 
                     ChunkIDList chunksIntersecting;
                     chunkManager.GetChunkIDsIntersecting(frustum, &chunksIntersecting);
-
                     std::mutex mutex;
                     ChunkIDList garbageChunks;
                     //for ( const ChunkID& chunkID : chunksIntersecting)
@@ -163,7 +162,6 @@ namespace chisel
                         else if(chunkNew)
                         {
                             garbageChunks.push_back(chunkID);
-                            recentlyChangedChunks[chunkID] = false;
                         }
                         mutex.unlock();
                     }, maxThreads, threadTreshold

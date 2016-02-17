@@ -125,6 +125,11 @@ namespace chisel
         mutex.lock();
         if(!mesh->vertices.empty())
             allMeshes[chunkID] = mesh;
+        else
+        {
+            deletedChunks[chunkID] = true;
+            RemoveChunk(chunkID);
+        }
         mutex.unlock();
     }
 

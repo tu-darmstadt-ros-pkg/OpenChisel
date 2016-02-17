@@ -82,6 +82,7 @@ namespace chisel
 
             inline bool RemoveChunk(const ChunkID& chunk)
             {
+                deletedChunks[chunk] = true;
                 if(HasChunk(chunk))
                 {
                     chunks.erase(chunk);
@@ -156,6 +157,8 @@ namespace chisel
             inline float GetResolution() const { return voxelResolutionMeters; }
 
             inline const Vec3List& GetCentroids() const { return centroids; }
+            inline const ChunkSet& GetDeletedChunks() const { return deletedChunks; }
+            inline void ResetDeletedChunks(){ deletedChunks.clear(); }
 
             void PrintMemoryStatistics();
 
@@ -175,6 +178,7 @@ namespace chisel
             bool useColor;
             int maxThreads;
             int threadTreshold;
+            ChunkSet deletedChunks;
     };
 
     typedef std::shared_ptr<ChunkManager> ChunkManagerPtr;

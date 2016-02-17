@@ -48,6 +48,7 @@ namespace chisel_ros
         saveMeshServer = nh.advertiseService("SaveMesh", &ChiselServer::SaveMesh, this);
         getAllChunksServer = nh.advertiseService("GetAllChunks", &ChiselServer::GetAllChunks, this);
         getLatestChunksServer = nh.advertiseService("GetLatestChunks", &ChiselServer::GetLatestChunks, this);
+        getDeletedChunksServer = nh.advertiseService("get_deleted_chunks", &ChiselServer::GetDeletedChunks, this);
     }
 
     void ChiselServer::SetupMeshPublisher(const std::string& topic)
@@ -642,7 +643,6 @@ namespace chisel_ros
         response.chunks.header.stamp = ros::Time::now();
 
         for (const std::pair<chisel::ChunkID, bool>& id : latestChunks)
-
         {
             if(chunkManager.HasChunk(id.first))
             {
@@ -651,6 +651,35 @@ namespace chisel_ros
               i++;
             }
         }
+        return true;
+    }
+
+    bool ChiselServer::GetDeletedChunks(chisel_msgs::GetDeletedChunksService::Request& request, chisel_msgs::GetDeletedChunksService::Response& response)
+    {
+        chisel::ChunkManager& chunkManager = chiselMap->GetMutableChunkManager();
+        const chisel::ChunkSet& deletedChunks = chunkManager.GetDeletedChunks();
+
+        int i = 0;
+
+        response.id_x.resize(deletedChunks.size());
+        response.id_y.resize(deletedChunks.size());
+        response.id_z.resize(deletedChunks.size());
+        response.header.stamp = ros::Time::now();
+        ROS_ERROR("Size of deleted chunks: %d", deletedChunks.size());
+
+
+        for (const std::pair<chisel::ChunkID, bool>& id : deletedChunks)
+        {
+              chisel::ChunkID chunkID = id.first;
+
+              response.id_x.at(i) = chunkID.x();
+              response.id_y.at(i) = chunkID.y();
+              response.id_z.at(i) = chunkID.z();
+
+              i++;
+        }
+
+        chunkManager.ResetDeletedChunks();
 
         return true;
     }
