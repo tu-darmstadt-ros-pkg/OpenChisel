@@ -42,8 +42,8 @@ namespace chisel
 
     }
 
-    ChunkManager::ChunkManager(const Eigen::Vector3i& size, float res, bool color) :
-            chunkSize(size), voxelResolutionMeters(res), useColor(color)
+    ChunkManager::ChunkManager(const Eigen::Vector3i& size, float res, bool color,  int maxThreads, int threadTreshold) :
+            chunkSize(size), voxelResolutionMeters(res), useColor(color), maxThreads(maxThreads), threadTreshold(threadTreshold)
     {
         CacheCentroids();
     }
@@ -125,6 +125,11 @@ namespace chisel
         mutex.lock();
         if(!mesh->vertices.empty())
             allMeshes[chunkID] = mesh;
+        else
+        {
+            deletedChunks[chunkID] = true;
+            RemoveChunk(chunkID);
+        }
         mutex.unlock();
     }
 
@@ -137,13 +142,13 @@ namespace chisel
         }
 
         std::mutex mutex;
-        for (const std::pair<ChunkID, bool>& chunk : chunkMeshes)
+
+        for(auto iter=chunkMeshes.begin(); iter!=chunkMeshes.end(); iter++)
         //parallel_for(chunks.begin(), chunks.end(), [this, &mutex](const ChunkID& chunkID)
         {
-            if (chunk.second)
-              this->RecomputeMesh(ChunkID(chunk.first), mutex);
+            this->RecomputeMesh(iter->first, mutex);
         }
-
+        //);
     }
 
     void ChunkManager::CreateChunk(const ChunkID& id)
@@ -199,8 +204,8 @@ namespace chisel
         ChunkMap map;
         Point3 minVal(-std::numeric_limits<int>::max(), -std::numeric_limits<int>::max(), -std::numeric_limits<int>::max());
         Point3 maxVal(std::numeric_limits<int>::max(), std::numeric_limits<int>::max(), std::numeric_limits<int>::max());
-        size_t numPoints = cloud.GetPoints().size();
-        size_t i = 0;
+        //size_t numPoints = cloud.GetPoints().size();
+        //size_t i = 0;
         for (const Vec3& point : cloud.GetPoints())
         {
             Vec3 end = cameraTransform * point;
@@ -546,6 +551,21 @@ namespace chisel
         else return nullptr;
     }
 
+    DistVoxel* ChunkManager::GetDistanceVoxelMutable(const Vec3& pos)
+    {
+        ChunkPtr chunk = GetChunkAt(pos);
+
+        if(chunk.get())
+        {
+            Vec3 rel = (pos - chunk->GetOrigin());
+            return &(chunk->GetDistVoxelMutable(chunk->GetVoxelID(rel)));
+        }
+        else return nullptr;
+    }
+
+
+
+
     const ColorVoxel* ChunkManager::GetColorVoxel(const Vec3& pos)
     {
         ChunkPtr chunk = GetChunkAt(pos);
@@ -553,15 +573,19 @@ namespace chisel
         if(chunk.get())
         {
             Vec3 rel = (pos - chunk->GetOrigin());
-            const VoxelID& id = chunk->GetVoxelID(rel);
-            if (id >= 0 && id < chunk->GetTotalNumVoxels())
-            {
-                return &(chunk->GetColorVoxel(id));
-            }
-            else
-            {
-                return nullptr;
-            }
+            return &(chunk->GetColorVoxel(chunk->GetVoxelID(rel)));
+        }
+        else return nullptr;
+    }
+
+    ColorVoxel* ChunkManager::GetColorVoxelMutable(const Vec3& pos)
+    {
+        ChunkPtr chunk = GetChunkAt(pos);
+
+        if(chunk.get())
+        {
+            Vec3 rel = (pos - chunk->GetOrigin());
+            return &(chunk->GetColorVoxelMutable(chunk->GetVoxelID(rel)));
         }
         else return nullptr;
     }

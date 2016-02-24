@@ -48,6 +48,8 @@ int main(int argc, char** argv)
     std::string chunkBoxTopic;
     double nearPlaneDist;
     double farPlaneDist;
+    int maxThreads;
+    int threadTreshold;
     chisel_ros::ChiselServer::FusionMode mode;
     std::string modeString;
     std::string pointCloudTopic;
@@ -77,6 +79,9 @@ int main(int argc, char** argv)
     nh.param("mesh_topic", meshTopic, std::string("full_mesh"));
     nh.param("chunk_box_topic", chunkBoxTopic, std::string("chunk_boxes"));
     nh.param("fusion_mode", modeString, std::string("DepthImage"));
+    nh.param("maximum_threads", maxThreads, 4);
+    nh.param("thread_threshold", threadTreshold, 500);
+
 
     if(modeString == "DepthImage")
     {
@@ -97,7 +102,7 @@ int main(int argc, char** argv)
     ROS_INFO("Subscribing.");
     chisel::Vec4 truncation(truncationDistQuad, truncationDistLinear, truncationDistConst, truncationDistScale);
 
-    chisel_ros::ChiselServerPtr server(new chisel_ros::ChiselServer(nh, chunkSizeX, chunkSizeY, chunkSizeZ, voxelResolution, useColor, mode));
+    chisel_ros::ChiselServerPtr server(new chisel_ros::ChiselServer(nh, chunkSizeX, chunkSizeY, chunkSizeZ, voxelResolution, useColor, mode, maxThreads, threadTreshold));
     server->SetupProjectionIntegrator(truncation, static_cast<uint16_t>(weight), useCarving, carvingDist);
 
     if (mode == chisel_ros::ChiselServer::FusionMode::DepthImage)
@@ -149,9 +154,11 @@ int main(int argc, char** argv)
             }
 
             server->PublishMeshes();
-            server->PublishChunkBoxes();
+            //server->PublishChunkBoxes();
+            //server->PublishTSDFMarkers();
 
-            if(mode == chisel_ros::ChiselServer::FusionMode::DepthImage)
+
+            /*if(mode == chisel_ros::ChiselServer::FusionMode::DepthImage)
             {
                 server->PublishDepthPose();
                 server->PublishDepthFrustum();
@@ -161,7 +168,7 @@ int main(int argc, char** argv)
                     server->PublishColorPose();
                     server->PublishColorFrustum();
                 }
-            }
+            }*/
         }
     }
 

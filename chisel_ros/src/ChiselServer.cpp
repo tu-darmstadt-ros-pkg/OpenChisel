@@ -25,12 +25,13 @@
 #include <visualization_msgs/Marker.h>
 #include <open_chisel/truncation/QuadraticTruncator.h>
 #include <open_chisel/weighting/ConstantWeighter.h>
+#include <sensor_msgs/PointCloud2.h>
 
 namespace chisel_ros
 {
 
     ChiselServer::ChiselServer() :
-            useColor(false), hasNewData(false), nearPlaneDist(0.05), farPlaneDist(5), isPaused(false), mode(FusionMode::DepthImage)
+            useColor(false), hasNewData(false), nearPlaneDist(0.05), farPlaneDist(5), isPaused(false), mode(FusionMode::DepthImage), maxThreads(4),threadTreshold(500)
     {
 
     }
@@ -46,12 +47,16 @@ namespace chisel_ros
         pauseServer = nh.advertiseService("TogglePaused", &ChiselServer::TogglePaused, this);
         saveMeshServer = nh.advertiseService("SaveMesh", &ChiselServer::SaveMesh, this);
         getAllChunksServer = nh.advertiseService("GetAllChunks", &ChiselServer::GetAllChunks, this);
+        getLatestChunksServer = nh.advertiseService("GetLatestChunks", &ChiselServer::GetLatestChunks, this);
+        getDeletedChunksServer = nh.advertiseService("get_deleted_chunks", &ChiselServer::GetDeletedChunks, this);
     }
 
     void ChiselServer::SetupMeshPublisher(const std::string& topic)
     {
         meshTopic = topic;
         meshPublisher = nh.advertise<visualization_msgs::Marker>(meshTopic, 1);
+        normalPublisher = nh.advertise<visualization_msgs::Marker>("chisel_normals", 1);
+        tsdfPublisher = nh.advertise<sensor_msgs::PointCloud2>("chisel_tsdf", 1);
     }
 
     void ChiselServer::PublishMeshes()
@@ -61,6 +66,13 @@ namespace chisel_ros
 
         if(!marker.points.empty())
             meshPublisher.publish(marker);
+
+       /* visualization_msgs::Marker normalMarker;
+        FillNormalMarkerTopicWithMeshes(&normalMarker);
+
+        if(!normalMarker.points.empty())
+            normalPublisher.publish(normalMarker);*/
+
     }
 
 
@@ -183,10 +195,10 @@ namespace chisel_ros
     }
 
 
-    ChiselServer::ChiselServer(const ros::NodeHandle& nodeHanlde, int chunkSizeX, int chunkSizeY, int chunkSizeZ, float resolution, bool color, FusionMode fusionMode) :
-            nh(nodeHanlde), useColor(color), hasNewData(false), isPaused(false), mode(fusionMode)
+    ChiselServer::ChiselServer(const ros::NodeHandle& nodeHanlde, int chunkSizeX, int chunkSizeY, int chunkSizeZ, float resolution, bool color, FusionMode fusionMode, int maximumNumThreads, int threadTresh) :
+            nh(nodeHanlde), useColor(color), hasNewData(false), isPaused(false), mode(fusionMode), maxThreads(maximumNumThreads), threadTreshold(threadTresh)
     {
-        chiselMap.reset(new chisel::Chisel(Eigen::Vector3i(chunkSizeX, chunkSizeY, chunkSizeZ), resolution, color));
+        chiselMap.reset(new chisel::Chisel(Eigen::Vector3i(chunkSizeX, chunkSizeY, chunkSizeZ), resolution, color, maximumNumThreads, threadTresh));
     }
 
     bool ChiselServer::TogglePaused(chisel_msgs::PauseService::Request& request, chisel_msgs::PauseService::Response& response)
@@ -416,8 +428,8 @@ namespace chisel_ros
                 chiselMap->IntegrateDepthScan<DepthData>(projectionIntegrator, lastDepthImage, depthCamera.lastPose, depthCamera.cameraModel);
             }
             printf("CHISEL: Done with scan\n");
-            PublishLatestChunkBoxes();
-            PublishDepthFrustum();
+            //PublishLatestChunkBoxes();
+            //PublishDepthFrustum();
 
             chiselMap->UpdateMeshes();
             hasNewData = false;
@@ -430,7 +442,7 @@ namespace chisel_ros
         {
             ROS_INFO("Integrating point cloud");
             chiselMap->IntegratePointCloud(projectionIntegrator, *lastPointCloud, pointcloudTopic.lastPose, 0.1f, farPlaneDist);
-            PublishLatestChunkBoxes();
+            //PublishLatestChunkBoxes();
             chiselMap->UpdateMeshes();;
             hasNewData = false;
         }
@@ -461,6 +473,7 @@ namespace chisel_ros
         marker.color.b = 0.3f;
         marker.color.a = 0.6f;
         const chisel::ChunkSet& latest = chiselMap->GetMeshesToUpdate();
+
         for (const std::pair<chisel::ChunkID, bool>& id : latest)
         {
             if(chunkManager.HasChunk(id.first))
@@ -617,5 +630,166 @@ namespace chisel_ros
 
         return true;
     }
+
+    bool ChiselServer::GetLatestChunks(chisel_msgs::GetLatestChunksService::Request& request, chisel_msgs::GetLatestChunksService::Response& response)
+    {
+
+        const chisel::ChunkManager& chunkManager = chiselMap->GetChunkManager();
+        const chisel::ChunkSet& latestChunks = chiselMap->GetRecentlyChangedChunks();
+
+        int i = 0;
+
+        response.chunks.chunks.resize(latestChunks.size());
+        response.chunks.header.stamp = ros::Time::now();
+
+        for (const std::pair<chisel::ChunkID, bool>& id : latestChunks)
+        {
+            if(chunkManager.HasChunk(id.first))
+            {
+              chisel_msgs::ChunkMessage& msg = response.chunks.chunks.at(i);
+              FillChunkMessage(chunkManager.GetChunk(id.first), &msg);
+              i++;
+            }
+        }
+        return true;
+    }
+
+    bool ChiselServer::GetDeletedChunks(chisel_msgs::GetDeletedChunksService::Request& request, chisel_msgs::GetDeletedChunksService::Response& response)
+    {
+        chisel::ChunkManager& chunkManager = chiselMap->GetMutableChunkManager();
+        const chisel::ChunkSet& deletedChunks = chunkManager.GetDeletedChunks();
+
+        int i = 0;
+
+        response.id_x.resize(deletedChunks.size());
+        response.id_y.resize(deletedChunks.size());
+        response.id_z.resize(deletedChunks.size());
+        response.header.stamp = ros::Time::now();
+        ROS_ERROR("Size of deleted chunks: %d", deletedChunks.size());
+
+
+        for (const std::pair<chisel::ChunkID, bool>& id : deletedChunks)
+        {
+              chisel::ChunkID chunkID = id.first;
+
+              response.id_x.at(i) = chunkID.x();
+              response.id_y.at(i) = chunkID.y();
+              response.id_z.at(i) = chunkID.z();
+
+              i++;
+        }
+
+        chunkManager.ResetDeletedChunks();
+
+        return true;
+    }
+
+    void ChiselServer::FillNormalMarkerTopicWithMeshes(visualization_msgs::Marker* marker)
+    {
+        assert(marker != nullptr);
+        marker->header.stamp = ros::Time::now();
+        marker->header.frame_id = baseTransform;
+        marker->action = visualization_msgs::Marker::ADD;
+        marker->scale.x = 0.04;
+        marker->pose.orientation.x = 0;
+        marker->pose.orientation.y = 0;
+        marker->pose.orientation.z = 0;
+        marker->pose.orientation.w = 1;
+
+        marker->color.r=1;
+        marker->color.g=0;
+        marker->color.b=0;
+        marker->color.a=1;
+        marker->type = visualization_msgs::Marker::LINE_LIST;
+        const chisel::MeshMap& meshMap = chiselMap->GetChunkManager().GetAllMeshes();
+
+        if(meshMap.size() == 0)
+        {
+            return;
+        }
+
+        for (const std::pair<chisel::ChunkID, chisel::MeshPtr>& meshes : meshMap)
+        {
+            const chisel::MeshPtr& mesh = meshes.second;
+            for (size_t i = 0; i < mesh->vertices.size(); i+=300)
+            {
+                if(mesh->HasNormals())
+                {
+                const chisel::Vec3& vec = mesh->vertices[i];
+                geometry_msgs::Point pt;
+                pt.x = vec[0];
+                pt.y = vec[1];
+                pt.z = vec[2];
+                marker->points.push_back(pt);
+
+                const chisel::Vec3 endPoint = 0.3*mesh->normals[i] + vec;
+                geometry_msgs::Point pt2;
+                pt2.x = endPoint[0];
+                pt2.y = endPoint[1];
+                pt2.z = endPoint[2];
+                marker->points.push_back(pt2);
+                }
+            }
+        }
+    }
+
+    void ChiselServer::PublishTSDFMarkers()
+    {
+      const chisel::ChunkManager& chunkManager = chiselMap->GetChunkManager();
+      const float resolution = chunkManager.GetResolution();
+      pcl::PointCloud<pcl::PointXYZRGB> cloud;
+      cloud.clear();
+
+      int stepSize=1;
+
+      for (const std::pair<chisel::ChunkID, chisel::ChunkPtr>& pair : chunkManager.GetChunks())
+      {
+        const std::vector<chisel::DistVoxel>&  voxels = pair.second->GetVoxels();
+        chisel::Vec3 origin = pair.second->GetOrigin();
+
+        int voxelID = 0;
+
+        for (int z = 0; z < chunkManager.GetChunkSize()(2); z+=stepSize)
+        {
+          for (int y = 0; y < chunkManager.GetChunkSize()(1); y+=stepSize)
+          {
+            for (int x = 0; x < chunkManager.GetChunkSize()(0); x+=stepSize)
+            {
+              if(voxels[voxelID].GetWeight() > 0)
+              {
+
+                  float sdf = voxels[voxelID].GetSDF();
+
+                  if(sdf>0)
+                  {
+                    pcl::PointXYZRGB point = pcl::PointXYZRGB(0, 0, 255);
+                    point.x = origin.x() + x *resolution;
+                    point.y = origin.y() + y *resolution;
+                    point.z = origin.z() + z *resolution;
+                    cloud.points.insert(cloud.end(), point);
+                  }
+                  else
+                  {
+                    pcl::PointXYZRGB point = pcl::PointXYZRGB(255, 0, 0);
+                    point.x = origin.x() + x *resolution;
+                    point.y = origin.y() + y *resolution;
+                    point.z = origin.z() + z *resolution;
+                    cloud.points.insert(cloud.end(), point);
+                  }
+              }
+
+              voxelID+=stepSize;
+            }
+          }
+        }
+      }
+      sensor_msgs::PointCloud2 pc;
+
+      pcl::toROSMsg(cloud, pc);
+      pc.header.frame_id = baseTransform;
+      pc.header.stamp = ros::Time::now();
+      tsdfPublisher.publish(pc);
+    }
+
 
 } // namespace chisel 

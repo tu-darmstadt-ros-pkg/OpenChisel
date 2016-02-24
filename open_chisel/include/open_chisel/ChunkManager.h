@@ -59,7 +59,7 @@ namespace chisel
     {
         public:
             ChunkManager();
-            ChunkManager(const Eigen::Vector3i& chunkSize, float voxelResolution, bool color);
+            ChunkManager(const Eigen::Vector3i& chunkSize, float voxelResolution, bool color,  int maxThreads, int threadTreshold);
             virtual ~ChunkManager();
 
             inline const ChunkMap& GetChunks() const { return chunks; }
@@ -82,6 +82,7 @@ namespace chisel
 
             inline bool RemoveChunk(const ChunkID& chunk)
             {
+                deletedChunks[chunk] = true;
                 if(HasChunk(chunk))
                 {
                     chunks.erase(chunk);
@@ -113,9 +114,9 @@ namespace chisel
 
             inline ChunkID GetIDAt(const Vec3& pos) const
             {
-                static const float roundingFactorX = 1.0f / (chunkSize(0) * voxelResolutionMeters);
-                static const float roundingFactorY = 1.0f / (chunkSize(1) * voxelResolutionMeters);
-                static const float roundingFactorZ = 1.0f / (chunkSize(2) * voxelResolutionMeters);
+                const float roundingFactorX = 1.0f / (chunkSize(0) * voxelResolutionMeters);
+                const float roundingFactorY = 1.0f / (chunkSize(1) * voxelResolutionMeters);
+                const float roundingFactorZ = 1.0f / (chunkSize(2) * voxelResolutionMeters);
 
                 return ChunkID(static_cast<int>(std::floor(pos(0) * roundingFactorX)),
                                static_cast<int>(std::floor(pos(1) * roundingFactorY)),
@@ -123,7 +124,9 @@ namespace chisel
             }
 
             const DistVoxel* GetDistanceVoxel(const Vec3& pos);
+            DistVoxel* GetDistanceVoxelMutable(const Vec3& pos);
             const ColorVoxel* GetColorVoxel(const Vec3& pos);
+            ColorVoxel* GetColorVoxelMutable(const Vec3& pos);
 
             void GetChunkIDsIntersecting(const AABB& box, ChunkIDList* chunkList);
             void GetChunkIDsIntersecting(const Frustum& frustum, ChunkIDList* chunkList);
@@ -154,6 +157,8 @@ namespace chisel
             inline float GetResolution() const { return voxelResolutionMeters; }
 
             inline const Vec3List& GetCentroids() const { return centroids; }
+            inline const ChunkSet& GetDeletedChunks() const { return deletedChunks; }
+            inline void ResetDeletedChunks(){ deletedChunks.clear(); }
 
             void PrintMemoryStatistics();
 
@@ -171,6 +176,9 @@ namespace chisel
             Eigen::Matrix<int, 3, 8> cubeIndexOffsets;
             MeshMap allMeshes;
             bool useColor;
+            int maxThreads;
+            int threadTreshold;
+            ChunkSet deletedChunks;
     };
 
     typedef std::shared_ptr<ChunkManager> ChunkManagerPtr;

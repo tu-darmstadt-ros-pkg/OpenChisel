@@ -26,6 +26,8 @@
 #include <chisel_msgs/PauseService.h>
 #include <chisel_msgs/SaveMeshService.h>
 #include <chisel_msgs/GetAllChunksService.h>
+#include <chisel_msgs/GetLatestChunksService.h>
+#include <chisel_msgs/GetDeletedChunksService.h>
 
 #include <memory>
 #include <open_chisel/Chisel.h>
@@ -85,7 +87,7 @@ namespace chisel_ros
             };
 
             ChiselServer();
-            ChiselServer(const ros::NodeHandle& nodeHanlde, int chunkSizeX, int chunkSizeY, int chunkSizeZ, float resolution, bool color, FusionMode fusionMode);
+            ChiselServer(const ros::NodeHandle& nodeHanlde, int chunkSizeX, int chunkSizeY, int chunkSizeZ, float resolution, bool color, FusionMode fusionMode, int maximumNumThreads, int threadTresh);
             virtual ~ChiselServer();
 
             inline chisel::ChiselPtr GetChiselMap() { return chiselMap; }
@@ -109,6 +111,7 @@ namespace chisel_ros
             void PublishColorPose();
             void PublishDepthFrustum();
             void PublishColorFrustum();
+            void PublishTSDFMarkers();
 
             void SubscribeDepthImage(const std::string& depthImageTopic, const std::string& cameraInfoTopic, const std::string& transform);
             void DepthCameraInfoCallback(sensor_msgs::CameraInfoConstPtr cameraInfo);
@@ -124,6 +127,8 @@ namespace chisel_ros
             void IntegrateLastDepthImage();
             void IntegrateLastPointCloud();
             void FillMarkerTopicWithMeshes(visualization_msgs::Marker* marker);
+            void FillNormalMarkerTopicWithMeshes(visualization_msgs::Marker* marker);
+
             inline void SetBaseTransform(const std::string& frameName) { baseTransform = frameName; }
 
             inline bool HasNewData() { return hasNewData; }
@@ -137,6 +142,8 @@ namespace chisel_ros
             bool TogglePaused(chisel_msgs::PauseService::Request& request, chisel_msgs::PauseService::Response& response);
             bool SaveMesh(chisel_msgs::SaveMeshService::Request& request, chisel_msgs::SaveMeshService::Response& response);
             bool GetAllChunks(chisel_msgs::GetAllChunksService::Request& request, chisel_msgs::GetAllChunksService::Response& response);
+            bool GetLatestChunks(chisel_msgs::GetLatestChunksService::Request& request, chisel_msgs::GetLatestChunksService::Response& response);
+            bool GetDeletedChunks(chisel_msgs::GetDeletedChunksService::Request& request, chisel_msgs::GetDeletedChunksService::Response& response);
 
             inline bool IsPaused() { return isPaused; }
             inline void SetPaused(bool paused) { isPaused = paused; }
@@ -167,12 +174,17 @@ namespace chisel_ros
             std::string meshTopic;
             std::string chunkBoxTopic;
             ros::Publisher meshPublisher;
+            ros::Publisher normalPublisher;
+            ros::Publisher tsdfPublisher;
             ros::Publisher chunkBoxPublisher;
             ros::Publisher latestChunkPublisher;
             ros::ServiceServer resetServer;
             ros::ServiceServer pauseServer;
             ros::ServiceServer saveMeshServer;
             ros::ServiceServer getAllChunksServer;
+            ros::ServiceServer getLatestChunksServer;
+            ros::ServiceServer getDeletedChunksServer;
+
             RosCameraTopic depthCamera;
             RosCameraTopic colorCamera;
             RosPointCloudTopic pointcloudTopic;
@@ -182,6 +194,9 @@ namespace chisel_ros
             float farPlaneDist;
             bool isPaused;
             FusionMode mode;
+            int maxThreads;
+            int threadTreshold;
+
     };
     typedef std::shared_ptr<ChiselServer> ChiselServerPtr;
     typedef std::shared_ptr<const ChiselServer> ChiselServerConstPtr;
