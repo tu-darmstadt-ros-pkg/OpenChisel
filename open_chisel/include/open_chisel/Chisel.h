@@ -38,7 +38,7 @@ namespace chisel
     {
         public:
             Chisel();
-            Chisel(const Eigen::Vector3i& chunkSize, float voxelResolution, bool useColor, int maxNumThreads, int threadTresh);
+            Chisel(const Eigen::Vector3i& chunkSize, float voxelResolution, bool useColor);
             virtual ~Chisel();
 
             inline const ChunkManager& GetChunkManager() const { return chunkManager; }
@@ -174,6 +174,14 @@ namespace chisel
                     //chunkManager.PrintMemoryStatistics();
             }
 
+            inline void SetThreadingParameters(unsigned int maxThreads, unsigned int threadTreshold)
+            {
+              this->maxThreads = maxThreads;
+              this->threadTreshold = threadTreshold;
+
+              chunkManager.SetThreadingParameters(maxThreads, threadTreshold);
+            }
+
             void GarbageCollect(const ChunkIDList& chunks);
             void UpdateMeshes();
 
@@ -187,8 +195,8 @@ namespace chisel
             ChunkManager chunkManager;
             ChunkSet meshesToUpdate;
             ChunkSet recentlyChangedChunks;
-            int maxThreads;
-            int threadTreshold;
+            unsigned int maxThreads;
+            unsigned int threadTreshold;
 
         private:
             Point3 getVoxelCoordinates(VoxelID id, Eigen::Vector3i chunkSize);

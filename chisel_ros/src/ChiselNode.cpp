@@ -102,7 +102,8 @@ int main(int argc, char** argv)
     ROS_INFO("Subscribing.");
     chisel::Vec4 truncation(truncationDistQuad, truncationDistLinear, truncationDistConst, truncationDistScale);
 
-    chisel_ros::ChiselServerPtr server(new chisel_ros::ChiselServer(nh, chunkSizeX, chunkSizeY, chunkSizeZ, voxelResolution, useColor, mode, maxThreads, threadTreshold));
+    chisel_ros::ChiselServerPtr server(new chisel_ros::ChiselServer(nh, chunkSizeX, chunkSizeY, chunkSizeZ, voxelResolution, useColor, mode));
+    server->SetThreadingParameters(std::abs(maxThreads), std::abs(threadTreshold));
     server->SetupProjectionIntegrator(truncation, static_cast<uint16_t>(weight), useCarving, carvingDist);
 
     if (mode == chisel_ros::ChiselServer::FusionMode::DepthImage)

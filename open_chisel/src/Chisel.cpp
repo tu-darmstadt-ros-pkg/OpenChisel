@@ -28,12 +28,15 @@ namespace chisel
   Chisel::Chisel()
   {
     // TODO Auto-generated constructor stub
+    maxThreads = 4;
+    threadTreshold = 500;
   }
 
-  Chisel::Chisel(const Eigen::Vector3i& chunkSize, float voxelResolution, bool useColor, int maxNumThreads, int threadTresh) :
-    chunkManager(chunkSize, voxelResolution, useColor, maxNumThreads, threadTresh), maxThreads(maxNumThreads), threadTreshold(threadTresh)
+  Chisel::Chisel(const Eigen::Vector3i& chunkSize, float voxelResolution, bool useColor) :
+    chunkManager(chunkSize, voxelResolution, useColor)
   {
-
+    maxThreads = 4;
+    threadTreshold = 500;
   }
 
   Chisel::~Chisel()
@@ -171,7 +174,7 @@ namespace chisel
     Eigen::Vector3i chunkChunksize = sourceChunkManager.GetChunkSize();
 
     const bool useColor = sourceChunkManager.GetUseColor();
-    ChunkManager tempTargetChunkManager(mapChunksize, mapResolution, useColor, maxThreads, threadTreshold);
+    ChunkManager tempTargetChunkManager(mapChunksize, mapResolution, useColor);
 
     if(std::fabs(mapResolution - chunkResolution) < 0.0001 && mapChunksize == chunkChunksize)
     {

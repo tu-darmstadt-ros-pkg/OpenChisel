@@ -87,7 +87,7 @@ namespace chisel_ros
             };
 
             ChiselServer();
-            ChiselServer(const ros::NodeHandle& nodeHanlde, int chunkSizeX, int chunkSizeY, int chunkSizeZ, float resolution, bool color, FusionMode fusionMode, int maximumNumThreads, int threadTresh);
+            ChiselServer(const ros::NodeHandle& nodeHanlde, int chunkSizeX, int chunkSizeY, int chunkSizeZ, float resolution, bool color, FusionMode fusionMode);
             virtual ~ChiselServer();
 
             inline chisel::ChiselPtr GetChiselMap() { return chiselMap; }
@@ -95,6 +95,14 @@ namespace chisel_ros
 
             inline const std::string& GetBaseTransform() const { return baseTransform; }
             inline const std::string& GetMeshTopic() const { return meshTopic; }
+
+            inline void SetThreadingParameters(unsigned int maxThreads, unsigned int threadTreshold)
+            {
+              this->maxThreads = maxThreads;
+              this->threadTreshold = threadTreshold;
+              chiselMap->SetThreadingParameters(maxThreads, threadTreshold);
+
+            }
 
             void SetupProjectionIntegrator(const chisel::Vec4& truncation, uint16_t weight, bool useCarving, float carvingDist);
             void SetupMeshPublisher(const std::string& meshTopic);
@@ -194,8 +202,8 @@ namespace chisel_ros
             float farPlaneDist;
             bool isPaused;
             FusionMode mode;
-            int maxThreads;
-            int threadTreshold;
+            unsigned int maxThreads;
+            unsigned int threadTreshold;
 
     };
     typedef std::shared_ptr<ChiselServer> ChiselServerPtr;

@@ -59,7 +59,7 @@ namespace chisel
     {
         public:
             ChunkManager();
-            ChunkManager(const Eigen::Vector3i& chunkSize, float voxelResolution, bool color,  int maxThreads, int threadTreshold);
+            ChunkManager(const Eigen::Vector3i& chunkSize, float voxelResolution, bool color);
             virtual ~ChunkManager();
 
             inline const ChunkMap& GetChunks() const { return chunks; }
@@ -123,6 +123,12 @@ namespace chisel
                                static_cast<int>(std::floor(pos(2) * roundingFactorZ)));
             }
 
+            inline void SetThreadingParameters(unsigned int maxThreads, unsigned int threadTreshold)
+            {
+              this->maxThreads = maxThreads;
+              this->threadTreshold = threadTreshold;
+            }
+
             const DistVoxel* GetDistanceVoxel(const Vec3& pos);
             DistVoxel* GetDistanceVoxelMutable(const Vec3& pos);
             const ColorVoxel* GetColorVoxel(const Vec3& pos);
@@ -176,8 +182,8 @@ namespace chisel
             Eigen::Matrix<int, 3, 8> cubeIndexOffsets;
             MeshMap allMeshes;
             bool useColor;
-            int maxThreads;
-            int threadTreshold;
+            unsigned int maxThreads;
+            unsigned int threadTreshold;
             ChunkSet deletedChunks;
     };
 
