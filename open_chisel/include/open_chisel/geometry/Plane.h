@@ -22,7 +22,7 @@
 #ifndef PLANE_H_
 #define PLANE_H_
 
-#include <memory>
+#include <boost/shared_ptr.hpp>
 #include "Geometry.h"
 
 namespace chisel
@@ -68,8 +68,8 @@ namespace chisel
 
             EIGEN_MAKE_ALIGNED_OPERATOR_NEW
     };
-    typedef std::shared_ptr<Plane> PlanePtr;
-    typedef std::shared_ptr<const Plane> PlaneConstPtr;
+    typedef boost::shared_ptr<Plane> PlanePtr;
+    typedef boost::shared_ptr<const Plane> PlaneConstPtr;
 
 } // namespace chisel 
 

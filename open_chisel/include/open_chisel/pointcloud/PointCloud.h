@@ -22,7 +22,7 @@
 #ifndef POINTCLOUD_H_
 #define POINTCLOUD_H_
 
-#include <memory>
+#include <boost/shared_ptr.hpp>
 #include <vector>
 #include <open_chisel/geometry/Geometry.h>
 
@@ -73,8 +73,8 @@ namespace chisel
             Vec3List points;
             Vec3List colors;
     };
-    typedef std::shared_ptr<PointCloud> PointCloudPtr;
-    typedef std::shared_ptr<const PointCloud> PointCloudConstPtr;
+    typedef boost::shared_ptr<PointCloud> PointCloudPtr;
+    typedef boost::shared_ptr<const PointCloud> PointCloudConstPtr;
 
 } // namespace chisel 
 

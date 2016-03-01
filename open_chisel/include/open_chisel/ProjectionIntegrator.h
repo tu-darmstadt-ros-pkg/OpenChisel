@@ -57,7 +57,7 @@ namespace chisel
         return truncator->GetTruncationDistance(depth);
     }
 
-    template<class DataType> bool Integrate(const std::shared_ptr<const DepthImage<DataType> >& depthImage, const PinholeCamera& camera, const Transform& cameraPose, Chunk* chunk) const
+    template<class DataType> bool Integrate(const boost::shared_ptr<const DepthImage<DataType> >& depthImage, const PinholeCamera& camera, const Transform& cameraPose, Chunk* chunk) const
     {
       assert(chunk != nullptr);
 
@@ -107,7 +107,7 @@ namespace chisel
         }
       return updated;
     }
-    template<class DataType, class ColorType> bool IntegrateColor(const std::shared_ptr<const DepthImage<DataType> >& depthImage, const PinholeCamera& depthCamera, const Transform& depthCameraPose, const std::shared_ptr<const ColorImage<ColorType> >& colorImage, const PinholeCamera& colorCamera, const Transform& colorCameraPose, Chunk* chunk) const
+    template<class DataType, class ColorType> bool IntegrateColor(const boost::shared_ptr<const DepthImage<DataType> >& depthImage, const PinholeCamera& depthCamera, const Transform& depthCameraPose, const boost::shared_ptr<const ColorImage<ColorType> >& colorImage, const PinholeCamera& colorCamera, const Transform& colorCameraPose, Chunk* chunk) const
     {
       assert(chunk != nullptr);
 
