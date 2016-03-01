@@ -49,8 +49,8 @@ namespace chisel
             float weight;
 
     };
-    typedef boost::shared_ptr<ConstantWeighter> ConstantWeighterPtr;
-    typedef boost::shared_ptr<const ConstantWeighter> ConstantWeighterConstPtr;
+    typedef std::shared_ptr<ConstantWeighter> ConstantWeighterPtr;
+    typedef std::shared_ptr<const ConstantWeighter> ConstantWeighterConstPtr;
 
 } // namespace chisel 
 

@@ -22,7 +22,7 @@
 #ifndef PINHOLECAMERA_H_
 #define PINHOLECAMERA_H_
 
-#include <boost/shared_ptr.hpp>
+#include <memory>
 #include <open_chisel/geometry/Geometry.h>
 #include <open_chisel/geometry/Frustum.h>
 #include <open_chisel/camera/Intrinsics.h>
@@ -66,8 +66,8 @@ namespace chisel
             float farPlane;
 
     };
-    typedef boost::shared_ptr<PinholeCamera> PinholeCameraPtr;
-    typedef boost::shared_ptr<const PinholeCamera> PinholeCameraConstPtr;
+    typedef std::shared_ptr<PinholeCamera> PinholeCameraPtr;
+    typedef std::shared_ptr<const PinholeCamera> PinholeCameraConstPtr;
 
 } // namespace chisel 
 

@@ -37,8 +37,8 @@ namespace chisel
             virtual float GetTruncationDistance(float depthReading) const = 0;
     };
 
-    typedef boost::shared_ptr<Truncator> TruncatorPtr;
-    typedef boost::shared_ptr<const Truncator> TruncatorConstPtr;
+    typedef std::shared_ptr<Truncator> TruncatorPtr;
+    typedef std::shared_ptr<const Truncator> TruncatorConstPtr;
 } // namespace chisel 
 
 #endif // TRUNCATOR_H_ 

@@ -49,7 +49,7 @@ namespace chisel
             void IntegrateChunks(const ProjectionIntegrator& integrator, ChunkManager &sourceChunkManager, ChunkSet &changedChunks);
             void DeleteChunks(ChunkSet &chunks);
 
-            template <class DataType> void IntegrateDepthScan(const ProjectionIntegrator& integrator, const boost::shared_ptr<const DepthImage<DataType> >& depthImage, const Transform& extrinsic, const PinholeCamera& camera)
+            template <class DataType> void IntegrateDepthScan(const ProjectionIntegrator& integrator, const std::shared_ptr<const DepthImage<DataType> >& depthImage, const Transform& extrinsic, const PinholeCamera& camera)
             {
                     recentlyChangedChunks.clear();
 
@@ -113,7 +113,7 @@ namespace chisel
                     printf("\n \n  ~ %f HZ     \n \n", 1/elapsed_secs);
             }
 
-            template <class DataType, class ColorType> void IntegrateDepthScanColor(const ProjectionIntegrator& integrator, const boost::shared_ptr<const DepthImage<DataType> >& depthImage,  const Transform& depthExtrinsic, const PinholeCamera& depthCamera, const boost::shared_ptr<const ColorImage<ColorType> >& colorImage, const Transform& colorExtrinsic, const PinholeCamera& colorCamera)
+            template <class DataType, class ColorType> void IntegrateDepthScanColor(const ProjectionIntegrator& integrator, const std::shared_ptr<const DepthImage<DataType> >& depthImage,  const Transform& depthExtrinsic, const PinholeCamera& depthCamera, const std::shared_ptr<const ColorImage<ColorType> >& colorImage, const Transform& colorExtrinsic, const PinholeCamera& colorCamera)
             {
                     recentlyChangedChunks.clear();
 
@@ -206,8 +206,8 @@ namespace chisel
 
 
     };
-    typedef boost::shared_ptr<Chisel> ChiselPtr;
-    typedef boost::shared_ptr<const Chisel> ChiselConstPtr;
+    typedef std::shared_ptr<Chisel> ChiselPtr;
+    typedef std::shared_ptr<const Chisel> ChiselConstPtr;
 
 } // namespace chisel 
 

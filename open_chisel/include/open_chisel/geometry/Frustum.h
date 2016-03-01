@@ -64,8 +64,8 @@ namespace chisel
             Plane near;
             Plane far;
     };
-    typedef boost::shared_ptr<Frustum> FrustumPtr;
-    typedef boost::shared_ptr<const Frustum> FrustumConstPtr;
+    typedef std::shared_ptr<Frustum> FrustumPtr;
+    typedef std::shared_ptr<const Frustum> FrustumConstPtr;
 
 } // namespace chisel 
 

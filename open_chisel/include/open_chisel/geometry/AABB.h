@@ -71,8 +71,8 @@ namespace chisel
             Vec3 min;
             Vec3 max;
     };
-    typedef boost::shared_ptr<AABB> AABBPtr;
-    typedef boost::shared_ptr<const AABB> AABBConstPtr;
+    typedef std::shared_ptr<AABB> AABBPtr;
+    typedef std::shared_ptr<const AABB> AABBConstPtr;
 
 } // namespace chisel 
 
