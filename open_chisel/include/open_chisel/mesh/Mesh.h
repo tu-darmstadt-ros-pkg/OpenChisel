@@ -22,7 +22,7 @@
 #ifndef MESH_H_
 #define MESH_H_
 
-#include <memory>
+#include <boost/shared_ptr.hpp>
 #include <vector>
 #include <open_chisel/geometry/Geometry.h>
 
@@ -56,8 +56,8 @@ namespace chisel
             Vec3List colors;
 
     };
-    typedef std::shared_ptr<Mesh> MeshPtr;
-    typedef std::shared_ptr<const Mesh> MeshConstPtr;
+    typedef boost::shared_ptr<Mesh> MeshPtr;
+    typedef boost::shared_ptr<const Mesh> MeshConstPtr;
 
 } // namespace chisel 
 

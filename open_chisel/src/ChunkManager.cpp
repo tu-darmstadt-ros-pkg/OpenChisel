@@ -112,7 +112,7 @@ namespace chisel
         MeshPtr mesh;
         if (!HasMesh(chunkID))
         {
-            mesh = std::allocate_shared<Mesh>(Eigen::aligned_allocator<Mesh>());
+            mesh = boost::allocate_shared<Mesh>(Eigen::aligned_allocator<Mesh>());
         }
         else
         {
@@ -163,7 +163,7 @@ namespace chisel
 
     void ChunkManager::CreateChunk(const ChunkID& id)
     {
-        AddChunk(std::allocate_shared<Chunk>(Eigen::aligned_allocator<Chunk>(), id, chunkSize, voxelResolutionMeters, useColor));
+        AddChunk(boost::allocate_shared<Chunk>(Eigen::aligned_allocator<Chunk>(), id, chunkSize, voxelResolutionMeters, useColor));
     }
 
     void ChunkManager::Reset()

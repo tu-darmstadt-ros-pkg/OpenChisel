@@ -36,8 +36,8 @@ namespace chisel
 
             virtual float GetWeight(float surfaceDist, float truncationDist) const = 0;
     };
-    typedef std::shared_ptr<Weighter> WeighterPtr;
-    typedef std::shared_ptr<const Weighter> WeighterConstPtr;
+    typedef boost::shared_ptr<Weighter> WeighterPtr;
+    typedef boost::shared_ptr<const Weighter> WeighterConstPtr;
 
 } // namespace chisel 
 

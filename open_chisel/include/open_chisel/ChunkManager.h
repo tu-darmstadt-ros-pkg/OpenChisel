@@ -22,7 +22,6 @@
 #ifndef CHUNKMANAGER_H_
 #define CHUNKMANAGER_H_
 
-#include <memory>
 #include <unordered_map>
 #include <mutex>
 #include <open_chisel/geometry/Geometry.h>
@@ -193,8 +192,8 @@ namespace chisel
             boost::shared_ptr<ChunkSet> deletedChunks;
     };
 
-    typedef std::shared_ptr<ChunkManager> ChunkManagerPtr;
-    typedef std::shared_ptr<const ChunkManager> ChunkManagerConstPtr;
+    typedef boost::shared_ptr<ChunkManager> ChunkManagerPtr;
+    typedef boost::shared_ptr<const ChunkManager> ChunkManagerConstPtr;
 
 
 } // namespace chisel 
