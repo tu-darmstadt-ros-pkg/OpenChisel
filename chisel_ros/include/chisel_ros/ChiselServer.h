@@ -29,7 +29,7 @@
 #include <chisel_msgs/GetLatestChunksService.h>
 #include <chisel_msgs/GetDeletedChunksService.h>
 
-#include <memory>
+#include <boost/shared_ptr.hpp>
 #include <open_chisel/Chisel.h>
 #include <open_chisel/ProjectionIntegrator.h>
 #include <open_chisel/camera/PinholeCamera.h>
@@ -174,8 +174,8 @@ namespace chisel_ros
             ros::NodeHandle nh;
             chisel::ChiselPtr chiselMap;
             tf::TransformListener transformListener;
-            std::shared_ptr<chisel::DepthImage<DepthData> > lastDepthImage;
-            std::shared_ptr<chisel::ColorImage<ColorData> > lastColorImage;
+            boost::shared_ptr<chisel::DepthImage<DepthData> > lastDepthImage;
+            boost::shared_ptr<chisel::ColorImage<ColorData> > lastColorImage;
             chisel::PointCloudPtr lastPointCloud;
             chisel::ProjectionIntegrator projectionIntegrator;
             std::string baseTransform;
@@ -206,8 +206,8 @@ namespace chisel_ros
             unsigned int threadTreshold;
 
     };
-    typedef std::shared_ptr<ChiselServer> ChiselServerPtr;
-    typedef std::shared_ptr<const ChiselServer> ChiselServerConstPtr;
+    typedef boost::shared_ptr<ChiselServer> ChiselServerPtr;
+    typedef boost::shared_ptr<const ChiselServer> ChiselServerConstPtr;
 
 } // namespace chisel 
 
