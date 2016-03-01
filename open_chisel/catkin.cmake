@@ -5,7 +5,9 @@ catkin_package(INCLUDE_DIRS include
 
 find_package(cmake_modules REQUIRED)
 find_package(Eigen REQUIRED)
-include_directories(${Eigen_INCLUDE_DIRS})
+find_package(Boost REQUIRED)
+include_directories(${Eigen_INCLUDE_DIRS}   ${boost_INCLUDE_DIRS})
+
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --std=c++0x")
 SET(CMAKE_BUILD_TYPE Release)
 

@@ -30,8 +30,10 @@
 #include <open_chisel/ColorVoxel.h>
 #include <open_chisel/DistVoxel.h>
 #include <open_chisel/pointcloud/PointCloud.h>
+#include <open_chisel/Chunk.h>
 
-#include "Chunk.h"
+#include <boost/shared_ptr.hpp>
+#include <boost/make_shared.hpp>
 
 namespace chisel
 {
@@ -62,30 +64,33 @@ namespace chisel
             ChunkManager(const Eigen::Vector3i& chunkSize, float voxelResolution, bool color);
             virtual ~ChunkManager();
 
-            inline const ChunkMap& GetChunks() const { return chunks; }
-            inline ChunkMap& GetMutableChunks() { return chunks; }
+            inline const ChunkMap& GetChunks() const { return *chunks; }
+            inline ChunkMap& GetMutableChunks() { return *chunks; }
+
+            inline const boost::shared_ptr<ChunkMap> GetChunksPointer() const { return chunks; }
+
 
             inline bool HasChunk(const ChunkID& chunk) const
             {
-                return chunks.find(chunk) != chunks.end();
+                return chunks->find(chunk) != chunks->end();
             }
 
             inline ChunkPtr GetChunk(const ChunkID& chunk) const
             {
-                return chunks.at(chunk);
+                return chunks->at(chunk);
             }
 
             inline void AddChunk(const ChunkPtr& chunk)
             {
-                chunks.insert(std::make_pair(chunk->GetID(), chunk));
+                chunks->insert(std::make_pair(chunk->GetID(), chunk));
             }
 
             inline bool RemoveChunk(const ChunkID& chunk)
             {
-                deletedChunks[chunk] = true;
+                deletedChunks->emplace(chunk, true);
                 if(HasChunk(chunk))
                 {
-                    chunks.erase(chunk);
+                    chunks->erase(chunk);
                     return true;
                 }
 
@@ -117,6 +122,7 @@ namespace chisel
                 const float roundingFactorX = 1.0f / (chunkSize(0) * voxelResolutionMeters);
                 const float roundingFactorY = 1.0f / (chunkSize(1) * voxelResolutionMeters);
                 const float roundingFactorZ = 1.0f / (chunkSize(2) * voxelResolutionMeters);
+
 
                 return ChunkID(static_cast<int>(std::floor(pos(0) * roundingFactorX)),
                                static_cast<int>(std::floor(pos(1) * roundingFactorY)),
@@ -163,8 +169,8 @@ namespace chisel
             inline float GetResolution() const { return voxelResolutionMeters; }
 
             inline const Vec3List& GetCentroids() const { return centroids; }
-            inline const ChunkSet& GetDeletedChunks() const { return deletedChunks; }
-            inline void ResetDeletedChunks(){ deletedChunks.clear(); }
+            inline const ChunkSet& GetDeletedChunks() const { return *deletedChunks; }
+            inline void ResetDeletedChunks(){ deletedChunks->clear(); }
 
             void PrintMemoryStatistics();
 
@@ -175,7 +181,7 @@ namespace chisel
 
             EIGEN_MAKE_ALIGNED_OPERATOR_NEW
         protected:
-            ChunkMap chunks;
+            boost::shared_ptr<ChunkMap> chunks;
             Eigen::Vector3i chunkSize;
             float voxelResolutionMeters;
             Vec3List centroids;
@@ -184,7 +190,7 @@ namespace chisel
             bool useColor;
             unsigned int maxThreads;
             unsigned int threadTreshold;
-            ChunkSet deletedChunks;
+            boost::shared_ptr<ChunkSet> deletedChunks;
     };
 
     typedef std::shared_ptr<ChunkManager> ChunkManagerPtr;

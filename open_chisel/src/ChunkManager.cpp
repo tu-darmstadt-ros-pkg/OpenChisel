@@ -37,6 +37,9 @@ namespace chisel
         CacheCentroids();
         maxThreads = 4;
         threadTreshold = 500;
+        chunks = boost::make_shared<ChunkMap>();
+        deletedChunks = boost::make_shared<ChunkSet>();
+
     }
 
     ChunkManager::~ChunkManager()
@@ -50,6 +53,9 @@ namespace chisel
         CacheCentroids();
         maxThreads = 4;
         threadTreshold = 500;
+        chunks = boost::make_shared<ChunkMap>();
+        deletedChunks = boost::make_shared<ChunkSet>();
+
     }
 
     void ChunkManager::CacheCentroids()
@@ -131,7 +137,7 @@ namespace chisel
             allMeshes[chunkID] = mesh;
         else
         {
-            deletedChunks[chunkID] = true;
+            deletedChunks->emplace(chunkID, true);
             RemoveChunk(chunkID);
         }
         mutex.unlock();
@@ -163,7 +169,7 @@ namespace chisel
     void ChunkManager::Reset()
     {
         allMeshes.clear();
-        chunks.clear();
+        chunks->clear();
     }
 
     void ChunkManager::GetChunkIDsIntersecting(const Frustum& frustum, ChunkIDList* chunkList)
@@ -641,7 +647,7 @@ namespace chisel
         stats.numKnownOutside = 0;
         stats.numUnknown = 0;
         stats.totalWeight = 0.0f;
-        for (const std::pair<ChunkID, ChunkPtr>& chunk : chunks)
+        for (const std::pair<ChunkID, ChunkPtr>& chunk : *chunks)
         {
             AABB bounds = chunk.second->ComputeBoundingBox();
             for (int i = 0; i < 3; i++)
@@ -660,7 +666,7 @@ namespace chisel
 
         float maxMemory = totalNum * sizeof(DistVoxel) / 1000000.0f;
 
-        size_t currentNum = chunks.size() * (chunkSize(0) * chunkSize(1) * chunkSize(2));
+        size_t currentNum = chunks->size() * (chunkSize(0) * chunkSize(1) * chunkSize(2));
         float currentMemory = currentNum * sizeof(DistVoxel) / 1000000.0f;
 
         printf("Num Unknown: %lu, Num KnownIn: %lu, Num KnownOut: %lu Weight: %f\n", stats.numUnknown, stats.numKnownInside, stats.numKnownOutside, stats.totalWeight);
