@@ -637,8 +637,8 @@ namespace chisel_ros
     bool ChiselServer::GetLatestChunks(chisel_msgs::GetLatestChunksService::Request& request, chisel_msgs::GetLatestChunksService::Response& response)
     {
 
-        const chisel::ChunkManager& chunkManager = chiselMap->GetChunkManager();
-        const chisel::ChunkSet& latestChunks = chiselMap->GetRecentlyChangedChunks();
+        chisel::ChunkManager& chunkManager = chiselMap->GetMutableChunkManager();
+        const chisel::ChunkSet& latestChunks = *(chunkManager.GetChangedChunks());
 
         int i = 0;
 
@@ -654,13 +654,15 @@ namespace chisel_ros
               i++;
             }
         }
+
+        chunkManager.ClearChangedChunks();
         return true;
     }
 
     bool ChiselServer::GetDeletedChunks(chisel_msgs::GetDeletedChunksService::Request& request, chisel_msgs::GetDeletedChunksService::Response& response)
     {
         chisel::ChunkManager& chunkManager = chiselMap->GetMutableChunkManager();
-        const chisel::ChunkSet& deletedChunks = chunkManager.GetDeletedChunks();
+        const chisel::ChunkSet& deletedChunks =  *(chunkManager.GetDeletedChunks());
 
         int i = 0;
 
@@ -668,7 +670,7 @@ namespace chisel_ros
         response.id_y.resize(deletedChunks.size());
         response.id_z.resize(deletedChunks.size());
         response.header.stamp = ros::Time::now();
-        ROS_ERROR("Size of deleted chunks: %d", deletedChunks.size());
+        ROS_INFO("Size of deleted chunks: %d", deletedChunks.size());
 
 
         for (const std::pair<chisel::ChunkID, bool>& id : deletedChunks)
@@ -682,7 +684,7 @@ namespace chisel_ros
               i++;
         }
 
-        chunkManager.ResetDeletedChunks();
+        chunkManager.ClearDeletedChunks();
 
         return true;
     }

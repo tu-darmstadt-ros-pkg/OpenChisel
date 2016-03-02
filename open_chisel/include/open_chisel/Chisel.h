@@ -51,8 +51,6 @@ namespace chisel
 
             template <class DataType> void IntegrateDepthScan(const ProjectionIntegrator& integrator, const boost::shared_ptr<const DepthImage<DataType> >& depthImage, const Transform& extrinsic, const PinholeCamera& camera)
             {
-                    recentlyChangedChunks.clear();
-
                     clock_t begin = clock();
                     printf("CHISEL: Integrating a scan\n");
 
@@ -85,7 +83,7 @@ namespace chisel
                         mutex.lock();
                         if (needsUpdate)
                         {
-                            recentlyChangedChunks[chunkID] = true;
+                            chunkManager.RememberChangedChunk(chunkID);
                             for (int dx = -1; dx <= 1; dx++)
                             {
                                 for (int dy = -1; dy <= 1; dy++)
@@ -115,8 +113,6 @@ namespace chisel
 
             template <class DataType, class ColorType> void IntegrateDepthScanColor(const ProjectionIntegrator& integrator, const boost::shared_ptr<const DepthImage<DataType> >& depthImage,  const Transform& depthExtrinsic, const PinholeCamera& depthCamera, const boost::shared_ptr<const ColorImage<ColorType> >& colorImage, const Transform& colorExtrinsic, const PinholeCamera& colorCamera)
             {
-                    recentlyChangedChunks.clear();
-
                     clock_t begin = clock();
 
                     Frustum frustum;
@@ -147,7 +143,8 @@ namespace chisel
                         mutex.lock();
                         if (needsUpdate)
                         {
-                            recentlyChangedChunks[chunkID] = true;
+                            chunkManager.RememberChangedChunk(chunkID);
+
                             for (int dx = -1; dx <= 1; dx++)
                             {
                                 for (int dy = -1; dy <= 1; dy++)
@@ -189,12 +186,10 @@ namespace chisel
             void Reset();
 
             const ChunkSet& GetMeshesToUpdate() const { return meshesToUpdate; }
-            const ChunkSet& GetRecentlyChangedChunks() const {return recentlyChangedChunks;}
 
         protected:
             ChunkManager chunkManager;
             ChunkSet meshesToUpdate;
-            ChunkSet recentlyChangedChunks;
             unsigned int maxThreads;
             unsigned int threadTreshold;
 

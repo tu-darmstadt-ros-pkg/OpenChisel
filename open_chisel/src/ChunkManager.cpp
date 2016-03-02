@@ -39,6 +39,7 @@ namespace chisel
         threadTreshold = 500;
         chunks = boost::make_shared<ChunkMap>();
         deletedChunks = boost::make_shared<ChunkSet>();
+        changedChunks = boost::make_shared<ChunkSet>();
 
     }
 
@@ -55,7 +56,7 @@ namespace chisel
         threadTreshold = 500;
         chunks = boost::make_shared<ChunkMap>();
         deletedChunks = boost::make_shared<ChunkSet>();
-
+        changedChunks = boost::make_shared<ChunkSet>();
     }
 
     void ChunkManager::CacheCentroids()
@@ -170,6 +171,8 @@ namespace chisel
     {
         allMeshes.clear();
         chunks->clear();
+        deletedChunks->clear();
+        changedChunks->clear();
     }
 
     void ChunkManager::GetChunkIDsIntersecting(const Frustum& frustum, ChunkIDList* chunkList)
