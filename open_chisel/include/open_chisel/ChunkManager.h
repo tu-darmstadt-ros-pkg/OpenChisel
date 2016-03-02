@@ -31,6 +31,7 @@
 #include <open_chisel/DistVoxel.h>
 #include <open_chisel/pointcloud/PointCloud.h>
 #include <open_chisel/Chunk.h>
+#include <open_chisel/geometry/Frustum.h>
 
 #include <boost/shared_ptr.hpp>
 #include <boost/make_shared.hpp>
@@ -55,8 +56,7 @@ namespace chisel
     typedef std::unordered_map<ChunkID, ChunkPtr, ChunkHasher> ChunkMap;
     typedef std::unordered_map<ChunkID, bool, ChunkHasher> ChunkSet;
     typedef std::unordered_map<ChunkID, MeshPtr, ChunkHasher> MeshMap;
-    class Frustum;
-    class AABB;
+
     class ChunkManager
     {
         public:
@@ -67,7 +67,11 @@ namespace chisel
             inline const ChunkMap& GetChunks() const { return *chunks; }
             inline ChunkMap& GetMutableChunks() { return *chunks; }
 
-            inline const boost::shared_ptr<ChunkMap> GetChunksPointer() const { return chunks; }
+            inline boost::shared_ptr<ChunkMap> GetChunksPointer() { return chunks; }
+            inline const boost::shared_ptr<ChunkSet> GetChangedChunks() const { return changedChunks; }
+            inline const boost::shared_ptr<ChunkSet> GetDeletedChunks() const { return deletedChunks; }
+            inline void ClearChangedChunks() { changedChunks->clear(); }
+            inline void ClearDeletedChunks() { deletedChunks->clear(); }
 
 
             inline bool HasChunk(const ChunkID& chunk) const
@@ -135,6 +139,8 @@ namespace chisel
               this->threadTreshold = threadTreshold;
             }
 
+            inline void RememberChangedChunk(ChunkID id) { changedChunks->emplace(id, true); }
+
             const DistVoxel* GetDistanceVoxel(const Vec3& pos);
             DistVoxel* GetDistanceVoxelMutable(const Vec3& pos);
             const ColorVoxel* GetColorVoxel(const Vec3& pos);
@@ -169,8 +175,6 @@ namespace chisel
             inline float GetResolution() const { return voxelResolutionMeters; }
 
             inline const Vec3List& GetCentroids() const { return centroids; }
-            inline const ChunkSet& GetDeletedChunks() const { return *deletedChunks; }
-            inline void ResetDeletedChunks(){ deletedChunks->clear(); }
 
             void PrintMemoryStatistics();
 
@@ -191,6 +195,8 @@ namespace chisel
             unsigned int maxThreads;
             unsigned int threadTreshold;
             boost::shared_ptr<ChunkSet> deletedChunks;
+            boost::shared_ptr<ChunkSet> changedChunks;
+
     };
 
     typedef std::shared_ptr<ChunkManager> ChunkManagerPtr;

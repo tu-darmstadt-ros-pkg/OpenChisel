@@ -48,7 +48,6 @@ namespace chisel
   {
     chunkManager.Reset();
     meshesToUpdate.clear();
-    recentlyChangedChunks.clear();
   }
 
   void Chisel::UpdateMeshes()
@@ -105,7 +104,6 @@ namespace chisel
 
   void Chisel::IntegratePointCloud(const ProjectionIntegrator& integrator, const PointCloud& cloud, const Transform& extrinsic, float truncation, float maxDist)
   {
-    recentlyChangedChunks.clear();
     clock_t begin = clock();
     ChunkIDList chunksIntersecting;
     chunkManager.GetChunkIDsIntersecting(cloud, extrinsic, truncation, maxDist, &chunksIntersecting);
@@ -132,7 +130,8 @@ namespace chisel
         mutex.lock();
         if (needsUpdate)
           {
-            recentlyChangedChunks[chunkID] = true;
+            chunkManager.RememberChangedChunk(chunkID);
+
             for (int dx = -1; dx <= 1; dx++)
               {
                 for (int dy = -1; dy <= 1; dy++)
@@ -285,7 +284,8 @@ namespace chisel
       mutex.lock();
       if (needsUpdate)
         {
-          recentlyChangedChunks[chunkID] = true;
+          chunkManager.RememberChangedChunk(chunkID);
+
           for (int dx = -1; dx <= 1; dx++)
             {
               for (int dy = -1; dy <= 1; dy++)
