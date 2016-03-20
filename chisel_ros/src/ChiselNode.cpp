@@ -155,8 +155,8 @@ int main(int argc, char** argv)
             }
 
             server->PublishMeshes();
-            //server->PublishChunkBoxes();
-            //server->PublishTSDFMarkers();
+            server->PublishChunkBoxes();
+            server->PublishTSDFMarkers();
 
 
             /*if(mode == chisel_ros::ChiselServer::FusionMode::DepthImage)

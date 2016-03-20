@@ -102,11 +102,11 @@ namespace chisel
     return success;
   }
 
-  void Chisel::IntegratePointCloud(const ProjectionIntegrator& integrator, const PointCloud& cloud, const Transform& extrinsic, float truncation, float maxDist)
+  void Chisel::IntegratePointCloud(const ProjectionIntegrator& integrator, const PointCloud& cloud, const Transform& extrinsic, float truncation, float minDist, float maxDist)
   {
     clock_t begin = clock();
     ChunkIDList chunksIntersecting;
-    chunkManager.GetChunkIDsIntersecting(cloud, extrinsic, truncation, maxDist, &chunksIntersecting);
+    chunkManager.GetChunkIDsIntersecting(cloud, extrinsic, truncation, minDist, maxDist, &chunksIntersecting);
     printf("There are %lu chunks intersecting\n", chunksIntersecting.size());
     std::mutex mutex;
     ChunkIDList garbageChunks;

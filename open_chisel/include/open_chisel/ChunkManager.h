@@ -148,7 +148,7 @@ namespace chisel
 
             void GetChunkIDsIntersecting(const AABB& box, ChunkIDList* chunkList);
             void GetChunkIDsIntersecting(const Frustum& frustum, ChunkIDList* chunkList);
-            void GetChunkIDsIntersecting(const PointCloud& cloud, const Transform& cameraTransform, float truncation, float maxDist, ChunkIDList* chunkList);
+            void GetChunkIDsIntersecting(const PointCloud& cloud, const Transform& cameraTransform, float truncation, float minDist, float maxDist, ChunkIDList* chunkList);
             void CreateChunk(const ChunkID& id);
 
             void GenerateMesh(const ChunkPtr& chunk, Mesh* mesh);

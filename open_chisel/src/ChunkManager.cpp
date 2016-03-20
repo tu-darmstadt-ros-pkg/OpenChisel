@@ -138,8 +138,8 @@ namespace chisel
             allMeshes[chunkID] = mesh;
         else
         {
-            deletedChunks->emplace(chunkID, true);
-            RemoveChunk(chunkID);
+            //deletedChunks->emplace(chunkID, true);
+            //RemoveChunk(chunkID);
         }
         mutex.unlock();
     }
@@ -207,7 +207,7 @@ namespace chisel
         //printf("%lu chunks intersect frustum\n", chunkList->size());
     }
 
-    void ChunkManager::GetChunkIDsIntersecting(const PointCloud& cloud, const Transform& cameraTransform,  float truncation, float maxDist, ChunkIDList* chunkList)
+    void ChunkManager::GetChunkIDsIntersecting(const PointCloud& cloud, const Transform& cameraTransform,  float truncation, float minDist, float maxDist, ChunkIDList* chunkList)
     {
         assert(!!chunkList);
         chunkList->clear();
@@ -225,7 +225,7 @@ namespace chisel
             Vec3 start = cameraTransform.translation();
             float len = (end - start).norm();
 
-            if(len > maxDist)
+            if(len > maxDist || len < minDist)
             {
                 continue;
             }

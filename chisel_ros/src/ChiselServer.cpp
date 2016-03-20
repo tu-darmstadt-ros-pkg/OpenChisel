@@ -444,7 +444,7 @@ namespace chisel_ros
         if (!IsPaused()  && pointcloudTopic.gotPose && lastPointCloud.get())
         {
             ROS_INFO("Integrating point cloud");
-            chiselMap->IntegratePointCloud(projectionIntegrator, *lastPointCloud, pointcloudTopic.lastPose, 0.1f, farPlaneDist);
+            chiselMap->IntegratePointCloud(projectionIntegrator, *lastPointCloud, pointcloudTopic.lastPose, 0.1f, nearPlaneDist, farPlaneDist);
             //PublishLatestChunkBoxes();
             chiselMap->UpdateMeshes();;
             hasNewData = false;
@@ -670,7 +670,7 @@ namespace chisel_ros
         response.id_y.resize(deletedChunks.size());
         response.id_z.resize(deletedChunks.size());
         response.header.stamp = ros::Time::now();
-        ROS_INFO("Size of deleted chunks: %d", deletedChunks.size());
+        ROS_INFO_STREAM("Size of deleted chunks: " << deletedChunks.size());
 
 
         for (const std::pair<chisel::ChunkID, bool>& id : deletedChunks)
