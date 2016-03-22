@@ -159,7 +159,7 @@ namespace chisel
     printf("\n \n  ~ %f HZ     \n \n", 1/elapsed_secs);
   }
 
-  void Chisel::IntegrateChunks(const ProjectionIntegrator& integrator,  ChunkManager& sourceChunkManager, ChunkSet& changedChunks)
+  void Chisel::IntegrateChunks(const ProjectionIntegrator& integrator, ChunkManager& sourceChunkManager, ChunkSet& changedChunks)
   {
     clock_t begin = clock();
     printf("CHISEL: Integrating chunks \n");
@@ -454,7 +454,7 @@ namespace chisel
     return true;
   }
 
-  bool Chisel::interpolateGridNearestNeighbour(const Vec3 &startPos, const Vec3 &endPos, const float &resolution, ChunkManager &sourceChunkManager, ChunkManager &targetChunkManager, const bool &useColor)
+  bool Chisel::interpolateGridNearestNeighbour(const Vec3 &startPos, const Vec3 &endPos, const float &resolution, ChunkManager& sourceChunkManager, ChunkManager &targetChunkManager, const bool &useColor)
   {
     const float sourceResolution = sourceChunkManager.GetResolution();
 
