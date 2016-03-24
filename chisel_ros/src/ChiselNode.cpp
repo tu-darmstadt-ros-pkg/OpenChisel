@@ -134,7 +134,7 @@ int main(int argc, char** argv)
     server->SetupChunkBoxPublisher(chunkBoxTopic);
     ROS_INFO("Beginning to loop.");
 
-    ros::Rate loop_rate(100);
+    ros::Rate loop_rate(30);
 
     while (ros::ok())
     {
@@ -144,6 +144,8 @@ int main(int argc, char** argv)
         if(!server->IsPaused() && server->HasNewData())
         {
             ROS_INFO("Got data.");
+            clock_t begin = clock();
+
             switch (server->GetMode())
             {
                 case chisel_ros::ChiselServer::FusionMode::DepthImage:
@@ -153,6 +155,10 @@ int main(int argc, char** argv)
                     server->IntegrateLastPointCloud();
                     break;
             }
+
+            clock_t end = clock();
+            double elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
+            printf("\n \n  ~ %f HZ     \n \n", 1/elapsed_secs);
 
             server->PublishMeshes();
             server->PublishChunkBoxes();

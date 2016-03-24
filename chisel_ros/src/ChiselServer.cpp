@@ -427,10 +427,8 @@ namespace chisel_ros
             }
             else
             {
-                printf("CHISEL: Integrating depth scan\n");
                 chiselMap->IntegrateDepthScan<DepthData>(projectionIntegrator, lastDepthImage, depthCamera.lastPose, depthCamera.cameraModel);
             }
-            printf("CHISEL: Done with scan\n");
             //PublishLatestChunkBoxes();
             //PublishDepthFrustum();
 
@@ -443,7 +441,6 @@ namespace chisel_ros
     {
         if (!IsPaused()  && pointcloudTopic.gotPose && lastPointCloud.get())
         {
-            ROS_INFO("Integrating point cloud");
             chiselMap->IntegratePointCloud(projectionIntegrator, *lastPointCloud, pointcloudTopic.lastPose, 0.1f, nearPlaneDist, farPlaneDist);
             //PublishLatestChunkBoxes();
             chiselMap->UpdateMeshes();;

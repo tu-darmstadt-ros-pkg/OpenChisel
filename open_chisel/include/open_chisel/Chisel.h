@@ -51,9 +51,6 @@ namespace chisel
 
             template <class DataType> void IntegrateDepthScan(const ProjectionIntegrator& integrator, const boost::shared_ptr<const DepthImage<DataType> >& depthImage, const Transform& extrinsic, const PinholeCamera& camera)
             {
-                    clock_t begin = clock();
-                    printf("CHISEL: Integrating a scan\n");
-
                     Frustum frustum;
                     camera.SetupFrustum(extrinsic, &frustum);
 
@@ -102,19 +99,12 @@ namespace chisel
                         mutex.unlock();
                     }, maxThreads, threadTreshold
                     );
-                    printf("CHISEL: Done with scan\n");
                     GarbageCollect(garbageChunks);
                     //chunkManager.PrintMemoryStatistics();
-
-                    clock_t end = clock();
-                    double elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
-                    printf("\n \n  ~ %f HZ     \n \n", 1/elapsed_secs);
             }
 
             template <class DataType, class ColorType> void IntegrateDepthScanColor(const ProjectionIntegrator& integrator, const boost::shared_ptr<const DepthImage<DataType> >& depthImage,  const Transform& depthExtrinsic, const PinholeCamera& depthCamera, const boost::shared_ptr<const ColorImage<ColorType> >& colorImage, const Transform& colorExtrinsic, const PinholeCamera& colorCamera)
             {
-                    clock_t begin = clock();
-
                     Frustum frustum;
                     depthCamera.SetupFrustum(depthExtrinsic, &frustum);
 
@@ -165,9 +155,6 @@ namespace chisel
                     );
 
                     GarbageCollect(garbageChunks);
-                    clock_t end = clock();
-                    double elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
-                    printf("\n \n  ~ %f HZ     \n \n", 1/elapsed_secs);
                     //chunkManager.PrintMemoryStatistics();
             }
 
