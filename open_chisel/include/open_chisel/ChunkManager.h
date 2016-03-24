@@ -122,14 +122,9 @@ namespace chisel
 
             inline ChunkID GetIDAt(const Vec3& pos) const
             {
-                const float roundingFactorX = 1.0f / (chunkSize(0) * voxelResolutionMeters);
-                const float roundingFactorY = 1.0f / (chunkSize(1) * voxelResolutionMeters);
-                const float roundingFactorZ = 1.0f / (chunkSize(2) * voxelResolutionMeters);
-
-
-                return ChunkID(static_cast<int>(std::floor(pos(0) * roundingFactorX)),
-                               static_cast<int>(std::floor(pos(1) * roundingFactorY)),
-                               static_cast<int>(std::floor(pos(2) * roundingFactorZ)));
+                return ChunkID(static_cast<int>(std::floor(pos(0) * roundingFactor(0))),
+                               static_cast<int>(std::floor(pos(1) * roundingFactor(1))),
+                               static_cast<int>(std::floor(pos(2) * roundingFactor(2))));
             }
 
             inline void SetThreadingParameters(unsigned int maxThreads, unsigned int threadTreshold)
@@ -197,6 +192,8 @@ namespace chisel
             boost::shared_ptr<ChunkSet> deletedChunks;
             boost::shared_ptr<ChunkSet> changedChunks;
 
+        private:
+            Vec3 roundingFactor;
     };
 
     typedef boost::shared_ptr<ChunkManager> ChunkManagerPtr;

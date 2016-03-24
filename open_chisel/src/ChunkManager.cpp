@@ -41,6 +41,7 @@ namespace chisel
         allMeshes = boost::make_shared<MeshMap>();
         deletedChunks = boost::make_shared<ChunkSet>();
         changedChunks = boost::make_shared<ChunkSet>();
+        roundingFactor = (chunkSize.cast<float>() * voxelResolutionMeters).cwiseInverse();
     }
 
     ChunkManager::~ChunkManager()
@@ -58,6 +59,7 @@ namespace chisel
         allMeshes = boost::make_shared<MeshMap>();
         deletedChunks = boost::make_shared<ChunkSet>();
         changedChunks = boost::make_shared<ChunkSet>();
+        roundingFactor = (chunkSize.cast<float>() * voxelResolutionMeters).cwiseInverse();
     }
 
     void ChunkManager::CacheCentroids()
@@ -212,9 +214,6 @@ namespace chisel
     {
         assert(!!chunkList);
         chunkList->clear();
-        const float roundX = 1.0f / (chunkSize.x() * voxelResolutionMeters);
-        const float roundY = 1.0f / (chunkSize.y() * voxelResolutionMeters);
-        const float roundZ = 1.0f / (chunkSize.z() * voxelResolutionMeters);
         ChunkMap map;
         Point3 minVal(-std::numeric_limits<int>::max(), -std::numeric_limits<int>::max(), -std::numeric_limits<int>::max());
         Point3 maxVal(std::numeric_limits<int>::max(), std::numeric_limits<int>::max(), std::numeric_limits<int>::max());
@@ -234,8 +233,8 @@ namespace chisel
             Vec3 dir = (end - start).normalized();
             Vec3 truncStart = end - dir * truncation;
             Vec3 truncEnd = end + dir * truncation;
-            Vec3 startInt = Vec3(truncStart.x() * roundX , truncStart.y() * roundY, truncStart.z() * roundZ);
-            Vec3 endInt = Vec3(truncEnd.x() * roundX, truncEnd.y() * roundY, truncEnd.z() * roundZ);
+            Vec3 startInt = Vec3(truncStart.x() * roundingFactor(0) , truncStart.y() * roundingFactor(1), truncStart.z() * roundingFactor(2));
+            Vec3 endInt = Vec3(truncEnd.x() * roundingFactor(0), truncEnd.y() * roundingFactor(1), truncEnd.z() * roundingFactor(2));
 
             Point3List intersectingChunks;
             Raycast(startInt, endInt, minVal, maxVal, &intersectingChunks);
@@ -483,9 +482,10 @@ namespace chisel
         const float& x = colorPos(0);
         const float& y = colorPos(1);
         const float& z = colorPos(2);
-        const int x_0 = static_cast<int>(std::floor(x / voxelResolutionMeters));
-        const int y_0 = static_cast<int>(std::floor(y / voxelResolutionMeters));
-        const int z_0 = static_cast<int>(std::floor(z / voxelResolutionMeters));
+        const float round = 1/voxelResolutionMeters;
+        const int x_0 = static_cast<int>(std::floor(x * round));
+        const int y_0 = static_cast<int>(std::floor(y * round));
+        const int z_0 = static_cast<int>(std::floor(z * round ));
         const int x_1 = x_0 + 1;
         const int y_1 = y_0 + 1;
         const int z_1 = z_0 + 1;
