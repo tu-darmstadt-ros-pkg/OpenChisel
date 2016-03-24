@@ -104,7 +104,6 @@ namespace chisel
 
   void Chisel::IntegratePointCloud(const ProjectionIntegrator& integrator, const PointCloud& cloud, const Transform& extrinsic, float truncation, float minDist, float maxDist)
   {
-    clock_t begin = clock();
     ChunkIDList chunksIntersecting;
     chunkManager.GetChunkIDsIntersecting(cloud, extrinsic, truncation, minDist, maxDist, &chunksIntersecting);
     printf("There are %lu chunks intersecting\n", chunksIntersecting.size());
@@ -153,10 +152,6 @@ namespace chisel
 
     GarbageCollect(garbageChunks);
     //  chunkManager.PrintMemoryStatistics();
-
-    clock_t end = clock();
-    double elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
-    printf("\n \n  ~ %f HZ     \n \n", 1/elapsed_secs);
   }
 
   void Chisel::IntegrateChunks(const ProjectionIntegrator& integrator, ChunkManager& sourceChunkManager, ChunkSet& changedChunks)
@@ -531,6 +526,7 @@ namespace chisel
     {
       chunkManager.RemoveChunk(chunk.first);
       chunkManager.GetAllMutableMeshes().erase(chunk.first);
+      chunkManager.RememberDeletedChunk(chunk.first);
     }
   }
 } // namespace chisel 

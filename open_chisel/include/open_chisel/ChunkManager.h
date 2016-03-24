@@ -91,7 +91,6 @@ namespace chisel
 
             inline bool RemoveChunk(const ChunkID& chunk)
             {
-                deletedChunks->emplace(chunk, true);
                 if(HasChunk(chunk))
                 {
                     chunks->erase(chunk);
@@ -140,6 +139,7 @@ namespace chisel
             }
 
             inline void RememberChangedChunk(ChunkID id) { changedChunks->emplace(id, true); }
+            inline void RememberDeletedChunk(ChunkID id) { deletedChunks->emplace(id, true); }
 
             const DistVoxel* GetDistanceVoxel(const Vec3& pos);
             DistVoxel* GetDistanceVoxelMutable(const Vec3& pos);
@@ -159,11 +159,11 @@ namespace chisel
             void ExtractBorderVoxelMesh(const ChunkPtr& chunk, const Eigen::Vector3i& index, const Eigen::Vector3f& coordinates, VertIndex* nextMeshIndex, Mesh* mesh);
             void ExtractInsideVoxelMesh(const ChunkPtr& chunk, const Eigen::Vector3i& index, const Vec3& coords, VertIndex* nextMeshIndex, Mesh* mesh);
 
-            inline const MeshMap& GetAllMeshes() const { return allMeshes; }
-            inline MeshMap& GetAllMutableMeshes() { return allMeshes; }
-            inline const MeshPtr& GetMesh(const ChunkID& chunkID) const { return allMeshes.at(chunkID); }
-            inline MeshPtr& GetMutableMesh(const ChunkID& chunkID) { return allMeshes.at(chunkID); }
-            inline bool HasMesh(const ChunkID& chunkID) const { return allMeshes.find(chunkID) != allMeshes.end(); }
+            inline const MeshMap& GetAllMeshes() const { return *allMeshes; }
+            inline MeshMap& GetAllMutableMeshes() { return *allMeshes; }
+            inline const MeshPtr& GetMesh(const ChunkID& chunkID) const { return allMeshes->at(chunkID); }
+            inline MeshPtr& GetMutableMesh(const ChunkID& chunkID) { return allMeshes->at(chunkID); }
+            inline bool HasMesh(const ChunkID& chunkID) const { return allMeshes->find(chunkID) != allMeshes->end(); }
 
             inline bool GetUseColor() { return useColor; }
 
@@ -190,7 +190,7 @@ namespace chisel
             float voxelResolutionMeters;
             Vec3List centroids;
             Eigen::Matrix<int, 3, 8> cubeIndexOffsets;
-            MeshMap allMeshes;
+            boost::shared_ptr<MeshMap> allMeshes;
             bool useColor;
             unsigned int maxThreads;
             unsigned int threadTreshold;

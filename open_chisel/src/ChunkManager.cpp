@@ -38,9 +38,9 @@ namespace chisel
         maxThreads = 4;
         threadTreshold = 500;
         chunks = boost::make_shared<ChunkMap>();
+        allMeshes = boost::make_shared<MeshMap>();
         deletedChunks = boost::make_shared<ChunkSet>();
         changedChunks = boost::make_shared<ChunkSet>();
-
     }
 
     ChunkManager::~ChunkManager()
@@ -55,6 +55,7 @@ namespace chisel
         maxThreads = 4;
         threadTreshold = 500;
         chunks = boost::make_shared<ChunkMap>();
+        allMeshes = boost::make_shared<MeshMap>();
         deletedChunks = boost::make_shared<ChunkSet>();
         changedChunks = boost::make_shared<ChunkSet>();
     }
@@ -135,11 +136,11 @@ namespace chisel
 
         mutex.lock();
         if(!mesh->vertices.empty())
-            allMeshes[chunkID] = mesh;
+            allMeshes->emplace(chunkID, mesh);
         else
         {
-            //deletedChunks->emplace(chunkID, true);
-            //RemoveChunk(chunkID);
+            deletedChunks->emplace(chunkID, true);
+            RemoveChunk(chunkID);
         }
         mutex.unlock();
     }
@@ -155,9 +156,9 @@ namespace chisel
         std::mutex mutex;
 
         for(auto iter=chunkMeshes.begin(); iter!=chunkMeshes.end(); iter++)
-        //parallel_for(chunks.begin(), chunks.end(), [this, &mutex](const ChunkID& chunkID)
+        //parallel_for(chunkMeshes.begin(), chunkMeshes.end(), [&](const ChunkID& chunkID)
         {
-            this->RecomputeMesh(iter->first, mutex);
+            RecomputeMesh(iter->first, mutex);
         }
         //);
     }
@@ -169,7 +170,7 @@ namespace chisel
 
     void ChunkManager::Reset()
     {
-        allMeshes.clear();
+        allMeshes->clear();
         chunks->clear();
         deletedChunks->clear();
         changedChunks->clear();
