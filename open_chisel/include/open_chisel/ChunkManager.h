@@ -66,7 +66,8 @@ namespace chisel
             inline const ChunkMap& GetChunks() const { return *chunks; }
             inline ChunkMap& GetMutableChunks() { return *chunks; }
 
-            inline boost::shared_ptr<ChunkMap> GetChunksPointer() { return chunks; }
+            inline boost::shared_ptr<ChunkMap> GetMutableChunksPointer() { return chunks; }
+            inline boost::shared_ptr<const ChunkMap> GetChunksPointer() const { return chunks; }
             inline void SetChunksPointer(boost::shared_ptr<ChunkMap> data) {chunks = data; }
 
             inline const boost::shared_ptr<ChunkSet> GetChangedChunks() const { return changedChunks; }
