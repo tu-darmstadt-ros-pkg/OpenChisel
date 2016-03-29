@@ -33,6 +33,7 @@
 
 #include <open_chisel/truncation/Truncator.h>
 #include <open_chisel/weighting/Weighter.h>
+#include <open_chisel/ChunkManager.h>
 
 namespace chisel
 {
@@ -46,11 +47,15 @@ namespace chisel
 
     bool Integrate(const PointCloud& cloud, const Transform& cameraPose, Chunk* chunk) const;
     bool IntegratePointCloud(const PointCloud& cloud, const Transform& cameraPose, Chunk* chunk) const;
-    bool IntegratePointCloud(const Vec3& sensorOrigin, const Vec3& cloud, const Vec3& direction, float distance, Chunk* chunk) const;
+    void IntegratePointCloud(const Vec3& sensorOrigin, const Vec3& point, const Vec3& direction, float distance, ChunkManager& chunkManager, ChunkSet* updatedChunks) const;
     bool IntegrateColorPointCloud(const PointCloud& cloud, const Transform& cameraPose, Chunk* chunk) const;
     bool IntegrateChunk(const Chunk* chunkToIntegrate, Chunk* chunk) const;
     bool IntegrateColorChunk(const Chunk* chunkToIntegrate, Chunk* chunk) const;
 
+    float ComputeTruncationDistance(const float depth) const
+    {
+        return truncator->GetTruncationDistance(depth);
+    }
 
     template<class DataType> bool Integrate(const boost::shared_ptr<const DepthImage<DataType> >& depthImage, const PinholeCamera& camera, const Transform& cameraPose, Chunk* chunk) const
     {
