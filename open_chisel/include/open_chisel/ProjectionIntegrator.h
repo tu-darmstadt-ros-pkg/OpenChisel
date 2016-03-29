@@ -46,6 +46,7 @@ namespace chisel
 
     bool Integrate(const PointCloud& cloud, const Transform& cameraPose, Chunk* chunk) const;
     bool IntegratePointCloud(const PointCloud& cloud, const Transform& cameraPose, Chunk* chunk) const;
+    bool IntegratePointCloud(const Vec3& sensorOrigin, const Vec3& cloud, const Vec3& direction, float distance, Chunk* chunk) const;
     bool IntegrateColorPointCloud(const PointCloud& cloud, const Transform& cameraPose, Chunk* chunk) const;
     bool IntegrateChunk(const Chunk* chunkToIntegrate, Chunk* chunk) const;
     bool IntegrateColorChunk(const Chunk* chunkToIntegrate, Chunk* chunk) const;
@@ -57,7 +58,7 @@ namespace chisel
 
       //Eigen::Vector3i numVoxels = chunk->GetNumVoxels();
       float resolution = chunk->GetVoxelResolutionMeters();
-      Vec3 origin = chunk->GetOrigin();
+      const Vec3& origin = chunk->GetOrigin();
       float diag = 2.0 * sqrt(3.0f) * resolution;
       Vec3 voxelCenter;
       bool updated = false;
@@ -106,7 +107,7 @@ namespace chisel
       assert(chunk != nullptr);
 
       float resolution = chunk->GetVoxelResolutionMeters();
-      Vec3 origin = chunk->GetOrigin();
+      const Vec3& origin = chunk->GetOrigin();
       float resolutionDiagonal = 2.0 * sqrt(3.0f) * resolution;
       bool updated = false;
       //std::vector<size_t> indexes;

@@ -21,7 +21,6 @@
 
 #include <open_chisel/ProjectionIntegrator.h>
 #include <open_chisel/geometry/Raycast.h>
-
 namespace chisel
 {
 
@@ -101,6 +100,53 @@ namespace chisel
               }
           }
       }
+    return updated;
+  }
+
+  bool ProjectionIntegrator::IntegratePointCloud(const Vec3& sensorOrigin, const Vec3& worldPoint, const Vec3& direction, float distance, Chunk* chunk) const
+  {
+    const float roundingFactor = 1.0f / chunk->GetVoxelResolutionMeters();
+
+    static const Point3 chunkMin = Point3::Zero();
+    const Point3& chunkMax = chunk->GetNumVoxels();
+    bool updated = false;
+    const Vec3& origin = chunk->GetOrigin();
+
+    Point3List raycastVoxels;
+
+
+    const float truncation = truncator->GetTruncationDistance(distance);
+    const Vec3 truncationOffset = direction.normalized() * truncation;
+    Vec3 start = worldPoint - truncationOffset - origin;
+    Vec3 end = worldPoint + truncationOffset - origin;
+
+    start *= roundingFactor;
+    end *= roundingFactor;
+
+    Raycast(start, end, chunkMin, chunkMax, &raycastVoxels);
+
+    for (const Point3& voxelCoords : raycastVoxels)
+    {
+        VoxelID id = chunk->GetVoxelID(voxelCoords);
+        DistVoxel& distVoxel = chunk->GetDistVoxelMutable(id);
+        const Vec3& centroid = centroids[id] + origin;
+        float u = distance - (centroid - sensorOrigin).norm();
+        float weight = weighter->GetWeight(u, truncation);
+        if (fabs(u) < truncation)
+          {
+            distVoxel.Integrate(u, weight);
+            updated = true;
+          }
+        else if (enableVoxelCarving && u > truncation + carvingDist)
+          {
+            if (distVoxel.GetWeight() > 0)
+              {
+                distVoxel.Integrate(1.0e-5, 5.0f);
+                updated = true;
+              }
+          }
+    }
+
     return updated;
   }
 

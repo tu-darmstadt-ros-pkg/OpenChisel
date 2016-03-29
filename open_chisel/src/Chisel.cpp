@@ -21,6 +21,7 @@
 
 #include <open_chisel/Chisel.h>
 #include <open_chisel/io/PLY.h>
+#include <open_chisel/geometry/Raycast.h>
 
 namespace chisel
 {
@@ -153,6 +154,89 @@ namespace chisel
     GarbageCollect(garbageChunks);
     //  chunkManager.PrintMemoryStatistics();
   }
+
+  void Chisel::IntegratePointCloud(const ProjectionIntegrator& integrator, const PointCloud& cloud, const Transform& extrinsic, float minDist, float maxDist)
+  {
+    ChunkIDList chunksIntersecting;
+    ChunkIDList garbageChunks;
+
+    const Vec3 roundingFactor = (chunkManager.GetChunkSize().cast<float>() * chunkManager.GetResolution()).cwiseInverse();
+
+    const Vec3& start = extrinsic.translation();
+    const Vec3 startInt = start.cwiseProduct(roundingFactor.cast<float>());
+
+    for (const Vec3& point : cloud.GetPoints())
+    {
+        chunksIntersecting.clear();
+        const Vec3 end = extrinsic * point;
+        const Vec3 difference = end - start;
+
+        float distance = difference.norm();
+
+        if(distance > maxDist || distance < minDist)
+        {
+            continue;
+        }
+
+        //const TruncatorPtr truncator = integrator.GetTruncator();
+        //float truncation = truncator->GetTruncationDistance(distance);
+        const Vec3 endInt = end.cwiseProduct(roundingFactor.cast<float>());
+        Raycast(startInt, endInt, &chunksIntersecting);
+
+        ChunkID& chunkID=chunksIntersecting.back();
+
+        if (!chunkManager.HasChunk(chunkID))
+          {
+            //chunkNew = true;
+            chunkManager.CreateChunk(chunkID);
+          }
+
+        ChunkPtr chunk = chunkManager.GetChunk(chunkID);
+
+        bool needsUpdate = integrator.IntegratePointCloud(start, end, difference, distance, chunk.get());
+
+        if (needsUpdate)
+        {
+          chunkManager.RememberChangedChunk(chunkID);
+
+          for (int dx = -1; dx <= 1; dx++)
+            {
+              for (int dy = -1; dy <= 1; dy++)
+                {
+                  for (int dz = -1; dz <= 1; dz++)
+                    {
+                      meshesToUpdate[chunkID + ChunkID(dx, dy, dz)] = true;
+                    }
+                }
+            };
+        }
+        chunksIntersecting.pop_back();
+        /*
+        for(auto& chunkID: chunksIntersecting)
+        {
+          bool chunkNew = false;
+
+          chunkManager.RemoveChunk(chunkID);
+          chunkManager.GetAllMutableMeshes().erase(chunkID);
+
+         /* if (!chunkManager.HasChunk(chunkID))
+            {
+              chunkNew = true;
+              chunkManager.CreateChunk(chunkID);
+            }
+
+          ChunkPtr chunk = chunkManager.GetChunk(chunkID);
+
+          bool needsUpdate = true;
+
+         // meshesToUpdate = integrator.IntegratePointCloud(cloud, extrinsic, chunkManager);
+
+
+        }*/
+
+    }
+  }
+
 
   void Chisel::IntegrateChunks(const ProjectionIntegrator& integrator, ChunkManager& sourceChunkManager, ChunkSet& changedChunks)
   {

@@ -46,6 +46,7 @@ namespace chisel
             inline void SetChunkManager(const ChunkManager& manager) { chunkManager = manager; }
 
             void IntegratePointCloud(const ProjectionIntegrator& integrator, const PointCloud& cloud, const Transform& extrinsic, float truncation, float minDist, float maxDist);
+            void IntegratePointCloud(const ProjectionIntegrator& integrator, const PointCloud& cloud, const Transform& extrinsic, float minDist, float maxDist);
             void IntegrateChunks(const ProjectionIntegrator& integrator, ChunkManager& sourceChunkManager, ChunkSet& changedChunks);
             void DeleteChunks(ChunkSet &chunks);
 
