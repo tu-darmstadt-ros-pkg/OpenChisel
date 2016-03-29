@@ -207,7 +207,6 @@ namespace chisel_ros
         transform.translation()(1) = tf.getOrigin().y();
         transform.translation()(2) = tf.getOrigin().z();
 
-
         chisel::Quaternion quat;
         quat.x() = tf.getRotation().x();
         quat.y() = tf.getRotation().y();
@@ -215,7 +214,7 @@ namespace chisel_ros
         quat.w() = tf.getRotation().w();
         transform.linear() = quat.toRotationMatrix();
 
-        return transform.inverse();
+        return transform;
     }
 
     inline chisel::PinholeCamera RosCameraToChiselCamera(const sensor_msgs::CameraInfoConstPtr& camera)

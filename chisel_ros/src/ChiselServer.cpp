@@ -284,8 +284,8 @@ namespace chisel_ros
             tries++;
             try
             {
-                transformListener.waitForTransform(depthCamera.transform, baseTransform, depthImage->header.stamp, ros::Duration(0.5));
-                transformListener.lookupTransform(depthCamera.transform, baseTransform, depthImage->header.stamp, tf);
+                transformListener.waitForTransform(baseTransform, depthImage->header.frame_id, depthImage->header.stamp, ros::Duration(0.5));
+                transformListener.lookupTransform(baseTransform, depthImage->header.frame_id, depthImage->header.stamp, tf);
                 depthCamera.gotPose = true;
                 gotTransform = true;
             }
@@ -348,8 +348,8 @@ namespace chisel_ros
             tries++;
             try
             {
-                transformListener.waitForTransform(colorCamera.transform, baseTransform, colorImage->header.stamp, ros::Duration(0.5));
-                transformListener.lookupTransform(colorCamera.transform, baseTransform, colorImage->header.stamp, tf);
+                transformListener.waitForTransform(baseTransform, colorCamera.transform, colorImage->header.stamp, ros::Duration(0.5));
+                transformListener.lookupTransform(baseTransform, colorImage->header.frame_id, colorImage->header.stamp, tf);
                 colorCamera.gotPose = true;
                 gotTransform = true;
             }
@@ -391,8 +391,8 @@ namespace chisel_ros
             tries++;
             try
             {
-                transformListener.waitForTransform(pointcloudTopic.transform, baseTransform, pointcloud->header.stamp, ros::Duration(0.5));
-                transformListener.lookupTransform(pointcloudTopic.transform, baseTransform, pointcloud->header.stamp, tf);
+                transformListener.waitForTransform(baseTransform, pointcloudTopic.transform, pointcloud->header.stamp, ros::Duration(0.5));
+                transformListener.lookupTransform(baseTransform, pointcloudTopic.transform, pointcloud->header.stamp, tf);
                 pointcloudTopic.gotPose = true;
                 gotTransform = true;
             }
