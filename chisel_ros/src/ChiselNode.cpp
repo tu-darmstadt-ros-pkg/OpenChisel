@@ -136,6 +136,11 @@ int main(int argc, char** argv)
 
     ros::Rate loop_rate(30);
 
+    double minTime = 10000;
+    double maxTime = 0;
+    double accumulatedTime = 0;
+    long iterations = 0;
+
     while (ros::ok())
     {
         loop_rate.sleep();
@@ -157,7 +162,12 @@ int main(int argc, char** argv)
 
             clock_t end = clock();
             double elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
-            printf("\n \n  ~ %f HZ     \n \n", 1/elapsed_secs);
+
+            minTime = std::min(minTime, elapsed_secs);
+            maxTime = std::max(maxTime, elapsed_secs);
+            accumulatedTime += elapsed_secs;
+            iterations++;
+            printf("average %f Hz    min time: %f s    max time: %f s \n", iterations/accumulatedTime, minTime, maxTime);
 
             server->PublishMeshes();
             server->PublishChunkBoxes();
