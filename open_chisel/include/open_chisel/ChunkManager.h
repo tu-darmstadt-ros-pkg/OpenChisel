@@ -74,6 +74,7 @@ namespace chisel
             inline const boost::shared_ptr<ChunkSet> GetDeletedChunks() const { return deletedChunks; }
             inline void ClearChangedChunks() { changedChunks->clear(); }
             inline void ClearDeletedChunks() { deletedChunks->clear(); }
+            inline const Vec3& GetRoundingFactor() const { return roundingFactor; }
 
             inline bool HasChunk(const ChunkID& chunk) const
             {

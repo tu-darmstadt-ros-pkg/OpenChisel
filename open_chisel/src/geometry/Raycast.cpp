@@ -157,6 +157,7 @@ void Raycast(const chisel::Vec3& start, const chisel::Vec3& end, chisel::Point3L
   const int endX = static_cast<int>(std::floor(end.x()));
   const int endY = static_cast<int>(std::floor(end.y()));
   const int endZ = static_cast<int>(std::floor(end.z()));
+
   // Break out direction vector.
   const int dx = endX - x;
   const int dy = endY - y;
@@ -166,11 +167,13 @@ void Raycast(const chisel::Vec3& start, const chisel::Vec3& end, chisel::Point3L
   const int stepX = signum(dx);
   const int stepY = signum(dy);
   const int stepZ = signum(dz);
+
   // See description above. The initial values depend on the fractional
   // part of the origin.
   float tMaxX = intbound(start.x(), dx);
   float tMaxY = intbound(start.y(), dy);
   float tMaxZ = intbound(start.z(), dz);
+
   // The change in t when taking a step (always positive).
   const float tDeltaX = static_cast<float>(stepX) / dx;
   const float tDeltaY = static_cast<float>(stepY) / dy;
@@ -184,8 +187,8 @@ void Raycast(const chisel::Vec3& start, const chisel::Vec3& end, chisel::Point3L
 
   while (true)
   {
-      //if(output->find( output->push_back(Point3(x, y, z));
       output->push_back(point);
+
       if(point(0) == endX && point(1) == endY && point(2) == endZ) break;
 
       // tMaxX stores the t-value at which we cross a cube boundary along the
