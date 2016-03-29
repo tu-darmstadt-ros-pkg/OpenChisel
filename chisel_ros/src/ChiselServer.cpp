@@ -441,7 +441,8 @@ namespace chisel_ros
     {
         if (!IsPaused()  && pointcloudTopic.gotPose && lastPointCloud.get())
         {
-            chiselMap->IntegratePointCloud(projectionIntegrator, *lastPointCloud, pointcloudTopic.lastPose, 0.1f, nearPlaneDist, farPlaneDist);
+            chiselMap->IntegratePointCloud(projectionIntegrator, *lastPointCloud, pointcloudTopic.lastPose, nearPlaneDist, farPlaneDist);
+            //chiselMap->IntegratePointCloud(projectionIntegrator, *lastPointCloud, pointcloudTopic.lastPose, 0.1f, nearPlaneDist, farPlaneDist);
             //PublishLatestChunkBoxes();
             chiselMap->UpdateMeshes();;
             hasNewData = false;

@@ -143,7 +143,6 @@ int main(int argc, char** argv)
 
         if(!server->IsPaused() && server->HasNewData())
         {
-            ROS_INFO("Got data.");
             clock_t begin = clock();
 
             switch (server->GetMode())
