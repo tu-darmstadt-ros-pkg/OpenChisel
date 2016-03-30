@@ -679,4 +679,29 @@ namespace chisel
 
     }
 
+    void ChunkManager::ClearPassedVoxels(const Vec3& start, const Vec3& end, ChunkSet* updatedChunks)
+    {
+        Point3List passedVoxels;
+        float roundingFactor = 1/voxelResolutionMeters;
+
+        Raycast(start* roundingFactor, end* roundingFactor, &passedVoxels);
+
+        for (Point3& voxelCoords: passedVoxels)
+        {
+            Vec3 voxelPos = voxelCoords.cast<float>() * voxelResolutionMeters +  Vec3(0.5 *voxelResolutionMeters, 0.5 *voxelResolutionMeters, 0.5 *voxelResolutionMeters);
+
+            ChunkPtr chunk = GetChunkAt(voxelPos);
+
+            if(chunk.get())
+            {
+                Vec3 rel = (voxelPos - chunk->GetOrigin());
+                chunk->GetDistVoxelMutable(chunk->GetVoxelID(rel)).Carve();
+                updatedChunks->emplace(chunk->GetID(), true);
+            }
+            else
+            {
+                continue;
+            }
+        }
+    }
 } // namespace chisel 
