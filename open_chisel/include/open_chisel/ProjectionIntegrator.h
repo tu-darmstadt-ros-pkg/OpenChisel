@@ -193,7 +193,11 @@ namespace chisel
     inline void SetWeighter(const WeighterPtr& value) { weighter = value; }
 
     inline float GetCarvingDist() { return carvingDist; }
+    inline float GetCarvingDist() const { return carvingDist; }
+
     inline bool IsCarvingEnabled() { return enableVoxelCarving; }
+    inline bool IsCarvingEnabled() const { return enableVoxelCarving; }
+
     inline void SetCarvingDist(float dist) { carvingDist = dist; }
     inline void SetCarvingEnabled(bool enabled) { enableVoxelCarving = enabled; }
 
