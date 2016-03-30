@@ -145,14 +145,6 @@ namespace chisel
           distVoxel.Integrate(u, weight);
           updatedChunks->emplace(chunkID, true);
         }
-        else if (enableVoxelCarving && u > truncation + carvingDist)
-        {
-          if (distVoxel.GetWeight() > 0)
-          {
-            distVoxel.Integrate(1.0e-5, 5.0f);
-            updatedChunks->emplace(chunkID, true);
-          }
-       }
     }
   }
 

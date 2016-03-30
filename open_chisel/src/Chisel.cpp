@@ -171,11 +171,14 @@ namespace chisel
         {
             continue;
         }
-        float truncation = integrator.ComputeTruncationDistance(distance);
-        const Vec3 direction = difference.normalized();
-        const Vec3 truncatedPositiveEnd = end - 5.0f * truncation * direction;
 
-        chunkManager.ClearPassedVoxels(start, truncatedPositiveEnd, &updatedChunks);
+        if (integrator.IsCarvingEnabled())
+        {
+            float truncation = integrator.ComputeTruncationDistance(distance);
+            const Vec3 direction = difference.normalized();
+            const Vec3 truncatedPositiveEnd = end - (integrator.GetCarvingDist() + truncation) * direction;
+            chunkManager.ClearPassedVoxels(start, truncatedPositiveEnd, &updatedChunks);
+        }
 
         integrator.IntegratePointCloud(start, end, difference, distance, chunkManager, &updatedChunks);
     }
