@@ -138,9 +138,9 @@ namespace chisel
             inline void RememberChangedChunk(ChunkID id) { changedChunks->emplace(id, true); }
             inline void RememberDeletedChunk(ChunkID id) { deletedChunks->emplace(id, true); }
 
-            const DistVoxel* GetDistanceVoxel(const Vec3& pos);
+            const DistVoxel* GetDistanceVoxel(const Vec3& pos) const;
             DistVoxel* GetDistanceVoxelMutable(const Vec3& pos);
-            const ColorVoxel* GetColorVoxel(const Vec3& pos);
+            const ColorVoxel* GetColorVoxel(const Vec3& pos) const;
             ColorVoxel* GetColorVoxelMutable(const Vec3& pos);
 
             void GetChunkIDsIntersecting(const AABB& box, ChunkIDList* chunkList);
@@ -164,6 +164,7 @@ namespace chisel
             inline bool HasMesh(const ChunkID& chunkID) const { return allMeshes->find(chunkID) != allMeshes->end(); }
 
             inline bool GetUseColor() { return useColor; }
+            inline bool GetUseColor() const { return useColor; }
 
             void RecomputeMesh(const ChunkID& chunkID, std::mutex& mutex);
             void RecomputeMeshes(const ChunkSet& chunks);
