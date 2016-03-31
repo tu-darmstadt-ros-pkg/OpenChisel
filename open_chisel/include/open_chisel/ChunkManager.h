@@ -22,7 +22,6 @@
 #ifndef CHUNKMANAGER_H_
 #define CHUNKMANAGER_H_
 
-#include <memory>
 #include <unordered_map>
 #include <mutex>
 #include <open_chisel/geometry/Geometry.h>
@@ -67,13 +66,15 @@ namespace chisel
             inline const ChunkMap& GetChunks() const { return *chunks; }
             inline ChunkMap& GetMutableChunks() { return *chunks; }
 
-            inline boost::shared_ptr<ChunkMap> GetChunksPointer() { return chunks; }
+            inline boost::shared_ptr<ChunkMap> GetMutableChunksPointer() { return chunks; }
+            inline boost::shared_ptr<const ChunkMap> GetChunksPointer() const { return chunks; }
             inline void SetChunksPointer(boost::shared_ptr<ChunkMap> data) {chunks = data; }
 
             inline const boost::shared_ptr<ChunkSet> GetChangedChunks() const { return changedChunks; }
             inline const boost::shared_ptr<ChunkSet> GetDeletedChunks() const { return deletedChunks; }
             inline void ClearChangedChunks() { changedChunks->clear(); }
             inline void ClearDeletedChunks() { deletedChunks->clear(); }
+            inline const Vec3& GetRoundingFactor() const { return roundingFactor; }
 
             inline bool HasChunk(const ChunkID& chunk) const
             {
@@ -92,7 +93,6 @@ namespace chisel
 
             inline bool RemoveChunk(const ChunkID& chunk)
             {
-                deletedChunks->emplace(chunk, true);
                 if(HasChunk(chunk))
                 {
                     chunks->erase(chunk);
@@ -124,14 +124,9 @@ namespace chisel
 
             inline ChunkID GetIDAt(const Vec3& pos) const
             {
-                const float roundingFactorX = 1.0f / (chunkSize(0) * voxelResolutionMeters);
-                const float roundingFactorY = 1.0f / (chunkSize(1) * voxelResolutionMeters);
-                const float roundingFactorZ = 1.0f / (chunkSize(2) * voxelResolutionMeters);
-
-
-                return ChunkID(static_cast<int>(std::floor(pos(0) * roundingFactorX)),
-                               static_cast<int>(std::floor(pos(1) * roundingFactorY)),
-                               static_cast<int>(std::floor(pos(2) * roundingFactorZ)));
+                return ChunkID(static_cast<int>(std::floor(pos(0) * roundingFactor(0))),
+                               static_cast<int>(std::floor(pos(1) * roundingFactor(1))),
+                               static_cast<int>(std::floor(pos(2) * roundingFactor(2))));
             }
 
             inline void SetThreadingParameters(unsigned int maxThreads, unsigned int threadTreshold)
@@ -141,6 +136,7 @@ namespace chisel
             }
 
             inline void RememberChangedChunk(ChunkID id) { changedChunks->emplace(id, true); }
+            inline void RememberDeletedChunk(ChunkID id) { deletedChunks->emplace(id, true); }
 
             const DistVoxel* GetDistanceVoxel(const Vec3& pos);
             DistVoxel* GetDistanceVoxelMutable(const Vec3& pos);
@@ -149,8 +145,9 @@ namespace chisel
 
             void GetChunkIDsIntersecting(const AABB& box, ChunkIDList* chunkList);
             void GetChunkIDsIntersecting(const Frustum& frustum, ChunkIDList* chunkList);
-            void GetChunkIDsIntersecting(const PointCloud& cloud, const Transform& cameraTransform, float truncation, float maxDist, ChunkIDList* chunkList);
+            void GetChunkIDsIntersecting(const PointCloud& cloud, const Transform& cameraTransform, float truncation, float minDist, float maxDist, ChunkIDList* chunkList);
             void CreateChunk(const ChunkID& id);
+            void ClearPassedVoxels(const Vec3& start, const Vec3& end, ChunkSet* updatedChunks);
 
             void GenerateMesh(const ChunkPtr& chunk, Mesh* mesh);
             void ColorizeMesh(Mesh* mesh);
@@ -160,11 +157,11 @@ namespace chisel
             void ExtractBorderVoxelMesh(const ChunkPtr& chunk, const Eigen::Vector3i& index, const Eigen::Vector3f& coordinates, VertIndex* nextMeshIndex, Mesh* mesh);
             void ExtractInsideVoxelMesh(const ChunkPtr& chunk, const Eigen::Vector3i& index, const Vec3& coords, VertIndex* nextMeshIndex, Mesh* mesh);
 
-            inline const MeshMap& GetAllMeshes() const { return allMeshes; }
-            inline MeshMap& GetAllMutableMeshes() { return allMeshes; }
-            inline const MeshPtr& GetMesh(const ChunkID& chunkID) const { return allMeshes.at(chunkID); }
-            inline MeshPtr& GetMutableMesh(const ChunkID& chunkID) { return allMeshes.at(chunkID); }
-            inline bool HasMesh(const ChunkID& chunkID) const { return allMeshes.find(chunkID) != allMeshes.end(); }
+            inline const MeshMap& GetAllMeshes() const { return *allMeshes; }
+            inline MeshMap& GetAllMutableMeshes() { return *allMeshes; }
+            inline const MeshPtr& GetMesh(const ChunkID& chunkID) const { return allMeshes->at(chunkID); }
+            inline MeshPtr& GetMutableMesh(const ChunkID& chunkID) { return allMeshes->at(chunkID); }
+            inline bool HasMesh(const ChunkID& chunkID) const { return allMeshes->find(chunkID) != allMeshes->end(); }
 
             inline bool GetUseColor() { return useColor; }
 
@@ -191,17 +188,19 @@ namespace chisel
             float voxelResolutionMeters;
             Vec3List centroids;
             Eigen::Matrix<int, 3, 8> cubeIndexOffsets;
-            MeshMap allMeshes;
+            boost::shared_ptr<MeshMap> allMeshes;
             bool useColor;
             unsigned int maxThreads;
             unsigned int threadTreshold;
             boost::shared_ptr<ChunkSet> deletedChunks;
             boost::shared_ptr<ChunkSet> changedChunks;
 
+        private:
+            Vec3 roundingFactor;
     };
 
-    typedef std::shared_ptr<ChunkManager> ChunkManagerPtr;
-    typedef std::shared_ptr<const ChunkManager> ChunkManagerConstPtr;
+    typedef boost::shared_ptr<ChunkManager> ChunkManagerPtr;
+    typedef boost::shared_ptr<const ChunkManager> ChunkManagerConstPtr;
 
 
 } // namespace chisel 

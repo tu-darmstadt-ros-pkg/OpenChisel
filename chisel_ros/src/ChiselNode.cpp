@@ -134,7 +134,12 @@ int main(int argc, char** argv)
     server->SetupChunkBoxPublisher(chunkBoxTopic);
     ROS_INFO("Beginning to loop.");
 
-    ros::Rate loop_rate(100);
+    ros::Rate loop_rate(30);
+
+    double minTime = 10000;
+    double maxTime = 0;
+    double accumulatedTime = 0;
+    long iterations = 0;
 
     while (ros::ok())
     {
@@ -143,7 +148,8 @@ int main(int argc, char** argv)
 
         if(!server->IsPaused() && server->HasNewData())
         {
-            ROS_INFO("Got data.");
+            clock_t begin = clock();
+
             switch (server->GetMode())
             {
                 case chisel_ros::ChiselServer::FusionMode::DepthImage:
@@ -154,9 +160,18 @@ int main(int argc, char** argv)
                     break;
             }
 
+            clock_t end = clock();
+            double elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
+
+            minTime = std::min(minTime, elapsed_secs);
+            maxTime = std::max(maxTime, elapsed_secs);
+            accumulatedTime += elapsed_secs;
+            iterations++;
+            printf("average %f Hz    min time: %f s    max time: %f s \n", iterations/accumulatedTime, minTime, maxTime);
+
             server->PublishMeshes();
-            //server->PublishChunkBoxes();
-            //server->PublishTSDFMarkers();
+            server->PublishChunkBoxes();
+            server->PublishTSDFMarkers();
 
 
             /*if(mode == chisel_ros::ChiselServer::FusionMode::DepthImage)

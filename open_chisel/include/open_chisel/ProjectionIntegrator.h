@@ -33,6 +33,7 @@
 
 #include <open_chisel/truncation/Truncator.h>
 #include <open_chisel/weighting/Weighter.h>
+#include <open_chisel/ChunkManager.h>
 
 namespace chisel
 {
@@ -46,10 +47,15 @@ namespace chisel
 
     bool Integrate(const PointCloud& cloud, const Transform& cameraPose, Chunk* chunk) const;
     bool IntegratePointCloud(const PointCloud& cloud, const Transform& cameraPose, Chunk* chunk) const;
+    void IntegratePointCloud(const Vec3& sensorOrigin, const Vec3& point, const Vec3& direction, float distance, ChunkManager& chunkManager, ChunkSet* updatedChunks) const;
     bool IntegrateColorPointCloud(const PointCloud& cloud, const Transform& cameraPose, Chunk* chunk) const;
     bool IntegrateChunk(const Chunk* chunkToIntegrate, Chunk* chunk) const;
     bool IntegrateColorChunk(const Chunk* chunkToIntegrate, Chunk* chunk) const;
 
+    float ComputeTruncationDistance(const float depth) const
+    {
+        return truncator->GetTruncationDistance(depth);
+    }
 
     template<class DataType> bool Integrate(const std::shared_ptr<const DepthImage<DataType> >& depthImage, const PinholeCamera& camera, const Transform& cameraPose, Chunk* chunk) const
     {
@@ -57,7 +63,7 @@ namespace chisel
 
       //Eigen::Vector3i numVoxels = chunk->GetNumVoxels();
       float resolution = chunk->GetVoxelResolutionMeters();
-      Vec3 origin = chunk->GetOrigin();
+      const Vec3& origin = chunk->GetOrigin();
       float diag = 2.0 * sqrt(3.0f) * resolution;
       Vec3 voxelCenter;
       bool updated = false;
@@ -106,7 +112,7 @@ namespace chisel
       assert(chunk != nullptr);
 
       float resolution = chunk->GetVoxelResolutionMeters();
-      Vec3 origin = chunk->GetOrigin();
+      const Vec3& origin = chunk->GetOrigin();
       float resolutionDiagonal = 2.0 * sqrt(3.0f) * resolution;
       bool updated = false;
       //std::vector<size_t> indexes;
@@ -187,7 +193,11 @@ namespace chisel
     inline void SetWeighter(const WeighterPtr& value) { weighter = value; }
 
     inline float GetCarvingDist() { return carvingDist; }
+    inline float GetCarvingDist() const { return carvingDist; }
+
     inline bool IsCarvingEnabled() { return enableVoxelCarving; }
+    inline bool IsCarvingEnabled() const { return enableVoxelCarving; }
+
     inline void SetCarvingDist(float dist) { carvingDist = dist; }
     inline void SetCarvingEnabled(bool enabled) { enableVoxelCarving = enabled; }
 

@@ -38,9 +38,10 @@ namespace chisel
         maxThreads = 4;
         threadTreshold = 500;
         chunks = boost::make_shared<ChunkMap>();
+        allMeshes = boost::make_shared<MeshMap>();
         deletedChunks = boost::make_shared<ChunkSet>();
         changedChunks = boost::make_shared<ChunkSet>();
-
+        roundingFactor = (chunkSize.cast<float>() * voxelResolutionMeters).cwiseInverse();
     }
 
     ChunkManager::~ChunkManager()
@@ -55,8 +56,10 @@ namespace chisel
         maxThreads = 4;
         threadTreshold = 500;
         chunks = boost::make_shared<ChunkMap>();
+        allMeshes = boost::make_shared<MeshMap>();
         deletedChunks = boost::make_shared<ChunkSet>();
         changedChunks = boost::make_shared<ChunkSet>();
+        roundingFactor = (chunkSize.cast<float>() * voxelResolutionMeters).cwiseInverse();
     }
 
     void ChunkManager::CacheCentroids()
@@ -135,7 +138,7 @@ namespace chisel
 
         mutex.lock();
         if(!mesh->vertices.empty())
-            allMeshes[chunkID] = mesh;
+            allMeshes->emplace(chunkID, mesh);
         else
         {
             deletedChunks->emplace(chunkID, true);
@@ -155,9 +158,9 @@ namespace chisel
         std::mutex mutex;
 
         for(auto iter=chunkMeshes.begin(); iter!=chunkMeshes.end(); iter++)
-        //parallel_for(chunks.begin(), chunks.end(), [this, &mutex](const ChunkID& chunkID)
+        //parallel_for(chunkMeshes.begin(), chunkMeshes.end(), [&](const ChunkID& chunkID)
         {
-            this->RecomputeMesh(iter->first, mutex);
+            RecomputeMesh(iter->first, mutex);
         }
         //);
     }
@@ -169,7 +172,7 @@ namespace chisel
 
     void ChunkManager::Reset()
     {
-        allMeshes.clear();
+        allMeshes->clear();
         chunks->clear();
         deletedChunks->clear();
         changedChunks->clear();
@@ -207,13 +210,10 @@ namespace chisel
         //printf("%lu chunks intersect frustum\n", chunkList->size());
     }
 
-    void ChunkManager::GetChunkIDsIntersecting(const PointCloud& cloud, const Transform& cameraTransform,  float truncation, float maxDist, ChunkIDList* chunkList)
+    void ChunkManager::GetChunkIDsIntersecting(const PointCloud& cloud, const Transform& cameraTransform,  float truncation, float minDist, float maxDist, ChunkIDList* chunkList)
     {
         assert(!!chunkList);
         chunkList->clear();
-        const float roundX = 1.0f / (chunkSize.x() * voxelResolutionMeters);
-        const float roundY = 1.0f / (chunkSize.y() * voxelResolutionMeters);
-        const float roundZ = 1.0f / (chunkSize.z() * voxelResolutionMeters);
         ChunkMap map;
         Point3 minVal(-std::numeric_limits<int>::max(), -std::numeric_limits<int>::max(), -std::numeric_limits<int>::max());
         Point3 maxVal(std::numeric_limits<int>::max(), std::numeric_limits<int>::max(), std::numeric_limits<int>::max());
@@ -225,7 +225,7 @@ namespace chisel
             Vec3 start = cameraTransform.translation();
             float len = (end - start).norm();
 
-            if(len > maxDist)
+            if(len > maxDist || len < minDist)
             {
                 continue;
             }
@@ -233,8 +233,8 @@ namespace chisel
             Vec3 dir = (end - start).normalized();
             Vec3 truncStart = end - dir * truncation;
             Vec3 truncEnd = end + dir * truncation;
-            Vec3 startInt = Vec3(truncStart.x() * roundX , truncStart.y() * roundY, truncStart.z() * roundZ);
-            Vec3 endInt = Vec3(truncEnd.x() * roundX, truncEnd.y() * roundY, truncEnd.z() * roundZ);
+            Vec3 startInt = Vec3(truncStart.x() * roundingFactor(0) , truncStart.y() * roundingFactor(1), truncStart.z() * roundingFactor(2));
+            Vec3 endInt = Vec3(truncEnd.x() * roundingFactor(0), truncEnd.y() * roundingFactor(1), truncEnd.z() * roundingFactor(2));
 
             Point3List intersectingChunks;
             Raycast(startInt, endInt, minVal, maxVal, &intersectingChunks);
@@ -482,9 +482,10 @@ namespace chisel
         const float& x = colorPos(0);
         const float& y = colorPos(1);
         const float& z = colorPos(2);
-        const int x_0 = static_cast<int>(std::floor(x / voxelResolutionMeters));
-        const int y_0 = static_cast<int>(std::floor(y / voxelResolutionMeters));
-        const int z_0 = static_cast<int>(std::floor(z / voxelResolutionMeters));
+        const float round = 1/voxelResolutionMeters;
+        const int x_0 = static_cast<int>(std::floor(x * round));
+        const int y_0 = static_cast<int>(std::floor(y * round));
+        const int z_0 = static_cast<int>(std::floor(z * round ));
         const int x_1 = x_0 + 1;
         const int y_1 = y_0 + 1;
         const int z_1 = z_0 + 1;
@@ -678,4 +679,30 @@ namespace chisel
 
     }
 
+    void ChunkManager::ClearPassedVoxels(const Vec3& start, const Vec3& end, ChunkSet* updatedChunks)
+    {
+        Point3List passedVoxels;
+        float roundingFactor = 1/voxelResolutionMeters;
+        Raycast(start * roundingFactor, end * roundingFactor, &passedVoxels);
+
+        for (Point3& voxelCoords: passedVoxels)
+        {
+            Vec3 voxelPos = voxelCoords.cast<float>() * voxelResolutionMeters +  Vec3(0.5 *voxelResolutionMeters, 0.5 *voxelResolutionMeters, 0.5 *voxelResolutionMeters);
+            ChunkPtr chunk = GetChunkAt(voxelPos);
+            if(chunk.get())
+            {
+                Vec3 rel = (voxelPos - chunk->GetOrigin());
+                DistVoxel& voxel = chunk->GetDistVoxelMutable(chunk->GetVoxelID(rel));
+                if(voxel.GetSDF()<0 && voxel.GetWeight()> 0)
+                {
+                    voxel.Carve();
+                    updatedChunks->emplace(chunk->GetID(), true);
+                }
+            }
+            else
+            {
+                continue;
+            }
+        }
+    }
 } // namespace chisel 

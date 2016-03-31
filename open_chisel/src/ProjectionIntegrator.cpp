@@ -21,7 +21,6 @@
 
 #include <open_chisel/ProjectionIntegrator.h>
 #include <open_chisel/geometry/Raycast.h>
-
 namespace chisel
 {
 
@@ -102,6 +101,51 @@ namespace chisel
           }
       }
     return updated;
+  }
+
+  void ProjectionIntegrator::IntegratePointCloud(const Vec3& sensorOrigin, const Vec3& point, const Vec3& direction, float distance, ChunkManager& chunkManager, ChunkSet* updatedChunks) const
+  {
+    const float resolution = chunkManager.GetResolution();
+    const float roundingFactor = 1.0f / resolution;
+
+    Point3List raycastVoxels;
+
+    const float truncation = truncator->GetTruncationDistance(distance);
+    const Vec3 truncationOffset = direction.normalized() * truncation;
+    Vec3 start = point - truncationOffset;
+    Vec3 end = point + truncationOffset;
+
+    start *= roundingFactor;
+    end *= roundingFactor;
+
+    Raycast(start, end, &raycastVoxels);
+
+    for (const Point3& voxelCoords : raycastVoxels)
+    {
+        Vec3 voxelPos = voxelCoords.cast<float>() * resolution +  Vec3(0.5 *resolution, 0.5 *resolution, 0.5 *resolution);
+        ChunkID chunkID = chunkManager.GetIDAt(voxelPos);
+
+        if (!chunkManager.HasChunk(chunkID))
+        {
+          chunkManager.CreateChunk(chunkID);
+        }
+
+        ChunkPtr chunk = chunkManager.GetChunk(chunkID);
+        const Vec3& origin = chunk->GetOrigin();
+
+        voxelPos -= origin;
+        VoxelID id = chunk->GetVoxelID(voxelPos);
+
+        DistVoxel& distVoxel = chunk->GetDistVoxelMutable(id);
+        const Vec3& centroid = centroids[id] + origin;
+        float u = distance - (centroid - sensorOrigin).norm();
+        float weight = weighter->GetWeight(u, truncation);
+        if (fabs(u) < truncation)
+        {
+          distVoxel.Integrate(u, weight);
+          updatedChunks->emplace(chunkID, true);
+        }
+    }
   }
 
   bool ProjectionIntegrator::IntegrateColorPointCloud(const PointCloud& cloud, const Transform& cameraPose, Chunk* chunk) const

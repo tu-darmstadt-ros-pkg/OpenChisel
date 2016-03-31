@@ -221,8 +221,8 @@ namespace chisel_ros
         depthCamera.imageTopic = imageTopic;
         depthCamera.transform = transform;
         depthCamera.infoTopic = infoTopic;
-        depthCamera.imageSubscriber = nh.subscribe(depthCamera.imageTopic, 20, &ChiselServer::DepthImageCallback, this);
-        depthCamera.infoSubscriber = nh.subscribe(depthCamera.infoTopic, 20, &ChiselServer::DepthCameraInfoCallback, this);
+        depthCamera.imageSubscriber = nh.subscribe(depthCamera.imageTopic, 1, &ChiselServer::DepthImageCallback, this);
+        depthCamera.infoSubscriber = nh.subscribe(depthCamera.infoTopic, 1, &ChiselServer::DepthCameraInfoCallback, this);
     }
 
 
@@ -284,8 +284,8 @@ namespace chisel_ros
             tries++;
             try
             {
-                transformListener.waitForTransform(depthCamera.transform, baseTransform, depthImage->header.stamp, ros::Duration(0.5));
-                transformListener.lookupTransform(depthCamera.transform, baseTransform, depthImage->header.stamp, tf);
+                transformListener.waitForTransform(baseTransform, depthImage->header.frame_id, depthImage->header.stamp, ros::Duration(0.5));
+                transformListener.lookupTransform(baseTransform, depthImage->header.frame_id, depthImage->header.stamp, tf);
                 depthCamera.gotPose = true;
                 gotTransform = true;
             }
@@ -322,8 +322,8 @@ namespace chisel_ros
         colorCamera.imageTopic = imageTopic;
         colorCamera.transform = transform;
         colorCamera.infoTopic = infoTopic;
-        colorCamera.imageSubscriber = nh.subscribe(colorCamera.imageTopic, 20, &ChiselServer::ColorImageCallback, this);
-        colorCamera.infoSubscriber = nh.subscribe(colorCamera.infoTopic, 20, &ChiselServer::ColorCameraInfoCallback, this);
+        colorCamera.imageSubscriber = nh.subscribe(colorCamera.imageTopic, 1, &ChiselServer::ColorImageCallback, this);
+        colorCamera.infoSubscriber = nh.subscribe(colorCamera.infoTopic, 1, &ChiselServer::ColorCameraInfoCallback, this);
     }
 
     void ChiselServer::ColorCameraInfoCallback(sensor_msgs::CameraInfoConstPtr cameraInfo)
@@ -348,8 +348,8 @@ namespace chisel_ros
             tries++;
             try
             {
-                transformListener.waitForTransform(colorCamera.transform, baseTransform, colorImage->header.stamp, ros::Duration(0.5));
-                transformListener.lookupTransform(colorCamera.transform, baseTransform, colorImage->header.stamp, tf);
+                transformListener.waitForTransform(baseTransform, colorCamera.transform, colorImage->header.stamp, ros::Duration(0.5));
+                transformListener.lookupTransform(baseTransform, colorImage->header.frame_id, colorImage->header.stamp, tf);
                 colorCamera.gotPose = true;
                 gotTransform = true;
             }
@@ -368,7 +368,7 @@ namespace chisel_ros
         pointcloudTopic.cloudTopic = topic;
         pointcloudTopic.gotCloud = false;
         pointcloudTopic.gotPose = false;
-        pointcloudTopic.cloudSubscriber = nh.subscribe(pointcloudTopic.cloudTopic, 20, &ChiselServer::PointCloudCallback, this);
+        pointcloudTopic.cloudSubscriber = nh.subscribe(pointcloudTopic.cloudTopic, 1, &ChiselServer::PointCloudCallback, this);
     }
 
     void ChiselServer::PointCloudCallback(sensor_msgs::PointCloud2ConstPtr pointcloud)
@@ -391,8 +391,8 @@ namespace chisel_ros
             tries++;
             try
             {
-                transformListener.waitForTransform(pointcloudTopic.transform, baseTransform, pointcloud->header.stamp, ros::Duration(0.5));
-                transformListener.lookupTransform(pointcloudTopic.transform, baseTransform, pointcloud->header.stamp, tf);
+                transformListener.waitForTransform(baseTransform, pointcloudTopic.transform, pointcloud->header.stamp, ros::Duration(0.5));
+                transformListener.lookupTransform(baseTransform, pointcloudTopic.transform, pointcloud->header.stamp, tf);
                 pointcloudTopic.gotPose = true;
                 gotTransform = true;
             }
@@ -427,10 +427,8 @@ namespace chisel_ros
             }
             else
             {
-                printf("CHISEL: Integrating depth scan\n");
                 chiselMap->IntegrateDepthScan<DepthData>(projectionIntegrator, lastDepthImage, depthCamera.lastPose, depthCamera.cameraModel);
             }
-            printf("CHISEL: Done with scan\n");
             //PublishLatestChunkBoxes();
             //PublishDepthFrustum();
 
@@ -443,8 +441,8 @@ namespace chisel_ros
     {
         if (!IsPaused()  && pointcloudTopic.gotPose && lastPointCloud.get())
         {
-            ROS_INFO("Integrating point cloud");
-            chiselMap->IntegratePointCloud(projectionIntegrator, *lastPointCloud, pointcloudTopic.lastPose, 0.1f, farPlaneDist);
+            chiselMap->IntegratePointCloud(projectionIntegrator, *lastPointCloud, pointcloudTopic.lastPose, nearPlaneDist, farPlaneDist);
+            //chiselMap->IntegratePointCloud(projectionIntegrator, *lastPointCloud, pointcloudTopic.lastPose, 0.1f, nearPlaneDist, farPlaneDist);
             //PublishLatestChunkBoxes();
             chiselMap->UpdateMeshes();;
             hasNewData = false;
@@ -670,7 +668,7 @@ namespace chisel_ros
         response.id_y.resize(deletedChunks.size());
         response.id_z.resize(deletedChunks.size());
         response.header.stamp = ros::Time::now();
-        ROS_INFO("Size of deleted chunks: %d", deletedChunks.size());
+        ROS_INFO_STREAM("Size of deleted chunks: " << deletedChunks.size());
 
 
         for (const std::pair<chisel::ChunkID, bool>& id : deletedChunks)

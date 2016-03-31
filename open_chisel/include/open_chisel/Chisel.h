@@ -45,15 +45,13 @@ namespace chisel
             inline ChunkManager& GetMutableChunkManager() { return chunkManager; }
             inline void SetChunkManager(const ChunkManager& manager) { chunkManager = manager; }
 
-            void IntegratePointCloud(const ProjectionIntegrator& integrator, const PointCloud& cloud, const Transform& extrinsic, float truncation, float maxDist);
-            void IntegrateChunks(const ProjectionIntegrator& integrator, ChunkManager &sourceChunkManager, ChunkSet &changedChunks);
+            void IntegratePointCloud(const ProjectionIntegrator& integrator, const PointCloud& cloud, const Transform& extrinsic, float truncation, float minDist, float maxDist);
+            void IntegratePointCloud(const ProjectionIntegrator& integrator, const PointCloud& cloud, const Transform& extrinsic, float minDist, float maxDist);
+            void IntegrateChunks(const ProjectionIntegrator& integrator, ChunkManager& sourceChunkManager, ChunkSet& changedChunks);
             void DeleteChunks(ChunkSet &chunks);
 
             template <class DataType> void IntegrateDepthScan(const ProjectionIntegrator& integrator, const std::shared_ptr<const DepthImage<DataType> >& depthImage, const Transform& extrinsic, const PinholeCamera& camera)
             {
-                    clock_t begin = clock();
-                    printf("CHISEL: Integrating a scan\n");
-
                     Frustum frustum;
                     camera.SetupFrustum(extrinsic, &frustum);
 
@@ -102,19 +100,12 @@ namespace chisel
                         mutex.unlock();
                     }, maxThreads, threadTreshold
                     );
-                    printf("CHISEL: Done with scan\n");
                     GarbageCollect(garbageChunks);
                     //chunkManager.PrintMemoryStatistics();
-
-                    clock_t end = clock();
-                    double elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
-                    printf("\n \n  ~ %f HZ     \n \n", 1/elapsed_secs);
             }
 
             template <class DataType, class ColorType> void IntegrateDepthScanColor(const ProjectionIntegrator& integrator, const std::shared_ptr<const DepthImage<DataType> >& depthImage,  const Transform& depthExtrinsic, const PinholeCamera& depthCamera, const std::shared_ptr<const ColorImage<ColorType> >& colorImage, const Transform& colorExtrinsic, const PinholeCamera& colorCamera)
             {
-                    clock_t begin = clock();
-
                     Frustum frustum;
                     depthCamera.SetupFrustum(depthExtrinsic, &frustum);
 
@@ -165,9 +156,6 @@ namespace chisel
                     );
 
                     GarbageCollect(garbageChunks);
-                    clock_t end = clock();
-                    double elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
-                    printf("\n \n  ~ %f HZ     \n \n", 1/elapsed_secs);
                     //chunkManager.PrintMemoryStatistics();
             }
 

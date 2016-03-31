@@ -108,7 +108,6 @@ namespace chisel_ros
 
     template <class DataType> void ROSImgToDepthImg(sensor_msgs::ImageConstPtr image, chisel::DepthImage<DataType>* depthImage)
     {
-            ROS_INFO("Got depth image of format %s\n", image->encoding.c_str());
             bool mmImage = false;
             
             if (image->encoding == "16UC1")
@@ -127,9 +126,7 @@ namespace chisel_ros
             
             if (!mmImage)
             {
-                size_t dataSize =image->step / image->width;
                 assert(depthImage->GetHeight() == static_cast<int>(image->height) && depthImage->GetWidth() == static_cast<int>(image->width));
-                assert(dataSize == sizeof(DataType));
                 const DataType* imageData = reinterpret_cast<const DataType*>(image->data.data());
                 DataType* depthImageData = depthImage->GetMutableData();
                 int totalPixels = image->width * image->height;
@@ -207,7 +204,6 @@ namespace chisel_ros
         transform.translation()(1) = tf.getOrigin().y();
         transform.translation()(2) = tf.getOrigin().z();
 
-
         chisel::Quaternion quat;
         quat.x() = tf.getRotation().x();
         quat.y() = tf.getRotation().y();
@@ -215,7 +211,7 @@ namespace chisel_ros
         quat.w() = tf.getRotation().w();
         transform.linear() = quat.toRotationMatrix();
 
-        return transform.inverse();
+        return transform;
     }
 
     inline chisel::PinholeCamera RosCameraToChiselCamera(const sensor_msgs::CameraInfoConstPtr& camera)
