@@ -711,4 +711,26 @@ namespace chisel
             }
         }
     }
+
+    void ChunkManager::DeleteEmptyChunks()
+    {
+      for (auto& chunkPair : *chunks)
+      {
+        ChunkPtr chunk = chunkPair.second;
+        bool chunkContainsData = false;
+        for (int i = 0; i < chunk->GetTotalNumVoxels(); i++)
+        {
+          if (chunk->GetDistVoxel(i).GetWeight() > 0)
+          {
+            chunkContainsData = true;
+            break;
+          }
+        }
+        if (!chunkContainsData)
+        {
+            deletedChunks->emplace(chunk->GetID(), true);
+            RemoveChunk(chunk->GetID());
+        }
+      }
+    }
 } // namespace chisel 
