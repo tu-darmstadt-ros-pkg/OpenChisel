@@ -126,9 +126,7 @@ namespace chisel_ros
             
             if (!mmImage)
             {
-                size_t dataSize =image->step / image->width;
                 assert(depthImage->GetHeight() == static_cast<int>(image->height) && depthImage->GetWidth() == static_cast<int>(image->width));
-                assert(dataSize == sizeof(DataType));
                 const DataType* imageData = reinterpret_cast<const DataType*>(image->data.data());
                 DataType* depthImageData = depthImage->GetMutableData();
                 int totalPixels = image->width * image->height;
