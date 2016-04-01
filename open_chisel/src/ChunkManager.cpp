@@ -139,11 +139,6 @@ namespace chisel
         mutex.lock();
         if(!mesh->vertices.empty())
             allMeshes->emplace(chunkID, mesh);
-        else
-        {
-            deletedChunks->emplace(chunkID, true);
-            RemoveChunk(chunkID);
-        }
         mutex.unlock();
     }
 
@@ -186,7 +181,7 @@ namespace chisel
         frustum.ComputeBoundingBox(&frustumAABB);
 
         ChunkID minID = GetIDAt(frustumAABB.min);
-        ChunkID maxID = GetIDAt(frustumAABB.max) + Eigen::Vector3i(1, 1, 1);
+        ChunkID maxID = GetIDAt(frustumAABB.max);
 
         //printf("FrustumAABB: %f %f %f %f %f %f\n", frustumAABB.min.x(), frustumAABB.min.y(), frustumAABB.min.z(), frustumAABB.max.x(), frustumAABB.max.y(), frustumAABB.max.z());
         //printf("Frustum min: %d %d %d max: %d %d %d\n", minID.x(), minID.y(), minID.z(), maxID.x(), maxID.y(), maxID.z());
