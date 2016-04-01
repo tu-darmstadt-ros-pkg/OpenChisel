@@ -58,6 +58,8 @@ namespace chisel
                     ChunkIDList chunksIntersecting;
                     chunkManager.GetChunkIDsIntersecting(frustum, &chunksIntersecting);
 
+                    Transform inverseExtrinsic = extrinsic.inverse();
+
                     std::mutex mutex;
                     ChunkIDList garbageChunks;
 
@@ -76,7 +78,7 @@ namespace chisel
                         ChunkPtr chunk = chunkManager.GetChunk(chunkID);
                         mutex.unlock();
 
-                        bool needsUpdate = integrator.Integrate(depthImage, camera, extrinsic, chunk.get());
+                        bool needsUpdate = integrator.Integrate(depthImage, camera, inverseExtrinsic, chunk.get());
 
                         mutex.lock();
                         if (needsUpdate)
@@ -109,6 +111,9 @@ namespace chisel
                     Frustum frustum;
                     depthCamera.SetupFrustum(depthExtrinsic, &frustum);
 
+                    Transform inverseDepthExtrinsic = depthExtrinsic.inverse();
+                    Transform inverseColorExtrinsic = colorExtrinsic.inverse();
+
                     ChunkIDList chunksIntersecting;
                     chunkManager.GetChunkIDsIntersecting(frustum, &chunksIntersecting);
                     std::mutex mutex;
@@ -129,7 +134,7 @@ namespace chisel
                         mutex.unlock();
 
 
-                        bool needsUpdate = integrator.IntegrateColor(depthImage, depthCamera, depthExtrinsic, colorImage, colorCamera, colorExtrinsic, chunk.get());
+                        bool needsUpdate = integrator.IntegrateColor(depthImage, depthCamera, inverseDepthExtrinsic, colorImage, colorCamera, inverseColorExtrinsic, chunk.get());
 
                         mutex.lock();
                         if (needsUpdate)

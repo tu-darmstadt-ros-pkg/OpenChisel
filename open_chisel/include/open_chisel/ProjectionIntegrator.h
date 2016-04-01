@@ -61,7 +61,6 @@ namespace chisel
     {
       assert(chunk != nullptr);
 
-      //Eigen::Vector3i numVoxels = chunk->GetNumVoxels();
       float resolution = chunk->GetVoxelResolutionMeters();
       const Vec3& origin = chunk->GetOrigin();
       float diag = 2.0 * sqrt(3.0f) * resolution;
@@ -70,7 +69,7 @@ namespace chisel
       for (size_t i = 0; i < centroids.size(); i++)
         {
           voxelCenter = centroids[i] + origin;
-          Vec3 voxelCenterInCamera = cameraPose.linear().transpose() * (voxelCenter - cameraPose.translation());
+          Vec3 voxelCenterInCamera = cameraPose * voxelCenter;
           Vec3 cameraPos = camera.ProjectPoint(voxelCenterInCamera);
 
           if (!camera.IsPointOnImage(cameraPos) || voxelCenterInCamera.z() < 0)
@@ -90,7 +89,7 @@ namespace chisel
           if (fabs(surfaceDist) < truncation + diag)
             {
               DistVoxel& voxel = chunk->GetDistVoxelMutable(i);
-              voxel.Integrate(surfaceDist, 1.0f);
+              voxel.Integrate(surfaceDist, weighter->GetWeight(surfaceDist, truncation));
               updated = true;
             }
           else if (enableVoxelCarving && surfaceDist > truncation + carvingDist)
@@ -115,20 +114,14 @@ namespace chisel
       const Vec3& origin = chunk->GetOrigin();
       float resolutionDiagonal = 2.0 * sqrt(3.0f) * resolution;
       bool updated = false;
-      //std::vector<size_t> indexes;
-      //indexes.resize(centroids.size());
-      //for (size_t i = 0; i < centroids.size(); i++)
-      //{
-      //    indexes[i] = i;
-      //}
 
+      Color<ColorType> color;
 
       for (size_t i = 0; i < centroids.size(); i++)
         //parallel_for(centroids.begin(), centroids.end(), [&](const size_t& i)
         {
-          Color<ColorType> color;
           Vec3 voxelCenter = centroids[i] + origin;
-          Vec3 voxelCenterInCamera = depthCameraPose.linear().transpose() * (voxelCenter - depthCameraPose.translation());
+          Vec3 voxelCenterInCamera = depthCameraPose * voxelCenter;
           Vec3 cameraPos = depthCamera.ProjectPoint(voxelCenterInCamera);
 
           if (!depthCamera.IsPointOnImage(cameraPos) || voxelCenterInCamera.z() < 0)
@@ -149,7 +142,7 @@ namespace chisel
 
           if (std::abs(surfaceDist) < truncation + resolutionDiagonal)
             {
-              Vec3 voxelCenterInColorCamera = colorCameraPose.linear().transpose() * (voxelCenter - colorCameraPose.translation());
+              Vec3 voxelCenterInColorCamera = colorCameraPose* voxelCenter;
               Vec3 colorCameraPos = colorCamera.ProjectPoint(voxelCenterInColorCamera);
               if(colorCamera.IsPointOnImage(colorCameraPos))
                 {
