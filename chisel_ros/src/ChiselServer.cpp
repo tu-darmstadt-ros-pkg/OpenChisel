@@ -348,7 +348,7 @@ namespace chisel_ros
             tries++;
             try
             {
-                transformListener.waitForTransform(baseTransform, colorCamera.transform, colorImage->header.stamp, ros::Duration(0.5));
+                transformListener.waitForTransform(baseTransform, colorImage->header.frame_id, colorImage->header.stamp, ros::Duration(0.5));
                 transformListener.lookupTransform(baseTransform, colorImage->header.frame_id, colorImage->header.stamp, tf);
                 colorCamera.gotPose = true;
                 gotTransform = true;
