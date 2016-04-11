@@ -548,6 +548,11 @@ namespace chisel_ros
         marker->type = visualization_msgs::Marker::TRIANGLE_LIST;
         const chisel::MeshMap& meshMap = chiselMap->GetChunkManager().GetAllMeshes();
 
+        FillMarkerTopicWithMeshes(meshMap, marker);
+    }
+
+    void ChiselServer::FillMarkerTopicWithMeshes(const chisel::MeshMap& meshMap, visualization_msgs::Marker* marker)
+    {
         if(meshMap.size() == 0)
         {
             return;

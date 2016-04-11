@@ -135,6 +135,7 @@ namespace chisel_ros
             void IntegrateLastDepthImage();
             void IntegrateLastPointCloud();
             void FillMarkerTopicWithMeshes(visualization_msgs::Marker* marker);
+            void FillMarkerTopicWithMeshes(const chisel::MeshMap& meshMap, visualization_msgs::Marker* marker);
             void FillNormalMarkerTopicWithMeshes(visualization_msgs::Marker* marker);
 
             inline void SetBaseTransform(const std::string& frameName) { baseTransform = frameName; }
