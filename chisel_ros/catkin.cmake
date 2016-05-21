@@ -15,9 +15,6 @@ find_package(PCL REQUIRED)
 include_directories(${Eigen_INCLUDE_DIRS})
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --std=c++0x")
 
-
-generate_messages(DEPENDENCIES std_msgs sensor_msgs geometry_msgs)
-
 catkin_package(CATKIN_DEPENDS roscpp tf std_msgs sensor_msgs open_chisel pcl_ros chisel_msgs
 	 	INCLUDE_DIRS include
                	LIBRARIES ${PROJECT_NAME})
