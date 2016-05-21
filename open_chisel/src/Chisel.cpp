@@ -197,6 +197,7 @@ namespace chisel
           }
         }
       };
+      meshesToUpdate[chunk.first] = true;
     }
   }
 

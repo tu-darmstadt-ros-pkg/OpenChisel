@@ -639,7 +639,7 @@ namespace chisel
     }
 
 
-    void ChunkManager::PrintMemoryStatistics()
+    void ChunkManager::PrintMemoryStatistics() const
     {
         float bigFloat = std::numeric_limits<float>::max();
 
@@ -694,7 +694,7 @@ namespace chisel
             {
                 Vec3 rel = (voxelPos - chunk->GetOrigin());
                 DistVoxel& voxel = chunk->GetDistVoxelMutable(chunk->GetVoxelID(rel));
-                if(voxel.GetSDF()<0 && voxel.GetWeight()> 0)
+                if(voxel.GetWeight()> 0)
                 {
                     voxel.Carve();
                     updatedChunks->emplace(chunk->GetID(), true);
@@ -709,9 +709,13 @@ namespace chisel
 
     void ChunkManager::DeleteEmptyChunks()
     {
-      for (auto& chunkPair : *chunks)
+      ChunkIDList chunks_to_delete;
+      for (auto chunkPair : *chunks)
       {
         ChunkPtr chunk = chunkPair.second;
+        if(!chunk)
+          continue;
+
         bool chunkContainsData = false;
         for (int i = 0; i < chunk->GetTotalNumVoxels(); i++)
         {
@@ -723,9 +727,14 @@ namespace chisel
         }
         if (!chunkContainsData)
         {
-            deletedChunks->emplace(chunk->GetID(), true);
-            RemoveChunk(chunk->GetID());
+            chunks_to_delete.push_back(chunk->GetID());
         }
+      }
+
+      for (ChunkID& id : chunks_to_delete)
+      {
+        deletedChunks->emplace(id, true);
+        RemoveChunk(id);
       }
     }
 } // namespace chisel 

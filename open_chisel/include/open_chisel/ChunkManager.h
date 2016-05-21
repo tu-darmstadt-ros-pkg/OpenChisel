@@ -70,8 +70,8 @@ namespace chisel
             inline boost::shared_ptr<const ChunkMap> GetChunksPointer() const { return chunks; }
             inline void SetChunksPointer(boost::shared_ptr<ChunkMap> data) {chunks = data; }
 
-            inline const boost::shared_ptr<ChunkSet> GetChangedChunks() const { return changedChunks; }
-            inline const boost::shared_ptr<ChunkSet> GetDeletedChunks() const { return deletedChunks; }
+            inline const boost::shared_ptr<ChunkSet> GetChangedChunks() { return changedChunks; }
+            inline const boost::shared_ptr<ChunkSet> GetDeletedChunks() { return deletedChunks; }
             inline void ClearChangedChunks() { changedChunks->clear(); }
             inline void ClearDeletedChunks() { deletedChunks->clear(); }
             inline const Vec3& GetRoundingFactor() const { return roundingFactor; }
@@ -175,7 +175,7 @@ namespace chisel
 
             inline const Vec3List& GetCentroids() const { return centroids; }
 
-            void PrintMemoryStatistics();
+            void PrintMemoryStatistics() const;
 
             void Reset();
 
