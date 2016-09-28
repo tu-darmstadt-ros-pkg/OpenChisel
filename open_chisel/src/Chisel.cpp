@@ -160,6 +160,7 @@ namespace chisel
     ChunkSet updatedChunks;
     const Vec3& start = extrinsic.translation();
 
+    //TODO: parallelize
     for (const Vec3& point : cloud.GetPoints())
     {
         const Vec3 end = extrinsic * point;
@@ -180,7 +181,7 @@ namespace chisel
             chunkManager.ClearPassedVoxels(start, truncatedPositiveEnd, &updatedChunks);
         }
 
-        integrator.IntegratePointCloud(start, end, difference, distance, chunkManager, &updatedChunks);
+        integrator.IntegratePoint(start, end, difference, distance, chunkManager, &updatedChunks);
     }
 
     for(auto& chunk : updatedChunks)
