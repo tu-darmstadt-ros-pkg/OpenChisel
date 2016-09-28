@@ -47,7 +47,7 @@ namespace chisel
 
     bool Integrate(const PointCloud& cloud, const Transform& cameraPose, Chunk* chunk) const;
     bool IntegratePointCloud(const PointCloud& cloud, const Transform& cameraPose, Chunk* chunk) const;
-    void IntegratePointCloud(const Vec3& sensorOrigin, const Vec3& point, const Vec3& direction, float distance, ChunkManager& chunkManager, ChunkSet* updatedChunks) const;
+    void IntegratePoint(const Vec3& sensorOrigin, const Vec3& point, const Vec3& direction, float distance, ChunkManager& chunkManager, ChunkSet* updatedChunks) const;
     bool IntegrateColorPointCloud(const PointCloud& cloud, const Transform& cameraPose, Chunk* chunk) const;
     bool IntegrateChunk(const Chunk* chunkToIntegrate, Chunk* chunk) const;
     bool IntegrateColorChunk(const Chunk* chunkToIntegrate, Chunk* chunk) const;

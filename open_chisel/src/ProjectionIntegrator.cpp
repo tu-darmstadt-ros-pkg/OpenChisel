@@ -103,7 +103,7 @@ namespace chisel
     return updated;
   }
 
-  void ProjectionIntegrator::IntegratePointCloud(const Vec3& sensorOrigin, const Vec3& point, const Vec3& direction, float distance, ChunkManager& chunkManager, ChunkSet* updatedChunks) const
+  void ProjectionIntegrator::IntegratePoint(const Vec3& sensorOrigin, const Vec3& point, const Vec3& direction, float distance, ChunkManager& chunkManager, ChunkSet* updatedChunks) const
   {
     const float resolution = chunkManager.GetResolution();
     const float roundingFactor = 1.0f / resolution;
