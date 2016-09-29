@@ -108,21 +108,25 @@ namespace chisel
     const float resolution = chunkManager.GetResolution();
     const float roundingFactor = 1.0f / resolution;
 
-    Point3List raycastVoxels;
-
     const float truncation = truncator->GetTruncationDistance(distance);
     const Vec3 truncationOffset = direction.normalized() * truncation;
-    Vec3 start = point - truncationOffset;
-    Vec3 end = point + truncationOffset;
+    const Vec3 start = (point - truncationOffset) * roundingFactor;
+    const Vec3 end = (point + truncationOffset) * roundingFactor;
 
-    start *= roundingFactor;
-    end *= roundingFactor;
+    const Vec3 voxelShift(0.5 * resolution, 0.5 * resolution, 0.5 * resolution);
 
-    Raycast(start, end, &raycastVoxels);
+    //estimate maximum number of voxels visited by ray section
+    int maxNumVoxels = (int)(start-end).norm() * roundingFactor ;
+
+    maxNumVoxels = std::max(maxNumVoxels, 10);
+
+    Point3List raycastVoxels(maxNumVoxels);
+
+    Raycast(start, end, raycastVoxels);
 
     for (const Point3& voxelCoords : raycastVoxels)
     {
-        Vec3 voxelPos = voxelCoords.cast<float>() * resolution +  Vec3(0.5 *resolution, 0.5 *resolution, 0.5 *resolution);
+        Vec3 voxelPos = voxelCoords.cast<float>() * resolution +  voxelShift;
         ChunkID chunkID = chunkManager.GetIDAt(voxelPos);
 
         if (!chunkManager.HasChunk(chunkID))

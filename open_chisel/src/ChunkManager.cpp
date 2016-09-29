@@ -682,9 +682,16 @@ namespace chisel
 
     void ChunkManager::ClearPassedVoxels(const Vec3& start, const Vec3& end, ChunkSet* updatedChunks)
     {
-        Point3List passedVoxels;
         float roundingFactor = 1/voxelResolutionMeters;
-        Raycast(start * roundingFactor, end * roundingFactor, &passedVoxels);
+        const Vec3 startRounded = start * roundingFactor;
+        const Vec3 endRounded = end * roundingFactor;
+
+        //estimate maximum number of voxels visited by ray section
+        int maxNumVoxels = (int)(startRounded-endRounded).norm() / voxelResolutionMeters ;
+        maxNumVoxels = std::max(maxNumVoxels, 100);
+        Point3List passedVoxels(maxNumVoxels);
+
+        Raycast(start * roundingFactor, end * roundingFactor, passedVoxels);
 
         for (Point3& voxelCoords: passedVoxels)
         {

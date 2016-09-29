@@ -1,7 +1,7 @@
 #include <open_chisel/geometry/Raycast.h>
 using namespace chisel;
 
-int signum(int x)
+inline int signum(int x)
 {
     return x == 0 ? 0 : x < 0 ? -1 : 1;
 }
@@ -11,7 +11,7 @@ float mod(float value, float modulus)
   return fmod(fmod(value, modulus) + modulus,  modulus);
 }
 
-float intbound(float s, int ds)
+inline float intbound(float s, int ds)
 {
 
   return (ds > 0 ? std::ceil(s)-s: s-std::floor(s)) / std::abs(ds);
@@ -131,7 +131,7 @@ void Raycast(const Vec3& start, const Vec3& end, const Point3& min, const Point3
     }
 }
 
-void Raycast(const chisel::Vec3& start, const chisel::Vec3& end, chisel::Point3List* output)
+void Raycast(const chisel::Vec3& start, const chisel::Vec3& end, chisel::Point3List& output)
 {
   assert(!!output);
   // From "A Fast Voxel Traversal Algorithm for Ray Tracing"
@@ -183,15 +183,28 @@ void Raycast(const chisel::Vec3& start, const chisel::Vec3& end, chisel::Point3L
 
   // Avoids an infinite loop.
   if (stepX == 0 && stepY == 0 && stepZ == 0)
+  {
+      output.resize(0);
       return;
+  }
 
   Point3 point = Point3(x,y,z);
 
+  int voxelCount = 0;
+
   while (true)
   {
-      output->push_back(point);
+      output[voxelCount] = point;
+      voxelCount++;
+      //output->push_back(point);
 
-      if(point(0) == endX && point(1) == endY && point(2) == endZ) break;
+      if(point(0) == endX && point(1) == endY && point(2) == endZ)
+      {
+        //only keep entries containing valid voxels
+        output.resize(voxelCount);
+
+        break;
+      }
 
       // tMaxX stores the t-value at which we cross a cube boundary along the
       // X axis, and similarly for Y and Z. Therefore, choosing the least tMax
