@@ -13,26 +13,14 @@ float mod(float value, float modulus)
 
 inline float intbound(float s, int ds)
 {
-
-  return (ds > 0 ? std::ceil(s)-s: s-std::floor(s)) / std::abs(ds);
- /* // Find the smallest positive t such that s+t*ds is an integer.
- if (ds < 0)
-  {
-    s = mod(-s, 1.0f);
-    // problem is now s+t*ds = 1
-    return (1-s)/-ds;
-  }
-  else if (ds > 0)
-  {
-    s = mod(s, 1.0f);
-    // problem is now s+t*ds = 1
-    return (1-s)/ds;
-  }
-  else
- {
-   // when ds is zero, we cant find a solution,
-   return std::numeric_limits<double>::max();
- }*/
+    if (ds ==0)
+    {
+        return std::numeric_limits<int>::max();
+    }
+    else
+    {
+        return (ds > 0 ? std::ceil(s)-s: s-std::floor(s)) / std::abs(ds);
+    }
 }
 
 void Raycast(const Vec3& start, const Vec3& end, const Point3& min, const Point3& max, Point3List* output)
