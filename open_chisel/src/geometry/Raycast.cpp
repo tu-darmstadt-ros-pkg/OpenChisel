@@ -13,7 +13,7 @@ float mod(float value, float modulus)
 
 inline float intbound(float s, int ds)
 {
-    if (ds ==0)
+    if (ds == 0)
     {
         return std::numeric_limits<int>::max();
     }
