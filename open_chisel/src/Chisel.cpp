@@ -103,58 +103,7 @@ namespace chisel
     return success;
   }
 
-  void Chisel::IntegratePointCloud(const ProjectionIntegrator& integrator, const PointCloud& cloud, const Transform& extrinsic, float truncation, float minDist, float maxDist)
-  {
-    ChunkIDList chunksIntersecting;
-    chunkManager.GetChunkIDsIntersecting(cloud, extrinsic, truncation, minDist, maxDist, &chunksIntersecting);
-    printf("There are %lu chunks intersecting\n", chunksIntersecting.size());
-    std::mutex mutex;
-    ChunkIDList garbageChunks;
-    //for(const ChunkID& chunkID : chunksIntersecting)
-      parallel_for(chunksIntersecting.begin(), chunksIntersecting.end(), [&](const ChunkID& chunkID)
-      {
-        bool chunkNew = false;
-
-        mutex.lock();
-        if (!chunkManager.HasChunk(chunkID))
-          {
-            chunkNew = true;
-            chunkManager.CreateChunk(chunkID);
-          }
-
-        ChunkPtr chunk = chunkManager.GetChunk(chunkID);
-        mutex.unlock();
-
-        bool needsUpdate = integrator.Integrate(cloud, extrinsic, chunk.get());
-
-        mutex.lock();
-        if (needsUpdate)
-          {
-            chunkManager.RememberChangedChunk(chunkID);
-
-            for (int dx = -1; dx <= 1; dx++)
-              {
-                for (int dy = -1; dy <= 1; dy++)
-                  {
-                    for (int dz = -1; dz <= 1; dz++)
-                      {
-                        meshesToUpdate[chunkID + ChunkID(dx, dy, dz)] = true;
-                      }
-                  }
-              };
-
-          }
-        else if(chunkNew)
-          {
-            garbageChunks.push_back(chunkID);
-          }
-        mutex.unlock();
-      }, maxThreads);
-
-    GarbageCollect(garbageChunks);
-    //  chunkManager.PrintMemoryStatistics();
-  }
-
+  //Integrate pointcloud after transforming to target frame
   void Chisel::IntegratePointCloud(const ProjectionIntegrator& integrator, const PointCloud& cloud, const Transform& extrinsic, float minDist, float maxDist)
   {
     ChunkSet updatedChunks;
@@ -163,45 +112,48 @@ namespace chisel
     //TODO: parallelize
     for (const Vec3& point : cloud.GetPoints())
     {
-        const Vec3 end = extrinsic * point;
-        const Vec3 difference = end - start;
-
-        float distance = difference.norm();
-
-        if(distance > maxDist || distance < minDist)
-        {
-            continue;
-        }
-
-        if (integrator.IsCarvingEnabled())
-        {
-            float truncation = integrator.ComputeTruncationDistance(distance);
-            const Vec3 direction = difference.normalized();
-            const Vec3 truncatedPositiveEnd = end - (integrator.GetCarvingDist() + truncation) * direction;
-            chunkManager.ClearPassedVoxels(start, truncatedPositiveEnd, &updatedChunks);
-        }
-
-        integrator.IntegratePoint(start, end, difference, distance, chunkManager, &updatedChunks);
+        IntegrateRay(integrator, updatedChunks, start, point, minDist, maxDist);
     }
 
-    for(auto& chunk : updatedChunks)
-    {
-      chunkManager.RememberChangedChunk(chunk.first);
-
-      for (int dx = -1; dx <= 1; dx++)
-      {
-        for (int dy = -1; dy <= 1; dy++)
-        {
-          for (int dz = -1; dz <= 1; dz++)
-          {
-            meshesToUpdate[chunk.first + ChunkID(dx, dy, dz)] = true;
-          }
-        }
-      };
-      meshesToUpdate[chunk.first] = true;
-    }
+    DetermineMeshesToUpdate(updatedChunks);
   }
 
+  //Integrate pointcloud already transformed to target frame
+  void Chisel::IntegratePointCloud(const ProjectionIntegrator& integrator, const PointCloud& cloud, const Vec3& sensorOrigin, float minDist, float maxDist)
+  {
+    ChunkSet updatedChunks;
+
+    //TODO: parallelize
+    for (const Vec3& point : cloud.GetPoints())
+    {
+        IntegrateRay(integrator, updatedChunks, sensorOrigin, point, minDist, maxDist);
+    }
+
+    DetermineMeshesToUpdate(updatedChunks);
+  }
+
+  //Integrate ray already transformed to target frame
+  void Chisel::IntegrateRay(const ProjectionIntegrator& integrator, ChunkSet& updatedChunks, const Vec3& startPoint, const Vec3& endPoint, float minDist, float maxDist)
+  {
+    const Vec3 difference = endPoint - startPoint;
+
+    float distance = difference.norm();
+
+    if(distance > maxDist || distance < minDist)
+    {
+        return;
+    }
+
+    if (integrator.IsCarvingEnabled())
+    {
+        float truncation = integrator.ComputeTruncationDistance(distance);
+        const Vec3 direction = difference.normalized();
+        const Vec3 truncatedPositiveEnd = endPoint - (integrator.GetCarvingDist() + truncation) * direction;
+        chunkManager.ClearPassedVoxels(startPoint, truncatedPositiveEnd, &updatedChunks);
+    }
+
+    integrator.IntegratePoint(startPoint, endPoint, difference, distance, chunkManager, &updatedChunks);
+  }
 
   void Chisel::IntegrateChunks(const ProjectionIntegrator& integrator, ChunkManager& sourceChunkManager, ChunkSet& changedChunks)
   {
@@ -578,4 +530,25 @@ namespace chisel
       chunkManager.RememberDeletedChunk(chunk.first);
     }
   }
+
+  void Chisel::DetermineMeshesToUpdate(ChunkSet& updatedChunks)
+  {
+    for(auto& chunk : updatedChunks)
+    {
+      chunkManager.RememberChangedChunk(chunk.first);
+
+      for (int dx = -1; dx <= 1; dx++)
+      {
+        for (int dy = -1; dy <= 1; dy++)
+        {
+          for (int dz = -1; dz <= 1; dz++)
+          {
+            meshesToUpdate[chunk.first + ChunkID(dx, dy, dz)] = true;
+          }
+        }
+      };
+      meshesToUpdate[chunk.first] = true;
+    }
+  }
+
 } // namespace chisel 
