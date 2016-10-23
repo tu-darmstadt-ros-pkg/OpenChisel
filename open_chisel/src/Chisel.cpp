@@ -103,6 +103,21 @@ namespace chisel
     return success;
   }
 
+  //Integrate pointcloud after transforming to target frame using a given sensor pose
+  void Chisel::IntegratePointCloud(const ProjectionIntegrator& integrator, const PointCloud& cloud, const Transform& extrinsic, const Vec3& sensorOrigin, float minDist, float maxDist)
+  {
+    ChunkSet updatedChunks;
+
+    //TODO: parallelize
+    for (const Vec3& point : cloud.GetPoints())
+    {
+        Vec3 point_transformed = extrinsic * point;
+        IntegrateRay(integrator, updatedChunks, sensorOrigin, point_transformed, minDist, maxDist);
+    }
+
+    DetermineMeshesToUpdate(updatedChunks);
+  }
+
   //Integrate pointcloud after transforming to target frame
   void Chisel::IntegratePointCloud(const ProjectionIntegrator& integrator, const PointCloud& cloud, const Transform& extrinsic, float minDist, float maxDist)
   {
@@ -112,7 +127,8 @@ namespace chisel
     //TODO: parallelize
     for (const Vec3& point : cloud.GetPoints())
     {
-        IntegrateRay(integrator, updatedChunks, start, point, minDist, maxDist);
+        Vec3 point_transformed = extrinsic * point;
+        IntegrateRay(integrator, updatedChunks, start, point_transformed, minDist, maxDist);
     }
 
     DetermineMeshesToUpdate(updatedChunks);
