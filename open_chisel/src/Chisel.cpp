@@ -164,7 +164,14 @@ namespace chisel
     {
         float truncation = integrator.ComputeTruncationDistance(distance);
         const Vec3 direction = difference.normalized();
-        const Vec3 truncatedPositiveEnd = endPoint - (integrator.GetCarvingDist() + truncation) * direction;
+
+        Vec3 truncatedPositiveEnd;
+        float truncationOffset = integrator.GetCarvingDist() + truncation;
+        //apply truncation offset towards sensor origin
+        truncatedPositiveEnd(0) = endPoint(0) - copysign(truncationOffset, direction(0));
+        truncatedPositiveEnd(1) = endPoint(1) - copysign(truncationOffset, direction(1));
+        truncatedPositiveEnd(2) = endPoint(2) - copysign(truncationOffset, direction(2));
+
         chunkManager.ClearPassedVoxels(startPoint, truncatedPositiveEnd, &updatedChunks);
     }
 
