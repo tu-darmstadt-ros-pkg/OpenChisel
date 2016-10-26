@@ -694,9 +694,11 @@ namespace chisel
 
         Raycast(startRounded, endRounded, passedVoxels);
 
+        const Vec3 voxelShift (0.5 * voxelResolutionMeters, 0.5 * voxelResolutionMeters, 0.5 * voxelResolutionMeters);
+
         for (Point3& voxelCoords: passedVoxels)
         {
-            Vec3 voxelPos = voxelCoords.cast<float>() * voxelResolutionMeters +  Vec3(0.5 *voxelResolutionMeters, 0.5 *voxelResolutionMeters, 0.5 *voxelResolutionMeters);
+            Vec3 voxelPos = voxelCoords.cast<float>() * voxelResolutionMeters +  voxelShift;
             ChunkPtr chunk = GetChunkAt(voxelPos);
             if(chunk.get())
             {
