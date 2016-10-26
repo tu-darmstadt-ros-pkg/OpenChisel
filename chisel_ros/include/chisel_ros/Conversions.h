@@ -40,7 +40,7 @@
 
 namespace chisel_ros
 {
-    void PclPointCloudToChisel(const pcl::PointCloud<pcl::PointXYZ>& cloudIn, chisel::PointCloud* cloudOut)
+    inline void PclPointCloudToChisel(const pcl::PointCloud<pcl::PointXYZ>& cloudIn, chisel::PointCloud* cloudOut)
     {
         assert(!!cloudOut);
         cloudOut->GetMutablePoints().resize(cloudIn.points.size());
@@ -56,7 +56,7 @@ namespace chisel_ros
         }
     }
 
-    void PclColorPointCloudToChisel(const pcl::PointCloud<pcl::PointXYZRGB>& cloudIn, chisel::PointCloud* cloudOut)
+    inline void PclColorPointCloudToChisel(const pcl::PointCloud<pcl::PointXYZRGB>& cloudIn, chisel::PointCloud* cloudOut)
     {
         assert(!!cloudOut);
         cloudOut->GetMutablePoints().resize(cloudIn.points.size());
@@ -79,7 +79,7 @@ namespace chisel_ros
         }
     }
 
-    void ROSPointCloudToChisel(sensor_msgs::PointCloud2ConstPtr cloudIn, chisel::PointCloud* cloudOut)
+    inline void ROSPointCloudToChisel(sensor_msgs::PointCloud2ConstPtr cloudIn, chisel::PointCloud* cloudOut)
     {
         assert(!!cloudOut);
 
