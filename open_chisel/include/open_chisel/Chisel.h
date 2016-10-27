@@ -66,8 +66,8 @@ namespace chisel
                     std::mutex mutex;
                     ChunkIDList garbageChunks;
 
-                    //for(const ChunkID& chunkID : chunksIntersecting)
-                    parallel_for(chunksIntersecting.begin(), chunksIntersecting.end(), [&](const ChunkID& chunkID)
+                    for(const ChunkID& chunkID : chunksIntersecting)
+                    //parallel_for(chunksIntersecting.begin(), chunksIntersecting.end(), [&](const ChunkID& chunkID)
                     {
                         bool chunkNew = false;
 
@@ -103,8 +103,8 @@ namespace chisel
                             garbageChunks.push_back(chunkID);
                         }
                         mutex.unlock();
-                    }, maxThreads, threadTreshold
-                    );
+                    }//, maxThreads, threadTreshold
+                    //);
                     GarbageCollect(garbageChunks);
                     //chunkManager.PrintMemoryStatistics();
             }
@@ -121,8 +121,8 @@ namespace chisel
                     chunkManager.GetChunkIDsIntersecting(frustum, &chunksIntersecting);
                     std::mutex mutex;
                     ChunkIDList garbageChunks;
-                    //for ( const ChunkID& chunkID : chunksIntersecting)
-                    parallel_for(chunksIntersecting.begin(), chunksIntersecting.end(), [&](const ChunkID& chunkID)
+                    for ( const ChunkID& chunkID : chunksIntersecting)
+                    //parallel_for(chunksIntersecting.begin(), chunksIntersecting.end(), [&](const ChunkID& chunkID)
                     {
 
                         mutex.lock();
@@ -160,8 +160,8 @@ namespace chisel
                             garbageChunks.push_back(chunkID);
                         }
                         mutex.unlock();
-                    }, maxThreads, threadTreshold
-                    );
+                    }//, maxThreads, threadTreshold
+                    //);
 
                     GarbageCollect(garbageChunks);
                     //chunkManager.PrintMemoryStatistics();
