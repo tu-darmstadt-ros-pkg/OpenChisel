@@ -101,8 +101,6 @@ namespace chisel
                   updated = true;
                 }
             }
-
-
         }
       return updated;
     }
