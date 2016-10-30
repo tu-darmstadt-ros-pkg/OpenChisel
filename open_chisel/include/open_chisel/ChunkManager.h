@@ -135,8 +135,8 @@ namespace chisel
               this->threadTreshold = threadTreshold;
             }
 
-            inline void RememberChangedChunk(ChunkID id) { changedChunks->emplace(id, true); }
-            inline void RememberDeletedChunk(ChunkID id) { deletedChunks->emplace(id, true); }
+            inline void RememberChangedChunk(const ChunkID& id) { changedChunks->emplace(id, true); }
+            inline void RememberDeletedChunk(const ChunkID& id) { deletedChunks->emplace(id, true); }
 
             const DistVoxel* GetDistanceVoxel(const Vec3& pos) const;
             DistVoxel* GetDistanceVoxelMutable(const Vec3& pos);
