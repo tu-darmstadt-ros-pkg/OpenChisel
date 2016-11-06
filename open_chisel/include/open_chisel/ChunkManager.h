@@ -204,6 +204,8 @@ namespace chisel
 
     typedef boost::shared_ptr<ChunkManager> ChunkManagerPtr;
     typedef boost::shared_ptr<const ChunkManager> ChunkManagerConstPtr;
+    typedef boost::shared_ptr<ChunkSet> ChunkSetPtr;
+    typedef boost::shared_ptr<const ChunkSet> ChunkSetConstPtr;
 
 
 } // namespace chisel 
