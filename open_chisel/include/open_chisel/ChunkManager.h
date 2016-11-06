@@ -95,7 +95,6 @@ namespace chisel
             {
                 if(HasChunk(chunk))
                 {
-                    deletedChunks->emplace(chunk, true);
                     chunks->erase(chunk);
                     return true;
                 }
