@@ -64,24 +64,11 @@ namespace chisel
                     Transform inverseExtrinsic = extrinsic.inverse();
 
                     std::mutex mutex;
-                    ChunkIDList garbageChunks;
 
                     for(const ChunkID& chunkID : chunksIntersecting)
                     //parallel_for(chunksIntersecting.begin(), chunksIntersecting.end(), [&](const ChunkID& chunkID)
                     {
-                        bool chunkNew = false;
-
-                        mutex.lock();
-                        if (!chunkManager.HasChunk(chunkID))
-                        {
-                           chunkNew = true;
-                           chunkManager.CreateChunk(chunkID);
-                        }
-
-                        ChunkPtr chunk = chunkManager.GetChunk(chunkID);
-                        mutex.unlock();
-
-                        bool needsUpdate = integrator.Integrate(depthImage, camera, inverseExtrinsic, chunk.get());
+                        bool needsUpdate = integrator.Integrate(depthImage, camera, inverseExtrinsic, chunkManager, chunkID);
 
                         mutex.lock();
                         if (needsUpdate)
@@ -98,15 +85,10 @@ namespace chisel
                                 }
                             }
                         }
-                        else if(chunkNew)
-                        {
-                            garbageChunks.push_back(chunkID);
-                        }
+
                         mutex.unlock();
                     }//, maxThreads, threadTreshold
                     //);
-                    GarbageCollect(garbageChunks);
-                    //chunkManager.PrintMemoryStatistics();
             }
 
             template <class DataType, class ColorType> void IntegrateDepthScanColor(const ProjectionIntegrator& integrator, const boost::shared_ptr<const DepthImage<DataType> >& depthImage,  const Transform& depthExtrinsic, const PinholeCamera& depthCamera, const boost::shared_ptr<const ColorImage<ColorType> >& colorImage, const Transform& colorExtrinsic, const PinholeCamera& colorCamera)
