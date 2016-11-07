@@ -106,20 +106,7 @@ namespace chisel
                     for ( const ChunkID& chunkID : chunksIntersecting)
                     //parallel_for(chunksIntersecting.begin(), chunksIntersecting.end(), [&](const ChunkID& chunkID)
                     {
-
-                        mutex.lock();
-                        bool chunkNew = false;
-                        if (!chunkManager.HasChunk(chunkID))
-                        {
-                           chunkNew = true;
-                           chunkManager.CreateChunk(chunkID);
-                        }
-
-                        ChunkPtr chunk = chunkManager.GetChunk(chunkID);
-                        mutex.unlock();
-
-
-                        bool needsUpdate = integrator.IntegrateColor(depthImage, depthCamera, inverseDepthExtrinsic, colorImage, colorCamera, inverseColorExtrinsic, chunk.get());
+                        bool needsUpdate = integrator.IntegrateColor(depthImage, depthCamera, inverseDepthExtrinsic, colorImage, colorCamera, inverseColorExtrinsic, chunkManager, chunkID);
 
                         mutex.lock();
                         if (needsUpdate)
@@ -137,15 +124,9 @@ namespace chisel
                                 }
                             }
                         }
-                        else if(chunkNew)
-                        {
-                            garbageChunks.push_back(chunkID);
-                        }
                         mutex.unlock();
                     }//, maxThreads, threadTreshold
                     //);
-
-                    GarbageCollect(garbageChunks);
                     //chunkManager.PrintMemoryStatistics();
             }
 

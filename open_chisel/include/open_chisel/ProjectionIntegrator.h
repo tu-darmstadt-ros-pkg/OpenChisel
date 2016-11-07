@@ -129,12 +129,16 @@ namespace chisel
       return updated;
     }
 
-    template<class DataType, class ColorType> bool IntegrateColor(const boost::shared_ptr<const DepthImage<DataType> >& depthImage, const PinholeCamera& depthCamera, const Transform& depthCameraPose, const boost::shared_ptr<const ColorImage<ColorType> >& colorImage, const PinholeCamera& colorCamera, const Transform& colorCameraPose, Chunk* chunk) const
+    template<class DataType, class ColorType> bool IntegrateColor(const boost::shared_ptr<const DepthImage<DataType> >& depthImage, const PinholeCamera& depthCamera, const Transform& depthCameraPose, const boost::shared_ptr<const ColorImage<ColorType> >& colorImage, const PinholeCamera& colorCamera, const Transform& colorCameraPose, ChunkManager& chunkManager, const ChunkID& chunkID) const
     {
-      assert(chunk != nullptr);
+      float resolution = chunkManager.GetResolution();
+      const Point3& numVoxels = chunkManager.GetChunkSize();
 
-      float resolution = chunk->GetVoxelResolutionMeters();
-      const Vec3& origin = chunk->GetOrigin();
+      const Vec3 origin(numVoxels(0) * chunkID(0) * resolution, numVoxels(1) * chunkID(1) * resolution, numVoxels(2) * chunkID(2) * resolution);
+
+      ChunkPtr chunk;
+      bool gotChunkPointer = false;
+
       float resolutionDiagonal = 2.0 * sqrt(3.0f) * resolution;
       bool updated = false;
 
@@ -167,6 +171,16 @@ namespace chisel
             {
               Vec3 voxelCenterInColorCamera = colorCameraPose* voxelCenter;
               Vec3 colorCameraPos = colorCamera.ProjectPoint(voxelCenterInColorCamera);
+
+              if (!gotChunkPointer)
+              {
+                if (!chunkManager.HasChunk(chunkID))
+                  chunkManager.CreateChunk(chunkID);
+
+                chunk = chunkManager.GetChunk(chunkID);
+                gotChunkPointer = true;
+              }
+
               if(colorCamera.IsPointOnImage(colorCameraPos))
                 {
                   ColorVoxel& colorVoxel = chunk->GetColorVoxelMutable(i);
@@ -188,6 +202,14 @@ namespace chisel
             }
           else if (enableVoxelCarving && surfaceDist > truncation + carvingDist)
             {
+              if (!gotChunkPointer)
+              {
+                if (!chunkManager.HasChunk(chunkID))
+                  chunkManager.CreateChunk(chunkID);
+
+                chunk = chunkManager.GetChunk(chunkID);
+                gotChunkPointer = true;
+              }
               DistVoxel& voxel = chunk->GetDistVoxelMutable(i);
               if (voxel.GetWeight() > 0)
                 {
