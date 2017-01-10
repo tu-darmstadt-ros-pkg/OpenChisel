@@ -717,14 +717,15 @@ namespace chisel
         }
     }
 
-    void ChunkManager::DeleteEmptyChunks()
+    void ChunkManager::DeleteEmptyChunks(const ChunkSet& chunk_set)
     {
       ChunkIDList chunks_to_delete;
-      for (auto chunkPair : *chunks)
+      for (auto chunkPair : chunk_set)
       {
-        ChunkPtr chunk = chunkPair.second;
-        if(!chunk)
+        if (!HasChunk(chunkPair.first))
           continue;
+
+        ChunkPtr chunk = GetChunk(chunkPair.first);
 
         bool chunkContainsData = false;
         for (int i = 0; i < chunk->GetTotalNumVoxels(); i++)
@@ -741,10 +742,7 @@ namespace chisel
         }
       }
 
-      for (ChunkID& id : chunks_to_delete)
-      {
-        deletedChunks->emplace(id, true);
-        RemoveChunk(id);
-      }
+      for (const ChunkID& id : chunks_to_delete)
+        RememberDeletedChunk(id);
     }
 } // namespace chisel 

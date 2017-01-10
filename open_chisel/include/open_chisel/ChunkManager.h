@@ -182,7 +182,7 @@ namespace chisel
             bool GetSDFAndGradient(const Eigen::Vector3f& pos, double* dist, Eigen::Vector3f* grad);
             bool GetSDF(const Eigen::Vector3f& pos, double* dist);
 
-            void DeleteEmptyChunks();
+            void DeleteEmptyChunks(const ChunkSet& chunk_set);
 
             EIGEN_MAKE_ALIGNED_OPERATOR_NEW
         protected:
