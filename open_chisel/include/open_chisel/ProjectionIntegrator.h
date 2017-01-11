@@ -42,7 +42,7 @@ namespace chisel
   {
   public:
     ProjectionIntegrator();
-    ProjectionIntegrator(const TruncatorPtr& t, const WeighterPtr& w, float carvingDist, bool enableCarving, const Vec3List& centroids);
+    ProjectionIntegrator(const TruncatorPtr& t, const WeighterPtr& w, const float maxWeight, float carvingDist, bool enableCarving, const Vec3List& centroids);
     virtual ~ProjectionIntegrator();
 
     bool Integrate(const PointCloud& cloud, const Transform& cameraPose, Chunk* chunk) const;
@@ -104,7 +104,7 @@ namespace chisel
 
             //mutex.unlock();
               DistVoxel& voxel = chunk->GetDistVoxelMutable(i);
-              voxel.Integrate(surfaceDist, weighter->GetWeight(surfaceDist, truncation));
+              voxel.Integrate(surfaceDist, weighter->GetWeight(surfaceDist, truncation), maximumWeight);
               updated = true;
             }
           else if (enableVoxelCarving && surfaceDist > truncation + carvingDist)
@@ -196,7 +196,7 @@ namespace chisel
                 }
 
               DistVoxel& voxel = chunk->GetDistVoxelMutable(i);
-              voxel.Integrate(surfaceDist, weighter->GetWeight(surfaceDist, truncation));
+              voxel.Integrate(surfaceDist, weighter->GetWeight(surfaceDist, truncation), maximumWeight);
 
               updated = true;
             }
@@ -241,12 +241,15 @@ namespace chisel
 
     inline void SetCentroids(const Vec3List& c) { centroids = c; }
 
+    inline void SetMaximumWeight(const float maxWeight){ maximumWeight = maxWeight; }
+
   protected:
     TruncatorPtr truncator;
     WeighterPtr weighter;
     float carvingDist;
     bool enableVoxelCarving;
     Vec3List centroids;
+    float maximumWeight;
   };
 
 } // namespace chisel 

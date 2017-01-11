@@ -48,20 +48,21 @@ namespace chisel
 
             inline float GetWeight() const { return weight; }
             inline void SetWeight(const float& w) { weight = w; }
+            // Sets the new weight, but restricts the maximum weight to enable faster dynamic updates
+            inline void SetWeight(const float& w, const float maxWeight) { weight = std::min(w, maxWeight); }
 
-            inline void Integrate(const float& distUpdate, const float& weightUpdate)
+            inline void Integrate(const float& distUpdate, const float& weightUpdate, const float maxWeight = std::numeric_limits<float>::max())
             {
                 float oldSDF = GetSDF();
                 float oldWeight = GetWeight();
                 float newDist = (oldWeight * oldSDF + weightUpdate * distUpdate) / (weightUpdate + oldWeight);
                 SetSDF(newDist);
-                SetWeight(oldWeight + weightUpdate);
-
+                SetWeight(oldWeight + weightUpdate, maxWeight);
             }
 
             inline void Carve()
             {
-		Reset();
+                Reset();
                 //Integrate(0.0, 1.5);
             }
 

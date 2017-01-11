@@ -30,8 +30,8 @@ namespace chisel
 
   }
 
-  ProjectionIntegrator::ProjectionIntegrator(const TruncatorPtr& t, const WeighterPtr& w, float crvDist, bool enableCrv, const Vec3List& centers) :
-    truncator(t), weighter(w), carvingDist(crvDist), enableVoxelCarving(enableCrv), centroids(centers)
+  ProjectionIntegrator::ProjectionIntegrator(const TruncatorPtr& t, const WeighterPtr& w, const float maxWeight, float crvDist, bool enableCrv, const Vec3List& centers) :
+    truncator(t), weighter(w), maximumWeight(maxWeight), carvingDist(crvDist), enableVoxelCarving(enableCrv), centroids(centers)
   {
 
   }
@@ -87,7 +87,7 @@ namespace chisel
             float weight = weighter->GetWeight(u, truncation);
             if (fabs(u) < truncation)
               {
-                distVoxel.Integrate(u, weight);
+                distVoxel.Integrate(u, weight, maximumWeight);
                 updated = true;
               }
             else if (enableVoxelCarving && u > truncation + carvingDist)
@@ -151,7 +151,7 @@ namespace chisel
         float weight = weighter->GetWeight(u, truncation);
         if (fabs(u) < truncation)
         {
-          distVoxel.Integrate(u, weight);
+          distVoxel.Integrate(u, weight, maximumWeight);
           updatedChunks->emplace(chunkID, true);
         }
     }
@@ -197,7 +197,7 @@ namespace chisel
             float weight = weighter->GetWeight(u, truncation);
             if (fabs(u) < truncation)
               {
-                distVoxel.Integrate(u, weight);
+                distVoxel.Integrate(u, weight, maximumWeight);
                 voxel.Integrate((uint8_t)(color.x() * 255.0f), (uint8_t)(color.y() * 255.0f), (uint8_t)(color.z() * 255.0f), 2);
                 updated = true;
               }
@@ -229,7 +229,7 @@ namespace chisel
 
         if (voxelToIntegrate.GetWeight() > 0 && voxelToIntegrate.GetSDF() <99999)
         {
-          voxel.Integrate(voxelToIntegrate.GetSDF(), voxelToIntegrate.GetWeight());
+          voxel.Integrate(voxelToIntegrate.GetSDF(), voxelToIntegrate.GetWeight(), maximumWeight);
           updated = true;
         }
 
@@ -261,7 +261,7 @@ namespace chisel
 
         if (distVoxelToIntegrate.GetWeight() > 0 && distVoxelToIntegrate.GetSDF() <99999)
         {
-          distVoxel.Integrate(distVoxelToIntegrate.GetSDF(), distVoxelToIntegrate.GetWeight());
+          distVoxel.Integrate(distVoxelToIntegrate.GetSDF(), distVoxelToIntegrate.GetWeight(), maximumWeight);
           colorVoxel.Integrate((uint8_t) colorVoxelToIntegrate.GetRed(), (uint8_t) colorVoxelToIntegrate.GetGreen(), (uint8_t)  colorVoxelToIntegrate.GetBlue(), colorVoxelToIntegrate.GetWeight());
 
           updated = true;
