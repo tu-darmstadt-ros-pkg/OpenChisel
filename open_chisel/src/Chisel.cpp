@@ -155,7 +155,13 @@ namespace chisel
 
     float distance = difference.norm();
 
-    if(distance > maxDist || distance < minDist)
+    bool carveAllRays = true;
+
+    if(distance < minDist)
+    {
+        return;
+    }
+    else if(distance > maxDist && !carveAllRays)
     {
         return;
     }
