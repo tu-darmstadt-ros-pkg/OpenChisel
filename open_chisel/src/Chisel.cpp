@@ -156,13 +156,17 @@ namespace chisel
     float distance = difference.norm();
 
     bool carveAllRays = true;
+    bool integrateRay = true;
 
     if(distance < minDist)
     {
         return;
     }
-    else if(distance > maxDist && !carveAllRays)
+    else if(distance > maxDist)
     {
+      if (carveAllRays)
+        integrateRay = false;
+      else
         return;
     }
 
@@ -181,7 +185,8 @@ namespace chisel
         chunkManager.ClearPassedVoxels(startPoint, truncatedPositiveEnd, &updatedChunks);
     }
 
-    integrator.IntegratePoint(startPoint, endPoint, difference, distance, chunkManager, &updatedChunks);
+    if (integrateRay)
+      integrator.IntegratePoint(startPoint, endPoint, difference, distance, chunkManager, &updatedChunks);
   }
 
   void Chisel::IntegrateChunks(const ProjectionIntegrator& integrator, ChunkManager& sourceChunkManager, ChunkSet& changedChunks)
