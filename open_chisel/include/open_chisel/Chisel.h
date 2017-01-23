@@ -153,10 +153,6 @@ namespace chisel
             unsigned int threadTreshold;
 
         private:
-            Point3 getVoxelCoordinates(VoxelID id, Eigen::Vector3i chunkSize);
-            bool interpolateDistVoxel(const Vec3& voxelPos, ChunkManager& sourceChunkManager, DistVoxel* voxel);
-            bool interpolateGridTrilinear(const Vec3& startPos, const Vec3& endPos, const float& resolution, ChunkManager& sourceChunkManager, ChunkManager& targetChunkManager, const bool& useColor);
-            bool interpolateGridNearestNeighbour(const Vec3& startPos, const Vec3& endPos, const float& resolution, ChunkManager& sourceChunkManager, ChunkManager& stargetChunkManager, const bool& useColor);
             void DetermineMeshesToUpdate(ChunkSet& updatedChunks);
 
 
