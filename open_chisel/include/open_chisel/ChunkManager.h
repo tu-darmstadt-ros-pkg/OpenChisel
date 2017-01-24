@@ -95,7 +95,10 @@ namespace chisel
             {
                 if(HasChunk(chunk))
                 {
+                    RememberDeletedChunk(chunk);
+                    changedChunks->erase(chunk);
                     chunks->erase(chunk);
+
                     return true;
                 }
 
