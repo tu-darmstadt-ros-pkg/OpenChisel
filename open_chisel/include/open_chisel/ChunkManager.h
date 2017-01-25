@@ -56,6 +56,45 @@ namespace chisel
     typedef std::unordered_map<ChunkID, bool, ChunkHasher> ChunkSet;
     typedef std::unordered_map<ChunkID, MeshPtr, ChunkHasher> MeshMap;
 
+    struct IncrementalChanges
+    {
+      ChunkSet deletedChunks;
+      ChunkSet changedChunks;
+      ChunkSet addedChunks;
+
+      IncrementalChanges()
+      {
+      }
+
+      IncrementalChanges(const IncrementalChanges& obj)
+      {
+        deletedChunks.insert(obj.deletedChunks.begin(), obj.deletedChunks.end());
+        changedChunks.insert(obj.changedChunks.begin(), obj.changedChunks.end());
+        addedChunks.insert(obj.addedChunks.begin(), obj.addedChunks.end());
+      }
+
+      ~IncrementalChanges()
+      {
+      }
+
+      void clear()
+      {
+        deletedChunks.clear();
+        changedChunks.clear();
+        addedChunks.clear();
+      }
+
+      ChunkSet merge(ChunkSet& a, ChunkSet& b)
+      {
+        ChunkSet temp(a);
+        temp.insert(b.begin(),b.end());
+        return temp;
+      }
+    };
+
+    typedef boost::shared_ptr<IncrementalChanges> IncrementalChangesPtr;
+    typedef boost::shared_ptr<const IncrementalChanges> IncrementalChangesConstPtr;
+
     class ChunkManager
     {
         public:
@@ -70,10 +109,6 @@ namespace chisel
             inline boost::shared_ptr<const ChunkMap> GetChunksPointer() const { return chunks; }
             inline void SetChunksPointer(boost::shared_ptr<ChunkMap> data) {chunks = data; }
 
-            inline const boost::shared_ptr<ChunkSet> GetChangedChunks() { return changedChunks; }
-            inline const boost::shared_ptr<ChunkSet> GetDeletedChunks() { return deletedChunks; }
-            inline void ClearChangedChunks() { changedChunks->clear(); }
-            inline void ClearDeletedChunks() { deletedChunks->clear(); }
             inline const Vec3& GetRoundingFactor() const { return roundingFactor; }
 
             inline bool HasChunk(const ChunkID& chunk) const
@@ -95,8 +130,9 @@ namespace chisel
             {
                 if(HasChunk(chunk))
                 {
-                    RememberDeletedChunk(chunk);
-                    changedChunks->erase(chunk);
+                    incrementalChanges->deletedChunks.emplace(ChunkID(chunk), true);
+                    incrementalChanges->changedChunks.erase(chunk);
+                    incrementalChanges->addedChunks.erase(chunk);
                     chunks->erase(chunk);
 
                     return true;
@@ -137,9 +173,6 @@ namespace chisel
               this->maxThreads = maxThreads;
               this->threadTreshold = threadTreshold;
             }
-
-            inline void RememberChangedChunk(const ChunkID& id) { changedChunks->emplace(id, true); }
-            inline void RememberDeletedChunk(const ChunkID& id) { deletedChunks->emplace(id, true); }
 
             const DistVoxel* GetDistanceVoxel(const Vec3& pos) const;
             DistVoxel* GetDistanceVoxelMutable(const Vec3& pos);
@@ -187,6 +220,9 @@ namespace chisel
 
             void DeleteEmptyChunks(const ChunkSet& chunk_set);
 
+            IncrementalChangesPtr getIncrementalChanges(){ return incrementalChanges; }
+            void clearIncrementalChanges(){ incrementalChanges->clear(); }
+
             EIGEN_MAKE_ALIGNED_OPERATOR_NEW
         protected:
             boost::shared_ptr<ChunkMap> chunks;
@@ -198,8 +234,7 @@ namespace chisel
             bool useColor;
             unsigned int maxThreads;
             unsigned int threadTreshold;
-            boost::shared_ptr<ChunkSet> deletedChunks;
-            boost::shared_ptr<ChunkSet> changedChunks;
+            IncrementalChangesPtr incrementalChanges;
 
         private:
             Vec3 roundingFactor;
@@ -207,10 +242,9 @@ namespace chisel
 
     typedef boost::shared_ptr<ChunkManager> ChunkManagerPtr;
     typedef boost::shared_ptr<const ChunkManager> ChunkManagerConstPtr;
+
     typedef boost::shared_ptr<ChunkSet> ChunkSetPtr;
     typedef boost::shared_ptr<const ChunkSet> ChunkSetConstPtr;
-
-
 } // namespace chisel 
 
 #endif // CHUNKMANAGER_H_ 

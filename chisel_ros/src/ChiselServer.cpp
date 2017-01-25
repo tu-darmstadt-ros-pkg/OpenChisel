@@ -641,7 +641,7 @@ namespace chisel_ros
     {
 
         chisel::ChunkManager& chunkManager = chiselMap->GetMutableChunkManager();
-        const chisel::ChunkSet& latestChunks = *(chunkManager.GetChangedChunks());
+        const chisel::ChunkSet& latestChunks = chunkManager.getIncrementalChanges()->changedChunks;
 
         int i = 0;
 
@@ -658,14 +658,15 @@ namespace chisel_ros
             }
         }
 
-        chunkManager.ClearChangedChunks();
+        chunkManager.getIncrementalChanges()->changedChunks.clear();
+
         return true;
     }
 
     bool ChiselServer::GetDeletedChunks(chisel_msgs::GetDeletedChunksService::Request& request, chisel_msgs::GetDeletedChunksService::Response& response)
     {
         chisel::ChunkManager& chunkManager = chiselMap->GetMutableChunkManager();
-        const chisel::ChunkSet& deletedChunks =  *(chunkManager.GetDeletedChunks());
+        const chisel::ChunkSet& deletedChunks =  chunkManager.getIncrementalChanges()->deletedChunks;
 
         int i = 0;
 
@@ -687,7 +688,7 @@ namespace chisel_ros
               i++;
         }
 
-        chunkManager.ClearDeletedChunks();
+        chunkManager.getIncrementalChanges()->deletedChunks.clear();
 
         return true;
     }

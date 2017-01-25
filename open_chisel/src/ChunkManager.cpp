@@ -39,8 +39,7 @@ namespace chisel
         threadTreshold = 500;
         chunks = boost::make_shared<ChunkMap>();
         allMeshes = boost::make_shared<MeshMap>();
-        deletedChunks = boost::make_shared<ChunkSet>();
-        changedChunks = boost::make_shared<ChunkSet>();
+        incrementalChanges = boost::make_shared<IncrementalChanges>();
         roundingFactor = (chunkSize.cast<float>() * voxelResolutionMeters).cwiseInverse();
     }
 
@@ -57,8 +56,7 @@ namespace chisel
         threadTreshold = 500;
         chunks = boost::make_shared<ChunkMap>();
         allMeshes = boost::make_shared<MeshMap>();
-        deletedChunks = boost::make_shared<ChunkSet>();
-        changedChunks = boost::make_shared<ChunkSet>();
+        incrementalChanges = boost::make_shared<IncrementalChanges>();
         roundingFactor = (chunkSize.cast<float>() * voxelResolutionMeters).cwiseInverse();
     }
 
@@ -163,15 +161,14 @@ namespace chisel
     void ChunkManager::CreateChunk(const ChunkID& id)
     {
         AddChunk(boost::allocate_shared<Chunk>(Eigen::aligned_allocator<Chunk>(), id, chunkSize, voxelResolutionMeters, useColor));
-        RememberChangedChunk(id);
+        incrementalChanges->addedChunks.emplace(id, true);
     }
 
     void ChunkManager::Reset()
     {
         allMeshes->clear();
         chunks->clear();
-        deletedChunks->clear();
-        changedChunks->clear();
+        incrementalChanges->clear();
     }
 
     void ChunkManager::GetChunkIDsIntersecting(const Frustum& frustum, ChunkIDList* chunkList)

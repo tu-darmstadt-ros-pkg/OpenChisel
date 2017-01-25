@@ -193,7 +193,7 @@ namespace chisel
   {
     for(auto& chunk : updatedChunks)
     {
-      chunkManager.RememberChangedChunk(chunk.first);
+      chunkManager.getIncrementalChanges()->changedChunks.emplace(chunk.first, true);
 
       for (int dx = -1; dx <= 1; dx++)
       {
