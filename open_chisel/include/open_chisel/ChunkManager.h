@@ -59,7 +59,7 @@ namespace chisel
     struct IncrementalChanges
     {
       ChunkSet deletedChunks;
-      ChunkSet changedChunks;
+      ChunkSet updatedChunks;
       ChunkSet addedChunks;
 
       IncrementalChanges()
@@ -69,7 +69,7 @@ namespace chisel
       IncrementalChanges(const IncrementalChanges& obj)
       {
         deletedChunks.insert(obj.deletedChunks.begin(), obj.deletedChunks.end());
-        changedChunks.insert(obj.changedChunks.begin(), obj.changedChunks.end());
+        updatedChunks.insert(obj.updatedChunks.begin(), obj.updatedChunks.end());
         addedChunks.insert(obj.addedChunks.begin(), obj.addedChunks.end());
       }
 
@@ -80,7 +80,7 @@ namespace chisel
       void clear()
       {
         deletedChunks.clear();
-        changedChunks.clear();
+        updatedChunks.clear();
         addedChunks.clear();
       }
 
@@ -130,9 +130,7 @@ namespace chisel
             {
                 if(HasChunk(chunk))
                 {
-                    incrementalChanges->deletedChunks.emplace(ChunkID(chunk), true);
-                    incrementalChanges->changedChunks.erase(chunk);
-                    incrementalChanges->addedChunks.erase(chunk);
+                    RememberDeletedChunk(chunk);
                     chunks->erase(chunk);
 
                     return true;
@@ -220,8 +218,12 @@ namespace chisel
 
             void DeleteEmptyChunks(const ChunkSet& chunk_set);
 
-            IncrementalChangesPtr getIncrementalChanges(){ return incrementalChanges; }
+            IncrementalChangesConstPtr getIncrementalChanges(){ return incrementalChanges; }
             void clearIncrementalChanges(){ incrementalChanges->clear(); }
+
+            void RememberAddedChunk(const ChunkID& chunkID);
+            void RememberUpdatedChunk(const ChunkID& chunkID);
+            void RememberDeletedChunk(const ChunkID& chunkID);
 
             EIGEN_MAKE_ALIGNED_OPERATOR_NEW
         protected:

@@ -73,7 +73,7 @@ namespace chisel
                         mutex.lock();
                         if (needsUpdate)
                         {
-                            chunkManager.getIncrementalChanges()->changedChunks.emplace(chunkID, true);
+                            chunkManager.RememberUpdatedChunk(chunkID);
 
                             for (int dx = -1; dx <= 1; dx++)
                             {
@@ -112,7 +112,7 @@ namespace chisel
                         mutex.lock();
                         if (needsUpdate)
                         {
-                            chunkManager.getIncrementalChanges()->changedChunks.emplace(chunkID, true);
+                            chunkManager.RememberUpdatedChunk(chunkID);
 
                             for (int dx = -1; dx <= 1; dx++)
                             {

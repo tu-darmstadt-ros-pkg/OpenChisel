@@ -421,6 +421,8 @@ namespace chisel_ros
     {
         if (!IsPaused() && depthCamera.gotInfo && depthCamera.gotPose && lastDepthImage.get())
         {
+            chiselMap->GetMutableChunkManager().clearIncrementalChanges();
+
             if(useColor)
             {
                 chiselMap->IntegrateDepthScanColor<DepthData, ColorData>(projectionIntegrator,  lastDepthImage, depthCamera.lastPose, depthCamera.cameraModel, lastColorImage, colorCamera.lastPose, colorCamera.cameraModel);
@@ -441,6 +443,8 @@ namespace chisel_ros
     {
         if (!IsPaused()  && pointcloudTopic.gotPose && lastPointCloud.get())
         {
+            chiselMap->GetMutableChunkManager().clearIncrementalChanges();
+
             chiselMap->IntegratePointCloud(projectionIntegrator, *lastPointCloud, pointcloudTopic.lastPose, nearPlaneDist, farPlaneDist);
             //chiselMap->IntegratePointCloud(projectionIntegrator, *lastPointCloud, pointcloudTopic.lastPose, 0.1f, nearPlaneDist, farPlaneDist);
             //PublishLatestChunkBoxes();
@@ -641,7 +645,7 @@ namespace chisel_ros
     {
 
         chisel::ChunkManager& chunkManager = chiselMap->GetMutableChunkManager();
-        const chisel::ChunkSet& latestChunks = chunkManager.getIncrementalChanges()->changedChunks;
+        const chisel::ChunkSet& latestChunks = chunkManager.getIncrementalChanges()->updatedChunks;
 
         int i = 0;
 
@@ -657,8 +661,6 @@ namespace chisel_ros
               i++;
             }
         }
-
-        chunkManager.getIncrementalChanges()->changedChunks.clear();
 
         return true;
     }
@@ -687,8 +689,6 @@ namespace chisel_ros
 
               i++;
         }
-
-        chunkManager.getIncrementalChanges()->deletedChunks.clear();
 
         return true;
     }

@@ -161,7 +161,7 @@ namespace chisel
     void ChunkManager::CreateChunk(const ChunkID& id)
     {
         AddChunk(boost::allocate_shared<Chunk>(Eigen::aligned_allocator<Chunk>(), id, chunkSize, voxelResolutionMeters, useColor));
-        incrementalChanges->addedChunks.emplace(id, true);
+        RememberAddedChunk(id);
     }
 
     void ChunkManager::Reset()
@@ -739,4 +739,22 @@ namespace chisel
         }
       }
     }
+
+    void ChunkManager::RememberAddedChunk(const ChunkID& chunkID)
+    {
+      incrementalChanges->addedChunks.emplace(chunkID, true);
+    }
+
+    void ChunkManager::RememberUpdatedChunk(const ChunkID& chunkID)
+    {
+      incrementalChanges->updatedChunks.emplace(chunkID, true);
+    }
+
+    void ChunkManager::RememberDeletedChunk(const ChunkID& chunkID)
+    {
+      incrementalChanges->deletedChunks.emplace(ChunkID(chunkID), true);
+      incrementalChanges->updatedChunks.erase(chunkID);
+      incrementalChanges->addedChunks.erase(chunkID);
+    }
+
 } // namespace chisel 
