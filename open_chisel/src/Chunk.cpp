@@ -78,6 +78,15 @@ namespace chisel
                      static_cast<int>(std::floor(relativeCoords(2) * roundingFactor)));
     }
 
+    Vec3 Chunk::GetWorldCoords(const VoxelID& voxelID) const
+    {
+      Point3 voxelCoods(voxelID % numVoxels(0),
+                        voxelID / numVoxels(0) % numVoxels(1),
+                        voxelID / (numVoxels(0)*numVoxels(1)));
+
+      return voxelCoods.cast<float>() * voxelResolutionMeters + origin;
+    }
+
     VoxelID Chunk::GetVoxelID(const Vec3& relativePos) const
     {
         return GetVoxelID(GetVoxelCoords(relativePos));

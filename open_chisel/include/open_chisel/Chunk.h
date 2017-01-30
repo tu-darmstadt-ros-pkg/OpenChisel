@@ -73,6 +73,8 @@ namespace chisel
 
             Point3 GetVoxelCoords(const Vec3& relativeCoords) const;
 
+            Vec3 GetWorldCoords(const VoxelID& voxelID) const;
+
             inline VoxelID GetVoxelID(const Point3& coords) const
             {
                 return GetVoxelID(coords.x(), coords.y(), coords.z());
