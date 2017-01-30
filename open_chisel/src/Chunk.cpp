@@ -69,20 +69,19 @@ namespace chisel
         return AABB(pos, pos + size);
     }
 
-    Point3 Chunk::GetVoxelCoords(const Vec3& worldCoords) const
+    Point3 Chunk::GetVoxelCoords(const Vec3& relativeCoords) const
     {
       const float roundingFactor = 1.0f / (voxelResolutionMeters);
 
-      return Point3( static_cast<int>(std::floor(worldCoords(0) * roundingFactor)),
-                     static_cast<int>(std::floor(worldCoords(1) * roundingFactor)),
-                     static_cast<int>(std::floor(worldCoords(2) * roundingFactor)));
+      return Point3( static_cast<int>(std::floor(relativeCoords(0) * roundingFactor)),
+                     static_cast<int>(std::floor(relativeCoords(1) * roundingFactor)),
+                     static_cast<int>(std::floor(relativeCoords(2) * roundingFactor)));
     }
 
-    VoxelID Chunk::GetVoxelID(const Vec3& worldPos) const
+    VoxelID Chunk::GetVoxelID(const Vec3& relativePos) const
     {
-        return GetVoxelID(GetVoxelCoords(worldPos));
+        return GetVoxelID(GetVoxelCoords(relativePos));
     }
-
 
     void Chunk::ComputeStatistics(ChunkStatistics* stats)
     {
@@ -113,21 +112,15 @@ namespace chisel
         }
     }
 
-    Vec3 Chunk::GetColorAt(const Vec3& pos)
+    Vec3 Chunk::GetColorAt(const Vec3& relativedPos)
     {
-        if(ComputeBoundingBox().Contains(pos))
-        {
-            Vec3 chunkPos = (pos - origin) / voxelResolutionMeters;
-            int chunkX = static_cast<int>(chunkPos(0));
-            int chunkY = static_cast<int>(chunkPos(1));
-            int chunkZ = static_cast<int>(chunkPos(2));
+        Point3 coords = GetVoxelCoords(relativedPos);
 
-            if(IsCoordValid(chunkX, chunkY, chunkZ))
-            {
-                const ColorVoxel& color = GetColorVoxel(chunkX, chunkY, chunkZ);
-                float maxVal = static_cast<float>(std::numeric_limits<uint8_t>::max());
-                return Vec3(static_cast<float>(color.GetRed()) / maxVal, static_cast<float>(color.GetGreen()) / maxVal, static_cast<float>(color.GetBlue()) / maxVal);
-            }
+        if (IsCoordValid(coords.x(), coords.y(), coords.z()))
+        {
+            const ColorVoxel& color = GetColorVoxel(coords.x(), coords.y(), coords.z());
+            float maxVal = static_cast<float>(std::numeric_limits<uint8_t>::max());
+            return Vec3(static_cast<float>(color.GetRed()) / maxVal, static_cast<float>(color.GetGreen()) / maxVal, static_cast<float>(color.GetBlue()) / maxVal);
         }
 
         return Vec3::Zero();

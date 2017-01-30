@@ -61,6 +61,7 @@ namespace chisel
       ChunkSet deletedChunks;
       ChunkSet updatedChunks;
       ChunkSet addedChunks;
+      /// TODO: Store VoxelChanges; Add Pointer to added and updated chunks
 
       IncrementalChanges()
       {
@@ -84,11 +85,16 @@ namespace chisel
         addedChunks.clear();
       }
 
-      ChunkSet merge(ChunkSet& a, ChunkSet& b)
+      ChunkSet merge(const ChunkSet& a, const ChunkSet& b) const
       {
         ChunkSet temp(a);
-        temp.insert(b.begin(),b.end());
+        temp.insert(b.begin(), b.end());
         return temp;
+      }
+
+      inline ChunkSet getChangedChunks() const
+      {
+        return merge(addedChunks, updatedChunks);
       }
     };
 
@@ -193,8 +199,20 @@ namespace chisel
 
             inline const MeshMap& GetAllMeshes() const { return *allMeshes; }
             inline MeshMap& GetAllMutableMeshes() { return *allMeshes; }
-            inline const MeshPtr& GetMesh(const ChunkID& chunkID) const { return allMeshes->at(chunkID); }
-            inline MeshPtr& GetMutableMesh(const ChunkID& chunkID) { return allMeshes->at(chunkID); }
+            inline MeshConstPtr GetMesh(const ChunkID& chunkID) const
+            {
+              auto itr = allMeshes->find(chunkID);
+              if (itr != allMeshes->end())
+                return itr->second;
+              return MeshConstPtr();
+            }
+            inline MeshPtr GetMutableMesh(const ChunkID& chunkID)
+            {
+              auto itr = allMeshes->find(chunkID);
+              if (itr != allMeshes->end())
+                return itr->second;
+              return MeshPtr();
+            }
             inline bool HasMesh(const ChunkID& chunkID) const { return allMeshes->find(chunkID) != allMeshes->end(); }
 
             inline bool GetUseColor() { return useColor; }

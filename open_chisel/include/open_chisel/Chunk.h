@@ -71,7 +71,7 @@ namespace chisel
             inline const ColorVoxel& GetColorVoxel(const VoxelID& voxelID) const { return colors.at(voxelID); }
             inline ColorVoxel& GetColorVoxelMutable(const VoxelID& voxelID) { return colors.at(voxelID); }
 
-            Point3 GetVoxelCoords(const Vec3& worldCoords) const;
+            Point3 GetVoxelCoords(const Vec3& relativeCoords) const;
 
             inline VoxelID GetVoxelID(const Point3& coords) const
             {
@@ -116,7 +116,7 @@ namespace chisel
 
             inline const std::vector<ColorVoxel>& GetColorVoxels() const
             {
-                    return colors;
+                return colors;
             }
 
             void ComputeStatistics(ChunkStatistics* stats);
@@ -125,9 +125,9 @@ namespace chisel
 
             inline const Vec3& GetOrigin() { return origin; }
 
-            Vec3 GetColorAt(const Vec3& pos);
+            Vec3 GetColorAt(const Vec3& relativedPos);
 
-            VoxelID GetVoxelID(const Vec3& worldPos) const;
+            VoxelID GetVoxelID(const Vec3& relativePos) const;
 
         protected:
             ChunkID ID;

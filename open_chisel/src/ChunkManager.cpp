@@ -118,7 +118,7 @@ namespace chisel
         }
         else
         {
-            mesh = GetMesh(chunkID);
+            mesh = GetMutableMesh(chunkID);
         }
 
 
@@ -504,7 +504,7 @@ namespace chisel
             else
             {
                 const ChunkPtr& chunk = GetChunk(chunkID);
-                return chunk->GetColorAt(colorPos);
+                return chunk->GetColorAt(colorPos - chunk->GetOrigin());
             }
         }
 
