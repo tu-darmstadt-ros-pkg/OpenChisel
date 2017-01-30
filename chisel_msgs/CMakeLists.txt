@@ -7,6 +7,8 @@ SET(CMAKE_BUILD_TYPE Release)
 add_message_files(FILES
   ChunkMessage.msg
   ChunkListMessage.msg
+  IncrementalChangesMessage.msg
+  ChunkMapMessage.msg
 )
 
 add_service_files(FILES
