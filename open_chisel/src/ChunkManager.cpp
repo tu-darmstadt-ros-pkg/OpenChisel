@@ -143,14 +143,14 @@ namespace chisel
     void ChunkManager::RecomputeMeshes(const ChunkSet& chunks)
     {
 
-        if (chunkMeshes.empty())
+        if (chunks.empty())
         {
             return;
         }
 
         std::mutex mutex;
 
-        for(auto iter=chunkMeshes.begin(); iter!=chunkMeshes.end(); iter++)
+        for(auto iter=chunks.begin(); iter!=chunks.end(); iter++)
         //parallel_for(chunkMeshes.begin(), chunkMeshes.end(), [&](const ChunkID& chunkID)
         {
             RecomputeMesh(iter->first, mutex);
@@ -161,14 +161,14 @@ namespace chisel
     void ChunkManager::RecomputeMeshes(const ChunkMap& chunks)
     {
 
-        if (chunkMeshes.empty())
+        if (chunks.empty())
         {
             return;
         }
 
         std::mutex mutex;
 
-        for(auto iter=chunkMeshes.begin(); iter!=chunkMeshes.end(); iter++)
+        for(auto iter=chunks.begin(); iter!=chunks.end(); iter++)
         //parallel_for(chunkMeshes.begin(), chunkMeshes.end(), [&](const ChunkID& chunkID)
         {
             RecomputeMesh(iter->first, mutex);
