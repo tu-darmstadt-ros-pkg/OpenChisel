@@ -140,7 +140,25 @@ namespace chisel
         mutex.unlock();
     }
 
-    void ChunkManager::RecomputeMeshes(const ChunkSet& chunkMeshes)
+    void ChunkManager::RecomputeMeshes(const ChunkSet& chunks)
+    {
+
+        if (chunkMeshes.empty())
+        {
+            return;
+        }
+
+        std::mutex mutex;
+
+        for(auto iter=chunkMeshes.begin(); iter!=chunkMeshes.end(); iter++)
+        //parallel_for(chunkMeshes.begin(), chunkMeshes.end(), [&](const ChunkID& chunkID)
+        {
+            RecomputeMesh(iter->first, mutex);
+        }
+        //);
+    }
+
+    void ChunkManager::RecomputeMeshes(const ChunkMap& chunks)
     {
 
         if (chunkMeshes.empty())
@@ -160,8 +178,9 @@ namespace chisel
 
     void ChunkManager::CreateChunk(const ChunkID& id)
     {
-        AddChunk(boost::allocate_shared<Chunk>(Eigen::aligned_allocator<Chunk>(), id, chunkSize, voxelResolutionMeters, useColor));
-        RememberAddedChunk(id);
+        ChunkPtr chunk = boost::allocate_shared<Chunk>(Eigen::aligned_allocator<Chunk>(), id, chunkSize, voxelResolutionMeters, useColor);
+        AddChunk(chunk);
+        RememberAddedChunk(chunk);
     }
 
     void ChunkManager::Reset()
@@ -715,7 +734,7 @@ namespace chisel
         }
     }
 
-    void ChunkManager::DeleteEmptyChunks(const ChunkSet& chunk_set)
+    void ChunkManager::DeleteEmptyChunks(const ChunkMap& chunk_set)
     {
       for (const auto& chunkPair : chunk_set)
       {
@@ -742,12 +761,22 @@ namespace chisel
 
     void ChunkManager::RememberAddedChunk(const ChunkID& chunkID)
     {
-      incrementalChanges->addedChunks.emplace(chunkID, true);
+      incrementalChanges->addedChunks.emplace(chunkID, GetChunk(chunkID));
+    }
+
+    void ChunkManager::RememberAddedChunk(ChunkPtr chunk)
+    {
+      incrementalChanges->addedChunks.emplace(chunk->GetID(), chunk);
     }
 
     void ChunkManager::RememberUpdatedChunk(const ChunkID& chunkID)
     {
-      incrementalChanges->updatedChunks.emplace(chunkID, true);
+      incrementalChanges->updatedChunks.emplace(chunkID, GetChunk(chunkID));
+    }
+
+    void ChunkManager::RememberUpdatedChunk(ChunkPtr chunk)
+    {
+      incrementalChanges->updatedChunks.emplace(chunk->GetID(), chunk);
     }
 
     void ChunkManager::RememberDeletedChunk(const ChunkID& chunkID)

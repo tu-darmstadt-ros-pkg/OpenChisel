@@ -645,7 +645,7 @@ namespace chisel_ros
     {
 
         chisel::ChunkManager& chunkManager = chiselMap->GetMutableChunkManager();
-        const chisel::ChunkSet& latestChunks = chunkManager.getIncrementalChanges()->updatedChunks;
+        const chisel::ChunkSet& latestChunks = chunkManager.getIncrementalChanges()->getChunkSet(chunkManager.getIncrementalChanges()->getChangedChunks());
 
         int i = 0;
 

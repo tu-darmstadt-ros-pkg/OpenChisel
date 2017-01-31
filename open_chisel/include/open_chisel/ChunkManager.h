@@ -59,9 +59,9 @@ namespace chisel
     struct IncrementalChanges
     {
       ChunkSet deletedChunks;
-      ChunkSet updatedChunks;
-      ChunkSet addedChunks;
-      /// TODO: Store VoxelChanges; Add Pointer to added and updated chunks
+      ChunkMap updatedChunks;
+      ChunkMap addedChunks;
+      /// TODO: Store VoxelChanges
 
       IncrementalChanges()
       {
@@ -85,16 +85,46 @@ namespace chisel
         addedChunks.clear();
       }
 
-      ChunkSet merge(const ChunkSet& a, const ChunkSet& b) const
+      ChunkMap merge(const ChunkMap& a, const ChunkMap& b) const
       {
-        ChunkSet temp(a);
+        ChunkMap temp(a);
         temp.insert(b.begin(), b.end());
         return temp;
       }
 
-      inline ChunkSet getChangedChunks() const
+      ChunkSet mergeToSet(const ChunkMap& a, const ChunkMap& b) const
+      {
+        ChunkSet chunkset;
+
+        for (const auto& chunk : a)
+          chunkset.emplace(chunk.first, true);
+
+        for (const auto& chunk : b)
+          chunkset.emplace(chunk.first, true);
+
+        return chunkset;
+      }
+
+      inline ChunkMap getChangedChunks() const
       {
         return merge(addedChunks, updatedChunks);
+      }
+
+      inline ChunkMap getAddedChunks() const
+      {
+        return addedChunks;
+      }
+
+      inline ChunkSet getChunkSet(const ChunkMap& chunks) const
+      {
+        ChunkSet chunkset;
+
+        for (auto& chunk: chunks)
+        {
+          chunkset.emplace(chunk.first, true);
+        }
+
+        return chunkset;
       }
     };
 
@@ -138,6 +168,8 @@ namespace chisel
                 {
                     RememberDeletedChunk(chunk);
                     chunks->erase(chunk);
+
+                    //call chunk destructor?
 
                     return true;
                 }
@@ -220,6 +252,7 @@ namespace chisel
 
             void RecomputeMesh(const ChunkID& chunkID, std::mutex& mutex);
             void RecomputeMeshes(const ChunkSet& chunks);
+            void RecomputeMeshes(const ChunkMap& chunks);
             void ComputeNormalsFromGradients(Mesh* mesh);
 
             inline const Eigen::Vector3i& GetChunkSize() const { return chunkSize; }
@@ -234,13 +267,17 @@ namespace chisel
             bool GetSDFAndGradient(const Eigen::Vector3f& pos, double* dist, Eigen::Vector3f* grad);
             bool GetSDF(const Eigen::Vector3f& pos, double* dist);
 
-            void DeleteEmptyChunks(const ChunkSet& chunk_set);
+            void DeleteEmptyChunks(const ChunkMap& chunk_set);
 
             IncrementalChangesConstPtr getIncrementalChanges(){ return incrementalChanges; }
             void clearIncrementalChanges(){ incrementalChanges->clear(); }
 
             void RememberAddedChunk(const ChunkID& chunkID);
+            void RememberAddedChunk(ChunkPtr chunk);
+
             void RememberUpdatedChunk(const ChunkID& chunkID);
+            void RememberUpdatedChunk(ChunkPtr chunk);
+
             void RememberDeletedChunk(const ChunkID& chunkID);
 
             EIGEN_MAKE_ALIGNED_OPERATOR_NEW
