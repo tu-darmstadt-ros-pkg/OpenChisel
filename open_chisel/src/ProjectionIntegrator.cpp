@@ -107,6 +107,7 @@ namespace chisel
   {
     const float resolution = chunkManager.GetResolution();
     const float roundingFactor = 1.0f / resolution;
+    const float halfDiag = 0.5 * sqrt(3.0f) * resolution;
 
     const float truncation = truncator->GetTruncationDistance(distance);
     const Vec3 truncationOffset = direction.normalized() * truncation;
@@ -118,8 +119,6 @@ namespace chisel
     Point3List raycastVoxels;
 
     Raycast(start, end, raycastVoxels);
-
-    //printf("raycastVoxels size: %d \n", raycastVoxels.size());
 
     for (const Point3& voxelCoords : raycastVoxels)
     {
@@ -141,7 +140,7 @@ namespace chisel
         const Vec3& centroid = centroids[id] + origin;
         float u = distance - (centroid - sensorOrigin).norm();
         float weight = weighter->GetWeight(u, truncation);
-        if (fabs(u) < truncation)
+        if (fabs(u) < truncation + halfDiag)
         {
           distVoxel.Integrate(u, weight, maximumWeight);
           updatedChunks->emplace(chunkID, true);
