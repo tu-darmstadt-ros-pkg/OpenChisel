@@ -32,8 +32,8 @@ namespace chisel
         public:
             ConstantTruncator() = default;
 
-            ConstantTruncator(float value) :
-                truncationDistance(value)
+            ConstantTruncator(float truncation, float scale) :
+                truncationDistance(truncation), scalingFactor(scale)
             {
 
             }
@@ -47,11 +47,12 @@ namespace chisel
 
             float GetTruncationDistance(float reading) const
             {
-                return truncationDistance;
+                return truncationDistance * scalingFactor;
             }
 
         protected:
             float truncationDistance;
+            float scalingFactor;
 
     };
     typedef boost::shared_ptr<ConstantTruncator> ConstantTruncatorPtr;
