@@ -703,12 +703,7 @@ namespace chisel
         const Vec3 startRounded = start * roundingFactor;
         const Vec3 endRounded = end * roundingFactor;
 
-        //estimate maximum number of voxels visited by ray section
-        int maxNumVoxels = (int) ((startRounded-endRounded).norm() / voxelResolutionMeters) / 9; //TODO find better estimate
-
-        maxNumVoxels = std::max(maxNumVoxels, 50);
-        Point3List passedVoxels(maxNumVoxels);
-
+        Point3List passedVoxels;
         Raycast(startRounded, endRounded, passedVoxels);
 
         const Vec3 voxelShift (0.5 * voxelResolutionMeters, 0.5 * voxelResolutionMeters, 0.5 * voxelResolutionMeters);

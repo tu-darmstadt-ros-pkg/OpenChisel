@@ -172,25 +172,17 @@ void Raycast(const chisel::Vec3& start, const chisel::Vec3& end, chisel::Point3L
   // Avoids an infinite loop.
   if (stepX == 0 && stepY == 0 && stepZ == 0)
   {
-      output.resize(0);
       return;
   }
 
   Point3 point = Point3(x,y,z);
 
-  int voxelCount = 0;
-
   while (true)
   {
-      output[voxelCount] = point;
-      voxelCount++;
-      //output->push_back(point);
+      output.push_back(point);
 
       if(point(0) == endX && point(1) == endY && point(2) == endZ)
       {
-        //only keep entries containing valid voxels
-        output.resize(voxelCount);
-
         break;
       }
 

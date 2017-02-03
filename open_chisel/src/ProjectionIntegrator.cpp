@@ -115,15 +115,7 @@ namespace chisel
 
     const Vec3 voxelShift(0.5 * resolution, 0.5 * resolution, 0.5 * resolution);
 
-    //estimate maximum number of voxels visited by ray section
-    int maxNumVoxels = (int)(start-end).norm() * roundingFactor;
-
-    //printf("estimated size: %d \n", maxNumVoxels);
-
-
-    maxNumVoxels = std::max(maxNumVoxels, 10);
-
-    Point3List raycastVoxels(maxNumVoxels);
+    Point3List raycastVoxels;
 
     Raycast(start, end, raycastVoxels);
 
