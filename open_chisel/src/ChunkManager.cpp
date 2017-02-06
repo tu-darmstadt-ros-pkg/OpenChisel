@@ -444,7 +444,7 @@ namespace chisel
         assert(mesh->vertices.size() == mesh->indices.size());
     }
 
-    bool ChunkManager::GetSDFAndGradient(const Eigen::Vector3f& pos, double* dist, Eigen::Vector3f* grad)
+    bool ChunkManager::GetSDFAndGradient(const Eigen::Vector3f& pos, double* dist, Eigen::Vector3f* grad) const
     {
         Eigen::Vector3f posf = Eigen::Vector3f(std::floor(pos.x() / voxelResolutionMeters) * voxelResolutionMeters + voxelResolutionMeters / 2.0f,
                 std::floor(pos.y() / voxelResolutionMeters) * voxelResolutionMeters + voxelResolutionMeters / 2.0f,
@@ -464,9 +464,9 @@ namespace chisel
         return true;
     }
 
-    bool ChunkManager::GetSDF(const Eigen::Vector3f& posf, double* dist)
+    bool ChunkManager::GetSDF(const Eigen::Vector3f& posf, double* dist) const
     {
-        chisel::ChunkPtr chunk = GetChunkAt(posf);
+        chisel::ChunkConstPtr chunk = GetChunkAt(posf);
         if(chunk)
         {
             Eigen::Vector3f relativePos = posf - chunk->GetOrigin();

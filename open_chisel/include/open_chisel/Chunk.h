@@ -125,7 +125,7 @@ namespace chisel
 
             AABB ComputeBoundingBox();
 
-            inline const Vec3& GetOrigin() { return origin; }
+            inline const Vec3& GetOrigin() const { return origin; }
 
             Vec3 GetColorAt(const Vec3& relativedPos);
 

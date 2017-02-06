@@ -154,7 +154,11 @@ namespace chisel
 
             inline ChunkPtr GetChunk(const ChunkID& chunk) const
             {
-                return chunks->at(chunk);
+                auto itr = chunks->find(chunk);
+                if (itr != chunks->end())
+                  return itr->second;
+
+                return ChunkPtr();
             }
 
             inline void AddChunk(const ChunkPtr& chunk)
@@ -185,16 +189,9 @@ namespace chisel
             inline bool HasChunk(int x, int y, int z) const { return HasChunk(ChunkID(x, y, z)); }
             inline ChunkPtr GetChunk(int x, int y, int z) const { return GetChunk(ChunkID(x, y, z)); }
 
-            inline ChunkPtr GetChunkAt(const Vec3& pos)
+            inline ChunkPtr GetChunkAt(const Vec3& pos) const
             {
-                ChunkID id = GetIDAt(pos);
-
-                if (HasChunk(id))
-                {
-                    return GetChunk(id);
-                }
-
-                return ChunkPtr();
+                return GetChunk(GetIDAt(pos));
             }
 
             inline ChunkID GetIDAt(const Vec3& pos) const
@@ -264,8 +261,8 @@ namespace chisel
 
             void Reset();
 
-            bool GetSDFAndGradient(const Eigen::Vector3f& pos, double* dist, Eigen::Vector3f* grad);
-            bool GetSDF(const Eigen::Vector3f& pos, double* dist);
+            bool GetSDFAndGradient(const Eigen::Vector3f& pos, double* dist, Eigen::Vector3f* grad) const;
+            bool GetSDF(const Eigen::Vector3f& pos, double* dist) const;
 
             void DeleteEmptyChunks(const ChunkMap& chunk_set);
 
