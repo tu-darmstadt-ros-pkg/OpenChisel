@@ -23,6 +23,7 @@
 #define CHUNKMANAGER_H_
 
 #include <unordered_map>
+#include <unordered_set>
 #include <mutex>
 #include <open_chisel/geometry/Geometry.h>
 #include <open_chisel/mesh/Mesh.h>
@@ -55,13 +56,17 @@ namespace chisel
     typedef std::unordered_map<ChunkID, ChunkPtr, ChunkHasher> ChunkMap;
     typedef std::unordered_map<ChunkID, bool, ChunkHasher> ChunkSet;
     typedef std::unordered_map<ChunkID, MeshPtr, ChunkHasher> MeshMap;
+    typedef std::unordered_map<ChunkID, std::unordered_set<int>, ChunkHasher> ChunkVoxelSet;
 
     struct IncrementalChanges
     {
       ChunkSet deletedChunks;
       ChunkMap updatedChunks;
       ChunkMap addedChunks;
-      /// TODO: Store VoxelChanges
+
+      // for all chunks contained in the updated chunk set, the updated and carved voxel ids are stored
+      ChunkVoxelSet updatedVoxels;
+      ChunkVoxelSet carvedVoxels;
 
       IncrementalChanges()
       {
@@ -72,6 +77,8 @@ namespace chisel
         deletedChunks.insert(obj.deletedChunks.begin(), obj.deletedChunks.end());
         updatedChunks.insert(obj.updatedChunks.begin(), obj.updatedChunks.end());
         addedChunks.insert(obj.addedChunks.begin(), obj.addedChunks.end());
+        updatedVoxels.insert(obj.updatedVoxels.begin(), obj.updatedVoxels.end());
+        carvedVoxels.insert(obj.carvedVoxels.begin(), obj.carvedVoxels.end());
       }
 
       ~IncrementalChanges()
@@ -83,6 +90,8 @@ namespace chisel
         deletedChunks.clear();
         updatedChunks.clear();
         addedChunks.clear();
+        updatedVoxels.clear();
+        carvedVoxels.clear();
       }
 
       ChunkMap merge(const ChunkMap& a, const ChunkMap& b) const
@@ -277,6 +286,8 @@ namespace chisel
 
             void RememberUpdatedChunk(const ChunkID& chunkID);
             void RememberUpdatedChunk(ChunkPtr chunk);
+            void RememberUpdatedVoxel(const ChunkID& chunkID, const int voxelID);
+            void RememberCarvedVoxel(const ChunkID& chunkID, const int voxelID);
 
             void RememberDeletedChunk(const ChunkID& chunkID);
 

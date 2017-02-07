@@ -715,11 +715,13 @@ namespace chisel
             if(chunk.get())
             {
                 Vec3 rel = (voxelPos - chunk->GetOrigin());
-                DistVoxel& voxel = chunk->GetDistVoxelMutable(chunk->GetVoxelID(rel));
+                VoxelID voxelID = chunk->GetVoxelID(rel);
+                DistVoxel& voxel = chunk->GetDistVoxelMutable(voxelID);
                 if(voxel.GetWeight()> 0)
                 {
                     voxel.Carve();
                     updatedChunks->emplace(chunk->GetID(), true);
+                    RememberCarvedVoxel(chunk->GetID(), voxelID);
                 }
             }
             else
@@ -779,6 +781,18 @@ namespace chisel
       incrementalChanges->deletedChunks.emplace(ChunkID(chunkID), true);
       incrementalChanges->updatedChunks.erase(chunkID);
       incrementalChanges->addedChunks.erase(chunkID);
+      incrementalChanges->updatedVoxels.erase(chunkID);
+      incrementalChanges->carvedVoxels.erase(chunkID);
+    }
+
+    void ChunkManager::RememberUpdatedVoxel(const ChunkID& chunkID, const int voxelID)
+    {
+      incrementalChanges->updatedVoxels[chunkID].insert(voxelID);
+    }
+
+    void ChunkManager::RememberCarvedVoxel(const ChunkID& chunkID, const int voxelID)
+    {
+      incrementalChanges->carvedVoxels[chunkID].insert(voxelID);
     }
 
 } // namespace chisel 
