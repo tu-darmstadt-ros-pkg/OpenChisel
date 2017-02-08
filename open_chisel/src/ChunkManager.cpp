@@ -785,14 +785,24 @@ namespace chisel
       incrementalChanges->carvedVoxels.erase(chunkID);
     }
 
-    void ChunkManager::RememberUpdatedVoxel(const ChunkID& chunkID, const int voxelID)
+    void ChunkManager::RememberUpdatedVoxel(const ChunkID& chunkID, const VoxelID& voxelID)
     {
-      incrementalChanges->updatedVoxels[chunkID].insert(voxelID);
+      incrementalChanges->updatedVoxels[chunkID].insert(std::make_pair(GetChunk(chunkID), voxelID));
     }
 
-    void ChunkManager::RememberCarvedVoxel(const ChunkID& chunkID, const int voxelID)
+    void ChunkManager::RememberUpdatedVoxel(ChunkPtr chunk, const VoxelID& voxelID)
     {
-      incrementalChanges->carvedVoxels[chunkID].insert(voxelID);
+      incrementalChanges->updatedVoxels[chunk->GetID()].insert(std::make_pair(chunk, voxelID));
+    }
+
+    void ChunkManager::RememberCarvedVoxel(const ChunkID& chunkID, const VoxelID& voxelID)
+    {
+      incrementalChanges->carvedVoxels[chunkID].insert(std::make_pair(GetChunk(chunkID), voxelID));
+    }
+
+    void ChunkManager::RememberCarvedVoxel(ChunkPtr chunk, const VoxelID& voxelID)
+    {
+      incrementalChanges->carvedVoxels[chunk->GetID()].insert(std::make_pair(chunk, voxelID));
     }
 
 } // namespace chisel 

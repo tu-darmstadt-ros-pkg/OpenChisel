@@ -51,12 +51,43 @@ namespace chisel
             {
                 return ( key(0) * p1 ^ key(1) * p2 ^ key(2) * p3);
             }
+
+            std::size_t operator()(const std::pair<ChunkID, VoxelID>& key) const
+            {
+                return operator()(key.first);
+            }
+
+            std::size_t operator()(const std::pair<ChunkPtr, VoxelID>& key) const
+            {
+                return operator()(key.first->GetID());
+            }
     };
+
+    struct VoxelHasher
+    {
+            std::size_t operator()(const VoxelID& key) const
+            {
+                return key;
+            }
+
+            std::size_t operator()(const std::pair<ChunkID, VoxelID>& key) const
+            {
+                return operator()(key.second);
+            }
+
+            std::size_t operator()(const std::pair<ChunkPtr, VoxelID>& key) const
+            {
+                return operator()(key.second);
+            }
+    };
+
+
 
     typedef std::unordered_map<ChunkID, ChunkPtr, ChunkHasher> ChunkMap;
     typedef std::unordered_map<ChunkID, bool, ChunkHasher> ChunkSet;
     typedef std::unordered_map<ChunkID, MeshPtr, ChunkHasher> MeshMap;
-    typedef std::unordered_map<ChunkID, std::unordered_set<int>, ChunkHasher> ChunkVoxelSet;
+    typedef std::unordered_set<std::pair<ChunkPtr, VoxelID>, VoxelHasher> VoxelSet;
+    typedef std::unordered_map<ChunkID, VoxelSet, ChunkHasher> ChunkVoxelMap;
 
     struct IncrementalChanges
     {
@@ -65,8 +96,8 @@ namespace chisel
       ChunkMap addedChunks;
 
       // for all chunks contained in the updated chunk set, the updated and carved voxel ids are stored
-      ChunkVoxelSet updatedVoxels;
-      ChunkVoxelSet carvedVoxels;
+      ChunkVoxelMap updatedVoxels;
+      ChunkVoxelMap carvedVoxels;
 
       IncrementalChanges()
       {
@@ -283,8 +314,12 @@ namespace chisel
 
             void RememberUpdatedChunk(const ChunkID& chunkID);
             void RememberUpdatedChunk(ChunkPtr chunk);
-            void RememberUpdatedVoxel(const ChunkID& chunkID, const int voxelID);
-            void RememberCarvedVoxel(const ChunkID& chunkID, const int voxelID);
+
+            void RememberUpdatedVoxel(const ChunkID& chunkID, const VoxelID& voxelID);
+            void RememberUpdatedVoxel(ChunkPtr chunk, const VoxelID& voxelID);
+
+            void RememberCarvedVoxel(const ChunkID& chunkID, const VoxelID& voxelID);
+            void RememberCarvedVoxel(ChunkPtr chunk, const VoxelID& voxelID);
 
             void RememberDeletedChunk(const ChunkID& chunkID);
 
