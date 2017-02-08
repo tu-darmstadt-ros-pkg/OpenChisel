@@ -80,11 +80,11 @@ namespace chisel
 
     Vec3 Chunk::GetWorldCoords(const VoxelID& voxelID) const
     {
-      Point3 voxelCoods(voxelID % numVoxels(0),
-                        voxelID / numVoxels(0) % numVoxels(1),
-                        voxelID / (numVoxels(0)*numVoxels(1)));
+      Point3 voxelCoords(voxelID % numVoxels(0),
+                         voxelID / numVoxels(0) % numVoxels(1),
+                         voxelID / (numVoxels(0)*numVoxels(1)));
 
-      return voxelCoods.cast<float>() * voxelResolutionMeters + origin;
+      return voxelCoords.cast<float>() * voxelResolutionMeters + origin;
     }
 
     VoxelID Chunk::GetVoxelID(const Vec3& relativePos) const

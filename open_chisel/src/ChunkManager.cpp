@@ -187,7 +187,7 @@ namespace chisel
     {
         allMeshes->clear();
         chunks->clear();
-        incrementalChanges->clear();
+        incrementalChanges->clear(); /// TODO: Add everything as deleted into IncrementalChanges
     }
 
     void ChunkManager::GetChunkIDsIntersecting(const Frustum& frustum, ChunkIDList* chunkList)
