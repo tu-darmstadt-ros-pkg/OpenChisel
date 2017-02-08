@@ -71,6 +71,11 @@ namespace chisel
             inline const ColorVoxel& GetColorVoxel(const VoxelID& voxelID) const { return colors.at(voxelID); }
             inline ColorVoxel& GetColorVoxelMutable(const VoxelID& voxelID) { return colors.at(voxelID); }
 
+            inline Vec3 GetCenterWorldCoords() const
+            {
+                return origin + (numVoxels.cast<float>() * 0.5f * voxelResolutionMeters);
+            }
+
             Point3 GetVoxelCoords(const Vec3& relativeCoords) const;
 
             Vec3 GetWorldCoords(const VoxelID& voxelID) const;
