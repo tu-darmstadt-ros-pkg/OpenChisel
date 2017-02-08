@@ -94,7 +94,7 @@ namespace chisel
               {
                 if (distVoxel.GetWeight() > 0)
                   {
-                    distVoxel.Integrate(1.0e-5, 5.0f);
+                    distVoxel.Carve();
                     updated = true;
                   }
               }
@@ -123,7 +123,7 @@ namespace chisel
     for (const Point3& voxelCoords : raycastVoxels)
     {
         Vec3 voxelPos = voxelCoords.cast<float>() * resolution +  voxelShift;
-        ChunkID chunkID = chunkManager.GetIDAt(voxelPos);
+        const ChunkID& chunkID = chunkManager.GetIDAt(voxelPos);
 
         if (!chunkManager.HasChunk(chunkID))
         {
@@ -134,16 +134,17 @@ namespace chisel
         const Vec3& origin = chunk->GetOrigin();
 
         voxelPos -= origin;
-        VoxelID id = chunk->GetVoxelID(voxelPos);
+        VoxelID voxelID = chunk->GetVoxelID(voxelPos);
 
-        DistVoxel& distVoxel = chunk->GetDistVoxelMutable(id);
-        const Vec3& centroid = centroids[id] + origin;
+        DistVoxel& distVoxel = chunk->GetDistVoxelMutable(voxelID);
+        const Vec3& centroid = centroids[voxelID] + origin;
         float u = distance - (centroid - sensorOrigin).norm();
         float weight = weighter->GetWeight(u, truncation);
         if (fabs(u) < truncation + halfDiag)
         {
           distVoxel.Integrate(u, weight, maximumWeight);
           updatedChunks->emplace(chunkID, true);
+          chunkManager.RememberUpdatedVoxel(chunk->GetID(), voxelID);
         }
     }
   }
@@ -196,7 +197,7 @@ namespace chisel
               {
                 if (distVoxel.GetWeight() > 0)
                   {
-                    distVoxel.Integrate(1.0e-5, 5.0f);
+                    distVoxel.Carve();
                     updated = true;
                   }
               }
