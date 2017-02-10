@@ -72,6 +72,11 @@ namespace chisel
                 weight = 0;
             }
 
+            inline bool IsValid()
+            {
+              return (weight > 0 && sdf < 99999);
+            }
+
         protected:
            float sdf;
            float weight;
