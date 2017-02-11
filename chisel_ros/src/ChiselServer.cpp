@@ -479,7 +479,7 @@ namespace chisel_ros
         marker.color.a = 0.6f;
         const chisel::ChunkSet& latest = chiselMap->GetMeshesToUpdate();
 
-        for (const std::pair<chisel::ChunkID, bool>& id : latest)
+        for (auto id : latest)
         {
             if(chunkManager.HasChunk(id.first))
             {
@@ -652,7 +652,7 @@ namespace chisel_ros
         response.chunks.chunks.resize(latestChunks.size());
         response.chunks.header.stamp = ros::Time::now();
 
-        for (const std::pair<chisel::ChunkID, bool>& id : latestChunks)
+        for (auto id : latestChunks)
         {
             if(chunkManager.HasChunk(id.first))
             {
@@ -679,7 +679,7 @@ namespace chisel_ros
         ROS_INFO_STREAM("Size of deleted chunks: " << deletedChunks.size());
 
 
-        for (const std::pair<chisel::ChunkID, bool>& id : deletedChunks)
+        for (auto id : deletedChunks)
         {
               chisel::ChunkID chunkID = id.first;
 

@@ -73,7 +73,8 @@ namespace chisel
                         mutex.lock();
                         if (needsUpdate)
                         {
-                            chunkManager.RememberUpdatedChunk(chunkID);
+                            ChunkPtr chunk = chunkManager.GetChunk(chunkID);
+                            chunkManager.RememberUpdatedChunk(chunk);
 
                             for (int dx = -1; dx <= 1; dx++)
                             {
@@ -81,7 +82,7 @@ namespace chisel
                                 {
                                     for (int dz = -1; dz <= 1; dz++)
                                     {
-                                        meshesToUpdate[chunkID + ChunkID(dx, dy, dz)] = true;
+                                        meshesToUpdate[chunkID + ChunkID(dx, dy, dz)] = chunk->GetOrigin() + Eigen::Vector3f(dx, dy, dz).cwiseProduct(chunkManager.GetChunkSizeMeters());
                                     }
                                 }
                             }
@@ -112,7 +113,8 @@ namespace chisel
                         mutex.lock();
                         if (needsUpdate)
                         {
-                            chunkManager.RememberUpdatedChunk(chunkID);
+                            ChunkPtr chunk = chunkManager.GetChunk(chunkID);
+                            chunkManager.RememberUpdatedChunk(chunk);
 
                             for (int dx = -1; dx <= 1; dx++)
                             {
@@ -120,7 +122,7 @@ namespace chisel
                                 {
                                     for (int dz = -1; dz <= 1; dz++)
                                     {
-                                        meshesToUpdate[chunkID + ChunkID(dx, dy, dz)] = true;
+                                        meshesToUpdate[chunkID + ChunkID(dx, dy, dz)] = chunk->GetOrigin() + Eigen::Vector3f(dx, dy, dz).cwiseProduct(chunkManager.GetChunkSizeMeters());
                                     }
                                 }
                             }

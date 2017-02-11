@@ -191,7 +191,8 @@ namespace chisel
 
   void Chisel::DetermineMeshesToUpdate(ChunkSet& updatedChunks)
   {
-    for(auto& chunk : updatedChunks)
+
+    for (auto& chunk : updatedChunks)
     {
       chunkManager.RememberUpdatedChunk(chunk.first);
 
@@ -201,11 +202,11 @@ namespace chisel
         {
           for (int dz = -1; dz <= 1; dz++)
           {
-            meshesToUpdate[chunk.first + ChunkID(dx, dy, dz)] = true;
+            meshesToUpdate[chunk.first + ChunkID(dx, dy, dz)] = chunk.second + Eigen::Vector3f(dx, dy, dz).cwiseProduct(chunkManager.GetChunkSizeMeters());
           }
         }
       };
-      meshesToUpdate[chunk.first] = true;
+      meshesToUpdate[chunk.first] = chunk.second;
     }
   }
 

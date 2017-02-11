@@ -34,6 +34,7 @@ namespace chisel
     ChunkManager::ChunkManager() :
             chunkSize(16, 16, 16), voxelResolutionMeters(0.03)
     {
+        chunkSizeMeters = chunkSize.cast<float>() * voxelResolutionMeters;
         CacheCentroids();
         maxThreads = 4;
         threadTreshold = 500;
@@ -51,6 +52,7 @@ namespace chisel
     ChunkManager::ChunkManager(const Eigen::Vector3i& size, float res, bool color) :
             chunkSize(size), voxelResolutionMeters(res), useColor(color)
     {
+        chunkSizeMeters = chunkSize.cast<float>() * voxelResolutionMeters;
         CacheCentroids();
         maxThreads = 4;
         threadTreshold = 500;
@@ -721,7 +723,7 @@ namespace chisel
                 if(voxel.GetWeight()> 0)
                 {
                     voxel.Carve();
-                    updatedChunks->emplace(chunk->GetID(), true);
+                    updatedChunks->emplace(chunk->GetID(), chunk->GetOrigin());
                     RememberCarvedVoxel(chunk->GetID(), voxelID);
                 }
             }
@@ -777,13 +779,13 @@ namespace chisel
       incrementalChanges->updatedChunks.emplace(chunk->GetID(), chunk);
     }
 
-    void ChunkManager::RememberDeletedChunk(const ChunkID& chunkID)
+    void ChunkManager::RememberDeletedChunk(ChunkPtr chunk)
     {
-      incrementalChanges->deletedChunks.emplace(ChunkID(chunkID), true);
-      incrementalChanges->updatedChunks.erase(chunkID);
-      incrementalChanges->addedChunks.erase(chunkID);
-      incrementalChanges->updatedVoxels.erase(chunkID);
-      incrementalChanges->carvedVoxels.erase(chunkID);
+      incrementalChanges->deletedChunks.emplace(chunk->GetID(), chunk->GetOrigin());
+      incrementalChanges->updatedChunks.erase(chunk->GetID());
+      incrementalChanges->addedChunks.erase(chunk->GetID());
+      incrementalChanges->updatedVoxels.erase(chunk->GetID());
+      incrementalChanges->carvedVoxels.erase(chunk->GetID());
     }
 
     void ChunkManager::RememberUpdatedVoxel(const ChunkID& chunkID, const VoxelID& voxelID)

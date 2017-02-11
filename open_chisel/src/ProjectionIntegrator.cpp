@@ -143,7 +143,7 @@ namespace chisel
         if (fabs(u) < truncation + halfDiag)
         {
           distVoxel.Integrate(u, weight, maximumWeight);
-          updatedChunks->emplace(chunkID, true);
+          updatedChunks->emplace(chunkID, chunk->GetOrigin());
           chunkManager.RememberUpdatedVoxel(chunk->GetID(), voxelID);
         }
     }

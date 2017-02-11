@@ -84,7 +84,7 @@ namespace chisel
 
 
     typedef std::unordered_map<ChunkID, ChunkPtr, ChunkHasher> ChunkMap;
-    typedef std::unordered_map<ChunkID, bool, ChunkHasher> ChunkSet;
+    typedef std::unordered_map<ChunkID, Vec3, ChunkHasher> ChunkSet;
     typedef std::unordered_map<ChunkID, MeshPtr, ChunkHasher> MeshMap;
     typedef std::unordered_set<std::pair<ChunkPtr, VoxelID>, VoxelHasher> VoxelSet;
     typedef std::unordered_map<ChunkID, VoxelSet, ChunkHasher> ChunkVoxelMap;
@@ -137,10 +137,10 @@ namespace chisel
         ChunkSet chunkset;
 
         for (const auto& chunk : a)
-          chunkset.emplace(chunk.first, true);
+          chunkset.emplace(chunk.first, chunk.second->GetOrigin());
 
         for (const auto& chunk : b)
-          chunkset.emplace(chunk.first, true);
+          chunkset.emplace(chunk.first, chunk.second->GetOrigin());
 
         return chunkset;
       }
@@ -161,7 +161,7 @@ namespace chisel
 
         for (auto& chunk: chunks)
         {
-          chunkset.emplace(chunk.first, true);
+          chunkset.emplace(chunk.first, chunk.second->GetOrigin());
         }
 
         return chunkset;
@@ -208,10 +208,12 @@ namespace chisel
 
             inline bool RemoveChunk(const ChunkID& chunk)
             {
-                if(HasChunk(chunk))
+                ChunkPtr chunk_ptr = GetChunk(chunk);
+
+                if (chunk_ptr)
                 {
-                    RememberDeletedChunk(chunk);
-                    chunks->erase(chunk);
+                    RememberDeletedChunk(chunk_ptr);
+                    chunks->erase(chunk_ptr->GetID());
 
                     //call chunk destructor?
 
@@ -293,6 +295,7 @@ namespace chisel
             void ComputeNormalsFromGradients(Mesh* mesh);
 
             inline const Eigen::Vector3i& GetChunkSize() const { return chunkSize; }
+            inline const Eigen::Vector3f& GetChunkSizeMeters() const { return chunkSizeMeters; }
             inline float GetResolution() const { return voxelResolutionMeters; }
 
             inline const Vec3List& GetCentroids() const { return centroids; }
@@ -321,12 +324,13 @@ namespace chisel
             void RememberCarvedVoxel(const ChunkID& chunkID, const VoxelID& voxelID);
             void RememberCarvedVoxel(ChunkPtr chunk, const VoxelID& voxelID);
 
-            void RememberDeletedChunk(const ChunkID& chunkID);
+            void RememberDeletedChunk(ChunkPtr chunk);
 
             EIGEN_MAKE_ALIGNED_OPERATOR_NEW
         protected:
             boost::shared_ptr<ChunkMap> chunks;
             Eigen::Vector3i chunkSize;
+            Eigen::Vector3f chunkSizeMeters;
             float voxelResolutionMeters;
             Vec3List centroids;
             Eigen::Matrix<int, 3, 8> cubeIndexOffsets;
