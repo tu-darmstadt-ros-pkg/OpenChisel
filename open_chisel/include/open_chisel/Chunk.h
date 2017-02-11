@@ -27,6 +27,7 @@
 #include <Eigen/Core>
 
 #include <open_chisel/geometry/AABB.h>
+#include "mesh/Mesh.h"
 #include "DistVoxel.h"
 #include "ColorVoxel.h"
 
@@ -136,14 +137,17 @@ namespace chisel
 
             VoxelID GetVoxelID(const Vec3& relativePos) const;
 
+            void SetMesh(MeshPtr mesh) { this->mesh = mesh; }
+            MeshConstPtr GetMesh() const { return mesh; }
+
         protected:
             ChunkID ID;
             Eigen::Vector3i numVoxels;
             float voxelResolutionMeters;
+            Vec3 origin;
             std::vector<DistVoxel> voxels;
             std::vector<ColorVoxel> colors;
-            Vec3 origin;
-
+            MeshPtr mesh;
     };
 
     typedef boost::shared_ptr<Chunk> ChunkPtr;

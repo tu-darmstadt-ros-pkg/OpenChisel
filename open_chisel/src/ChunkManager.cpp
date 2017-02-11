@@ -136,7 +136,10 @@ namespace chisel
 
         mutex.lock();
         if(!mesh->vertices.empty())
+        {
             allMeshes->emplace(chunkID, mesh);
+            chunk->SetMesh(mesh);
+        }
         mutex.unlock();
     }
 
