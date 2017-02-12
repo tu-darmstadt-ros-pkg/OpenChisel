@@ -316,7 +316,8 @@ namespace chisel
             void RememberAddedChunk(ChunkPtr chunk);
 
             void RememberUpdatedChunk(const ChunkID& chunkID);
-            void RememberUpdatedChunk(ChunkPtr chunk);
+            void RememberUpdatedChunk(ChunkPtr chunk);            
+            void RememberUpdatedChunk(ChunkPtr chunk, ChunkSet& meshes_to_update);
 
             void RememberUpdatedVoxel(const ChunkID& chunkID, const VoxelID& voxelID);
             void RememberUpdatedVoxel(ChunkPtr chunk, const VoxelID& voxelID);

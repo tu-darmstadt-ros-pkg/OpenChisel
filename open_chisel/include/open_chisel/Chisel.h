@@ -74,18 +74,7 @@ namespace chisel
                         if (needsUpdate)
                         {
                             ChunkPtr chunk = chunkManager.GetChunk(chunkID);
-                            chunkManager.RememberUpdatedChunk(chunk);
-
-                            for (int dx = -1; dx <= 1; dx++)
-                            {
-                                for (int dy = -1; dy <= 1; dy++)
-                                {
-                                    for (int dz = -1; dz <= 1; dz++)
-                                    {
-                                        meshesToUpdate[chunkID + ChunkID(dx, dy, dz)] = chunk->GetOrigin() + Eigen::Vector3f(dx, dy, dz).cwiseProduct(chunkManager.GetChunkSizeMeters());
-                                    }
-                                }
-                            }
+                            chunkManager.RememberUpdatedChunk(chunk, meshesToUpdate);
                         }
 
                         mutex.unlock();
@@ -104,7 +93,7 @@ namespace chisel
                     ChunkIDList chunksIntersecting;
                     chunkManager.GetChunkIDsIntersecting(frustum, &chunksIntersecting);
                     std::mutex mutex;
-                    ChunkIDList garbageChunks;
+                    //ChunkIDList garbageChunks;
                     for ( const ChunkID& chunkID : chunksIntersecting)
                     //parallel_for(chunksIntersecting.begin(), chunksIntersecting.end(), [&](const ChunkID& chunkID)
                     {
@@ -114,18 +103,7 @@ namespace chisel
                         if (needsUpdate)
                         {
                             ChunkPtr chunk = chunkManager.GetChunk(chunkID);
-                            chunkManager.RememberUpdatedChunk(chunk);
-
-                            for (int dx = -1; dx <= 1; dx++)
-                            {
-                                for (int dy = -1; dy <= 1; dy++)
-                                {
-                                    for (int dz = -1; dz <= 1; dz++)
-                                    {
-                                        meshesToUpdate[chunkID + ChunkID(dx, dy, dz)] = chunk->GetOrigin() + Eigen::Vector3f(dx, dy, dz).cwiseProduct(chunkManager.GetChunkSizeMeters());
-                                    }
-                                }
-                            }
+                            chunkManager.RememberUpdatedChunk(chunk, meshesToUpdate);
                         }
                         mutex.unlock();
                     }//, maxThreads, threadTreshold

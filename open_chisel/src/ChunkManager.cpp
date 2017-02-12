@@ -779,6 +779,23 @@ namespace chisel
       incrementalChanges->updatedChunks.emplace(chunk->GetID(), chunk);
     }
 
+    void ChunkManager::RememberUpdatedChunk(ChunkPtr chunk, ChunkSet& meshes_to_update)
+    {
+      RememberUpdatedChunk(chunk);
+
+      ChunkID chunk_id = chunk->GetID();
+      for (int dx = -1; dx <= 1; dx++)
+      {
+          for (int dy = -1; dy <= 1; dy++)
+          {
+              for (int dz = -1; dz <= 1; dz++)
+              {
+                  meshes_to_update[chunk_id + ChunkID(dx, dy, dz)] = chunk->GetOrigin() + Eigen::Vector3f(dx, dy, dz).cwiseProduct(GetChunkSizeMeters());
+              }
+          }
+      }
+    }
+
     void ChunkManager::RememberDeletedChunk(ChunkPtr chunk)
     {
       incrementalChanges->deletedChunks.emplace(chunk->GetID(), chunk->GetOrigin());

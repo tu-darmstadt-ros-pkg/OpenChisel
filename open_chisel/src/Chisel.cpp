@@ -191,22 +191,10 @@ namespace chisel
 
   void Chisel::DetermineMeshesToUpdate(ChunkSet& updatedChunks)
   {
-
-    for (auto& chunk : updatedChunks)
+    for (const auto& entry : updatedChunks)
     {
-      chunkManager.RememberUpdatedChunk(chunk.first);
-
-      for (int dx = -1; dx <= 1; dx++)
-      {
-        for (int dy = -1; dy <= 1; dy++)
-        {
-          for (int dz = -1; dz <= 1; dz++)
-          {
-            meshesToUpdate[chunk.first + ChunkID(dx, dy, dz)] = chunk.second + Eigen::Vector3f(dx, dy, dz).cwiseProduct(chunkManager.GetChunkSizeMeters());
-          }
-        }
-      };
-      meshesToUpdate[chunk.first] = chunk.second;
+      ChunkPtr chunk = chunkManager.GetChunk(entry.first);
+      chunkManager.RememberUpdatedChunk(chunk, meshesToUpdate);
     }
   }
 
