@@ -72,7 +72,7 @@ namespace chisel
                 weight = 0;
             }
 
-            inline bool IsValid()
+            inline bool IsValid() const
             {
               return (weight > 0 && sdf < 99999);
             }

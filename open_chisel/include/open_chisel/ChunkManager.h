@@ -214,9 +214,6 @@ namespace chisel
                 {
                     RememberDeletedChunk(chunk_ptr);
                     chunks->erase(chunk_ptr->GetID());
-
-                    //call chunk destructor?
-
                     return true;
                 }
 
@@ -326,6 +323,15 @@ namespace chisel
             void RememberCarvedVoxel(ChunkPtr chunk, const VoxelID& voxelID);
 
             void RememberDeletedChunk(ChunkPtr chunk);
+
+            /**
+             * @brief Removes voxel id entry from ChunkVoxelMap cleanly.
+             * @param map ChunkVoxelMap from which to remove the voxel entry
+             * @param chunk Owner of voxel
+             * @param voxelID voxel id within the chunk
+             * @return true if no entries in the map according to the given voxel are left for the chunk
+             */
+            bool RemoveFromChunkVoxelMap(ChunkVoxelMap& map, ChunkPtr chunk, const VoxelID& voxelID);
 
             EIGEN_MAKE_ALIGNED_OPERATOR_NEW
         protected:
