@@ -169,12 +169,16 @@ namespace chisel
 
       void RememberAddedChunk(ChunkPtr chunk)
       {
-        addedChunks.emplace(chunk->GetID(), chunk);
+        ChunkID chunk_id = chunk->GetID();
+        addedChunks.emplace(chunk_id, chunk);
+        deletedChunks.erase(chunk_id);
       }
 
       void RememberUpdatedChunk(ChunkPtr chunk)
       {
-        updatedChunks.emplace(chunk->GetID(), chunk);
+        ChunkID chunk_id = chunk->GetID();
+        updatedChunks.emplace(chunk_id, chunk);
+        deletedChunks.erase(chunk_id);
       }
 
       void RememberUpdatedChunk(ChunkPtr chunk, const Vec3& chunk_size_meters, ChunkSet& meshes_to_update)
@@ -194,13 +198,17 @@ namespace chisel
         }
       }
 
+      void RememberDeletedChunk(const ChunkID& chunk_id, const Vec3& origin)
+      {
+        deletedChunks.emplace(chunk_id, origin);
+        addedChunks.erase(chunk_id);
+        updatedChunks.erase(chunk_id);
+        updatedVoxels.erase(chunk_id);
+      }
+
       void RememberDeletedChunk(ChunkPtr chunk)
       {
-        const ChunkID& chunk_id = chunk->GetID();
-        deletedChunks.emplace(chunk_id, chunk->GetOrigin());
-        updatedChunks.erase(chunk_id);
-        addedChunks.erase(chunk_id);
-        updatedVoxels.erase(chunk_id);
+        RememberDeletedChunk(chunk->GetID(), chunk->GetOrigin());
 
         for (size_t voxel_id = 0; voxel_id < chunk->GetTotalNumVoxels(); voxel_id++)
         {
