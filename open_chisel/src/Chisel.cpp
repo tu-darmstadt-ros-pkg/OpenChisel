@@ -155,7 +155,8 @@ namespace chisel
 
     float distance = difference.norm();
 
-    bool carveAllRays = true;
+    /// todo: set up as parameter
+    bool carveAllRays = false;
     bool integrateRay = true;
 
     if(distance < minDist)
@@ -175,12 +176,11 @@ namespace chisel
         float truncation = integrator.ComputeTruncationDistance(distance);
         const Vec3 direction = difference.normalized();
 
-        Vec3 truncatedPositiveEnd;
+        Vec3 truncatedPositiveEnd(endPoint);
         float truncationOffset = integrator.GetCarvingDist() + truncation;
+
         //apply truncation offset towards sensor origin
-        truncatedPositiveEnd(0) = endPoint(0) - copysign(truncationOffset, direction(0));
-        truncatedPositiveEnd(1) = endPoint(1) - copysign(truncationOffset, direction(1));
-        truncatedPositiveEnd(2) = endPoint(2) - copysign(truncationOffset, direction(2));
+        truncatedPositiveEnd -= truncationOffset * direction;
 
         chunkManager.ClearPassedVoxels(startPoint, truncatedPositiveEnd, &updatedChunks);
     }
