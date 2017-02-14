@@ -724,7 +724,7 @@ namespace chisel
                 {
                     voxel.Carve();
                     updatedChunks->emplace(chunk->GetID(), chunk->GetOrigin());
-                    RememberCarvedVoxel(chunk->GetID(), voxelID);
+                    RememberCarvedVoxel(chunk, voxelID);
                 }
             }
             else
@@ -757,110 +757,5 @@ namespace chisel
           RemoveChunk(chunk->GetID());
         }
       }
-    }
-
-    void ChunkManager::RememberAddedChunk(const ChunkID& chunkID)
-    {
-      incrementalChanges->addedChunks.emplace(chunkID, GetChunk(chunkID));
-    }
-
-    void ChunkManager::RememberAddedChunk(ChunkPtr chunk)
-    {
-      incrementalChanges->addedChunks.emplace(chunk->GetID(), chunk);
-    }
-
-    void ChunkManager::RememberUpdatedChunk(const ChunkID& chunkID)
-    {
-      incrementalChanges->updatedChunks.emplace(chunkID, GetChunk(chunkID));
-    }
-
-    void ChunkManager::RememberUpdatedChunk(ChunkPtr chunk)
-    {
-      incrementalChanges->updatedChunks.emplace(chunk->GetID(), chunk);
-    }
-
-    void ChunkManager::RememberUpdatedChunk(ChunkPtr chunk, ChunkSet& meshes_to_update)
-    {
-      RememberUpdatedChunk(chunk);
-
-      ChunkID chunk_id = chunk->GetID();
-      for (int dx = -1; dx <= 1; dx++)
-      {
-          for (int dy = -1; dy <= 1; dy++)
-          {
-              for (int dz = -1; dz <= 1; dz++)
-              {
-                  meshes_to_update[chunk_id + ChunkID(dx, dy, dz)] = chunk->GetOrigin() + Eigen::Vector3f(dx, dy, dz).cwiseProduct(GetChunkSizeMeters());
-              }
-          }
-      }
-    }
-
-    void ChunkManager::RememberDeletedChunk(ChunkPtr chunk)
-    {
-      const ChunkID& chunk_id = chunk->GetID();
-      incrementalChanges->deletedChunks.emplace(chunk_id, chunk->GetOrigin());
-      incrementalChanges->updatedChunks.erase(chunk_id);
-      incrementalChanges->addedChunks.erase(chunk_id);
-      incrementalChanges->updatedVoxels.erase(chunk_id);
-
-      for (size_t voxel_id = 0; voxel_id < chunk->GetTotalNumVoxels(); voxel_id++)
-      {
-        const chisel::DistVoxel& voxel = chunk->GetDistVoxel(voxel_id);
-        if (voxel.IsValid())
-          RememberCarvedVoxel(chunk, voxel_id);
-      }
-    }
-
-    void ChunkManager::RememberUpdatedVoxel(const ChunkID& chunkID, const VoxelID& voxelID)
-    {
-      RememberUpdatedVoxel(GetChunk(chunkID), voxelID);
-    }
-
-    void ChunkManager::RememberUpdatedVoxel(ChunkPtr chunk, const VoxelID& voxelID)
-    {
-      const ChunkID& chunk_id = chunk->GetID();
-      incrementalChanges->updatedVoxels[chunk_id].insert(std::make_pair(chunk, voxelID));
-
-      // delete any carve information
-      if (RemoveFromChunkVoxelMap(incrementalChanges->carvedVoxels, chunk, voxelID))
-        incrementalChanges->deletedChunks.erase(chunk_id);
-    }
-
-    void ChunkManager::RememberCarvedVoxel(const ChunkID& chunkID, const VoxelID& voxelID)
-    {
-      RememberCarvedVoxel(GetChunk(chunkID), voxelID);
-    }
-
-    void ChunkManager::RememberCarvedVoxel(ChunkPtr chunk, const VoxelID& voxelID)
-    {
-      const ChunkID& chunk_id = chunk->GetID();
-      incrementalChanges->carvedVoxels[chunk_id].insert(std::make_pair(chunk, voxelID));
-
-      // delete any add and update information
-      if (RemoveFromChunkVoxelMap(incrementalChanges->updatedVoxels, chunk, voxelID))
-        incrementalChanges->addedChunks.erase(chunk_id);
-    }
-
-    bool ChunkManager::RemoveFromChunkVoxelMap(ChunkVoxelMap& map, ChunkPtr chunk, const VoxelID& voxelID)
-    {
-      // find voxel entry
-      auto itr = map.find(chunk->GetID());
-      if (itr != map.end())
-      {
-        VoxelSet& voxel_set = itr->second;
-
-        // remove entry from voxelset
-        voxel_set.erase(std::make_pair(chunk, voxelID));
-
-        // also delete voxel set itself if empty
-        if (voxel_set.empty())
-        {
-          map.erase(itr);
-          return true;
-        }
-      }
-
-      return false;
     }
 } // namespace chisel 

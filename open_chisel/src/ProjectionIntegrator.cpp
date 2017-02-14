@@ -144,7 +144,7 @@ namespace chisel
         {
           distVoxel.Integrate(u, weight, maximumWeight);
           updatedChunks->emplace(chunkID, chunk->GetOrigin());
-          chunkManager.RememberUpdatedVoxel(chunk->GetID(), voxelID);
+          chunkManager.RememberUpdatedVoxel(chunk, voxelID);
         }
     }
   }

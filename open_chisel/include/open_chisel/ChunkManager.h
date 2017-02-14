@@ -166,6 +166,91 @@ namespace chisel
 
         return chunkset;
       }
+
+      void RememberAddedChunk(ChunkPtr chunk)
+      {
+        addedChunks.emplace(chunk->GetID(), chunk);
+      }
+
+      void RememberUpdatedChunk(ChunkPtr chunk)
+      {
+        updatedChunks.emplace(chunk->GetID(), chunk);
+      }
+
+      void RememberUpdatedChunk(ChunkPtr chunk, const Vec3& chunk_size_meters, ChunkSet& meshes_to_update)
+      {
+        RememberUpdatedChunk(chunk);
+
+        ChunkID chunk_id = chunk->GetID();
+        for (int dx = -1; dx <= 1; dx++)
+        {
+            for (int dy = -1; dy <= 1; dy++)
+            {
+                for (int dz = -1; dz <= 1; dz++)
+                {
+                    meshes_to_update[chunk_id + ChunkID(dx, dy, dz)] = chunk->GetOrigin() + Vec3(dx, dy, dz).cwiseProduct(chunk_size_meters);
+                }
+            }
+        }
+      }
+
+      void RememberDeletedChunk(ChunkPtr chunk)
+      {
+        const ChunkID& chunk_id = chunk->GetID();
+        deletedChunks.emplace(chunk_id, chunk->GetOrigin());
+        updatedChunks.erase(chunk_id);
+        addedChunks.erase(chunk_id);
+        updatedVoxels.erase(chunk_id);
+
+        for (size_t voxel_id = 0; voxel_id < chunk->GetTotalNumVoxels(); voxel_id++)
+        {
+          const chisel::DistVoxel& voxel = chunk->GetDistVoxel(voxel_id);
+          if (voxel.IsValid())
+            RememberCarvedVoxel(chunk, voxel_id);
+        }
+      }
+
+      void RememberUpdatedVoxel(ChunkPtr chunk, const VoxelID& voxelID)
+      {
+        const ChunkID& chunk_id = chunk->GetID();
+        updatedVoxels[chunk_id].insert(std::make_pair(chunk, voxelID));
+
+        // delete any carve information
+        if (RemoveFromChunkVoxelMap(carvedVoxels, chunk, voxelID))
+          deletedChunks.erase(chunk_id);
+      }
+
+      void RememberCarvedVoxel(ChunkPtr chunk, const VoxelID& voxelID)
+      {
+        const ChunkID& chunk_id = chunk->GetID();
+        carvedVoxels[chunk_id].insert(std::make_pair(chunk, voxelID));
+
+        // delete any add and update information
+        if (RemoveFromChunkVoxelMap(updatedVoxels, chunk, voxelID))
+          addedChunks.erase(chunk_id);
+      }
+
+      bool RemoveFromChunkVoxelMap(ChunkVoxelMap& map, ChunkPtr chunk, const VoxelID& voxelID)
+      {
+        // find voxel entry
+        auto itr = map.find(chunk->GetID());
+        if (itr != map.end())
+        {
+          VoxelSet& voxel_set = itr->second;
+
+          // remove entry from voxelset
+          voxel_set.erase(std::make_pair(chunk, voxelID));
+
+          // also delete voxel set itself if empty
+          if (voxel_set.empty())
+          {
+            map.erase(itr);
+            return true;
+          }
+        }
+
+        return false;
+      }
     };
 
     typedef boost::shared_ptr<IncrementalChanges> IncrementalChangesPtr;
@@ -309,29 +394,15 @@ namespace chisel
             IncrementalChangesConstPtr getIncrementalChanges(){ return incrementalChanges; }
             void clearIncrementalChanges(){ incrementalChanges->clear(); }
 
-            void RememberAddedChunk(const ChunkID& chunkID);
-            void RememberAddedChunk(ChunkPtr chunk);
+            inline void RememberAddedChunk(ChunkPtr chunk) { incrementalChanges->RememberAddedChunk(chunk); }
 
-            void RememberUpdatedChunk(const ChunkID& chunkID);
-            void RememberUpdatedChunk(ChunkPtr chunk);            
-            void RememberUpdatedChunk(ChunkPtr chunk, ChunkSet& meshes_to_update);
+            inline void RememberUpdatedChunk(ChunkPtr chunk) { incrementalChanges->RememberUpdatedChunk(chunk); }
+            inline void RememberUpdatedChunk(ChunkPtr chunk, ChunkSet& meshes_to_update) { incrementalChanges->RememberUpdatedChunk(chunk, GetChunkSizeMeters(), meshes_to_update); }
 
-            void RememberUpdatedVoxel(const ChunkID& chunkID, const VoxelID& voxelID);
-            void RememberUpdatedVoxel(ChunkPtr chunk, const VoxelID& voxelID);
+            inline void RememberDeletedChunk(ChunkPtr chunk) { incrementalChanges->RememberDeletedChunk(chunk); }
 
-            void RememberCarvedVoxel(const ChunkID& chunkID, const VoxelID& voxelID);
-            void RememberCarvedVoxel(ChunkPtr chunk, const VoxelID& voxelID);
-
-            void RememberDeletedChunk(ChunkPtr chunk);
-
-            /**
-             * @brief Removes voxel id entry from ChunkVoxelMap cleanly.
-             * @param map ChunkVoxelMap from which to remove the voxel entry
-             * @param chunk Owner of voxel
-             * @param voxelID voxel id within the chunk
-             * @return true if no entries in the map according to the given voxel are left for the chunk
-             */
-            bool RemoveFromChunkVoxelMap(ChunkVoxelMap& map, ChunkPtr chunk, const VoxelID& voxelID);
+            inline void RememberUpdatedVoxel(ChunkPtr chunk, const VoxelID& voxelID) { incrementalChanges->RememberUpdatedVoxel(chunk, voxelID); }
+            inline void RememberCarvedVoxel(ChunkPtr chunk, const VoxelID& voxelID) { incrementalChanges->RememberCarvedVoxel(chunk, voxelID); }
 
             EIGEN_MAKE_ALIGNED_OPERATOR_NEW
         protected:
