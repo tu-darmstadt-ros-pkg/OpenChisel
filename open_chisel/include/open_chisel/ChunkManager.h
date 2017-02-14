@@ -389,6 +389,7 @@ namespace chisel
             bool GetSDFAndGradient(const Eigen::Vector3f& pos, double* dist, Eigen::Vector3f* grad) const;
             bool GetSDF(const Eigen::Vector3f& pos, double* dist) const;
 
+            inline void DeleteEmptyChunks() { DeleteEmptyChunks(incrementalChanges->getChangedChunks()); }
             void DeleteEmptyChunks(const ChunkMap& chunk_set);
 
             IncrementalChangesConstPtr getIncrementalChanges(){ return incrementalChanges; }
