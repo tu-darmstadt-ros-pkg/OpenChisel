@@ -107,14 +107,14 @@ namespace chisel
   {
     const float resolution = chunkManager.GetResolution();
     const float roundingFactor = 1.0f / resolution;
-    const float halfDiag = 0.5 * sqrt(3.0f) * resolution;
 
     const float truncation = truncator->GetTruncationDistance(distance);
+    const float halfDiag = 0.5 * sqrt(3.0f) * resolution;
+    const float maxSurfaceDist = truncation + halfDiag;
+
     const Vec3 truncationOffset = direction.normalized() * truncation;
     const Vec3 start = (point - truncationOffset) * roundingFactor;
     const Vec3 end = (point + truncationOffset) * roundingFactor;
-
-    const Vec3 voxelShift(0.5 * resolution, 0.5 * resolution, 0.5 * resolution);
 
     Point3List raycastVoxels;
 
@@ -122,15 +122,10 @@ namespace chisel
 
     for (const Point3& voxelCoords : raycastVoxels)
     {
-        Vec3 voxelPos = voxelCoords.cast<float>() * resolution +  voxelShift;
+        Vec3 voxelPos = voxelCoords.cast<float>() * resolution + chunkManager.GetVoxelShift();
         const ChunkID& chunkID = chunkManager.GetIDAt(voxelPos);
 
-        if (!chunkManager.HasChunk(chunkID))
-        {
-          chunkManager.CreateChunk(chunkID);
-        }
-
-        ChunkPtr chunk = chunkManager.GetChunk(chunkID);
+        ChunkPtr chunk = chunkManager.GetOrCreateChunk(chunkID);
         const Vec3& origin = chunk->GetOrigin();
 
         voxelPos -= origin;
@@ -140,7 +135,7 @@ namespace chisel
         const Vec3& centroid = centroids[voxelID] + origin;
         float u = distance - (centroid - sensorOrigin).norm();
         float weight = weighter->GetWeight(u, truncation);
-        if (fabs(u) < truncation + halfDiag)
+        if (fabs(u) < maxSurfaceDist)
         {
           distVoxel.Integrate(u, weight, maximumWeight);
           updatedChunks->emplace(chunkID, chunk->GetOrigin());
