@@ -480,7 +480,7 @@ namespace chisel
             if(id >= 0 && id < chunk->GetTotalNumVoxels())
             {
                 const chisel::DistVoxel& voxel = chunk->GetDistVoxel(id);
-                if(voxel.GetWeight() > 1e-12)
+                if(voxel.IsValid())
                 {
                     *dist = voxel.GetSDF();
                     return true;
@@ -603,7 +603,7 @@ namespace chisel
     {
         const ChunkPtr chunk = GetChunk(GetIDAt(pos));
 
-        if (chunk)
+        if (chunk && chunk->HasColors())
         {
             Vec3 rel = (pos - chunk->GetOrigin());
             return &(chunk->GetColorVoxel(chunk->GetVoxelID(rel)));
@@ -616,7 +616,7 @@ namespace chisel
     {
         ChunkPtr chunk = GetChunkAt(pos);
 
-        if (chunk)
+        if (chunk && chunk->HasColors())
         {
             Vec3 rel = (pos - chunk->GetOrigin());
             return &(chunk->GetColorVoxelMutable(chunk->GetVoxelID(rel)));
