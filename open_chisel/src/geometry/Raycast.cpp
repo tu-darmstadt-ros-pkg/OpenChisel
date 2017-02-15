@@ -220,3 +220,63 @@ void Raycast(const chisel::Vec3& start, const chisel::Vec3& end, chisel::Point3L
       }
   }
 }
+
+
+/*
+ * Adapted Ray-box intersection using IEEE numerical properties to ensure that the
+ * test is both robust and efficient, as described in:
+ *
+ *      Amy Williams, Steve Barrus, R. Keith Morley, and Peter Shirley
+ *      "An Efficient and Robust Ray-Box Intersection Algorithm"
+ *      Journal of graphics tools, 10(1):49-54, 2005
+ *
+ */
+void GetRayChunkIntersect(const chisel::Vec3& rayOrigin, const chisel::Vec3& rayDir,  const chisel::Vec3& chunkMin, const chisel::Vec3& chunkMax, float& tmin, float& tmax)
+{
+  float tymin, tymax, tzmin, tzmax;
+
+  if (rayDir(0) > 0)
+  {
+    tmin = (chunkMin.x() - rayOrigin.x()) / rayDir.x();
+    tmax = (chunkMax.x() - rayOrigin.x()) / rayDir.x();
+  }
+  else
+  {
+    tmin = (chunkMax.x() - rayOrigin.x()) / rayDir.x();
+    tmax = (chunkMin.x() - rayOrigin.x()) / rayDir.x();
+  }
+
+  if (rayDir(1) > 0)
+  {
+    tymin = (chunkMin.y() - rayOrigin.y()) / rayDir.y();
+    tymax = (chunkMax.y() - rayOrigin.y()) / rayDir.y();
+  }
+  else
+  {
+    tymin = (chunkMax.y() - rayOrigin.y()) / rayDir.y();
+    tymax = (chunkMin.y() - rayOrigin.y()) / rayDir.y();
+  }
+
+  if (rayDir(2) > 0)
+  {
+    tzmin = (chunkMin.z() - rayOrigin.z()) / rayDir.z();
+    tzmax = (chunkMax.z() - rayOrigin.z()) / rayDir.z();
+  }
+  else
+  {
+    tzmin = (chunkMax.z() - rayOrigin.z()) / rayDir.z();
+    tzmax = (chunkMin.z() - rayOrigin.z()) / rayDir.z();
+  }
+
+  if (tymin > tmin)
+    tmin = tymin;
+
+  if (tymax < tmax)
+    tmax = tymax;
+
+  if (tzmin > tmin)
+    tmin = tzmin;
+
+  if (tzmax < tmax)
+    tmax = tzmax;
+}

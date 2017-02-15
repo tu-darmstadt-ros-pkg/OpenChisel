@@ -32,7 +32,7 @@ namespace chisel
 {
 
     ChunkManager::ChunkManager() :
-            chunkSize(16, 16, 16), voxelResolutionMeters(0.03)
+            chunkSize(16, 16, 16), voxelResolutionMeters(0.03), voxelShift(0.5 * 0.03, 0.5 * 0.03, 0.5 * 0.03), chunkDimensions(16 * 0.03, 16 * 0.03, 16 * 0.03)
     {
         chunkSizeMeters = chunkSize.cast<float>() * voxelResolutionMeters;
         CacheCentroids();
@@ -41,7 +41,7 @@ namespace chisel
         chunks = boost::make_shared<ChunkMap>();
         allMeshes = boost::make_shared<MeshMap>();
         incrementalChanges = boost::make_shared<IncrementalChanges>();
-        roundingFactor = (chunkSize.cast<float>() * voxelResolutionMeters).cwiseInverse();
+        roundingFactor = (chunkSize.cast<float>() * voxelResolutionMeters).cwiseInverse();        
     }
 
     ChunkManager::~ChunkManager()
@@ -50,7 +50,7 @@ namespace chisel
     }
 
     ChunkManager::ChunkManager(const Eigen::Vector3i& size, float res, bool color) :
-            chunkSize(size), voxelResolutionMeters(res), useColor(color)
+            chunkSize(size), voxelResolutionMeters(res), useColor(color), voxelShift(0.5 * res, 0.5 * res, 0.5 * res), chunkDimensions(size(0) * res, size(1) * res, size(2) * res)
     {
         chunkSizeMeters = chunkSize.cast<float>() * voxelResolutionMeters;
         CacheCentroids();
@@ -64,7 +64,6 @@ namespace chisel
 
     void ChunkManager::CacheCentroids()
     {
-        Vec3 halfResolution = Vec3(voxelResolutionMeters, voxelResolutionMeters, voxelResolutionMeters) * 0.5f;
         centroids.resize(static_cast<size_t>(chunkSize(0) * chunkSize(1) * chunkSize(2)));
         int i = 0;
         for (int z = 0; z < chunkSize(2); z++)
@@ -73,7 +72,7 @@ namespace chisel
             {
                 for(int x = 0; x < chunkSize(0); x++)
                 {
-                    centroids[i] = Vec3(x, y, z) * voxelResolutionMeters + halfResolution;
+                    centroids[i] = Vec3(x, y, z) * voxelResolutionMeters + voxelShift;
                     i++;
                 }
             }
@@ -181,11 +180,13 @@ namespace chisel
         //);
     }
 
-    void ChunkManager::CreateChunk(const ChunkID& id)
+    ChunkPtr ChunkManager::CreateChunk(const ChunkID& id)
     {
         ChunkPtr chunk = boost::allocate_shared<Chunk>(Eigen::aligned_allocator<Chunk>(), id, chunkSize, voxelResolutionMeters, useColor);
         AddChunk(chunk);
         RememberAddedChunk(chunk);
+
+        return chunk;
     }
 
     void ChunkManager::Reset()
@@ -268,6 +269,17 @@ namespace chisel
             chunkList->push_back(it.first);
         }
 
+    }
+
+    void ChunkManager::GetChunkIDsIntersecting(const Vec3& start, const Vec3& end,  ChunkIDList& chunkList)
+    {
+          Vec3 startInt(start);
+          Vec3 endInt(end);
+
+          startInt = startInt.cwiseProduct(roundingFactor);
+          endInt = endInt.cwiseProduct(roundingFactor);
+
+          Raycast(startInt, endInt, chunkList);
     }
 
     void ChunkManager::ExtractInsideVoxelMesh(const ChunkPtr& chunk, const Eigen::Vector3i& index, const Vec3& coords, VertIndex* nextMeshIndex, Mesh* mesh)
@@ -700,37 +712,67 @@ namespace chisel
 
     }
 
-    void ChunkManager::ClearPassedVoxels(const Vec3& start, const Vec3& end, ChunkSet* updatedChunks)
+    void ChunkManager::ClearPassedVoxels(const Vec3& start, const Vec3& end, ChunkSet& updatedChunks)
     {
         float roundingFactor = 1/voxelResolutionMeters;
-        const Vec3 startRounded = start * roundingFactor;
-        const Vec3 endRounded = end * roundingFactor;
 
-        Point3List passedVoxels;
-        Raycast(startRounded, endRounded, passedVoxels);
+        Point3List passedChunks;
+        GetChunkIDsIntersecting(start, end, passedChunks);
 
-        const Vec3 voxelShift (0.5 * voxelResolutionMeters, 0.5 * voxelResolutionMeters, 0.5 * voxelResolutionMeters);
+        Vec3 dir = (end - start).normalized();
+        float tMin, tMax;
 
-        for (Point3& voxelCoords: passedVoxels)
+        if (passedChunks.empty())
+          return;
+
+        for (int i = 0; i < passedChunks.size(); i++)
         {
-            Vec3 voxelPos = voxelCoords.cast<float>() * voxelResolutionMeters +  voxelShift;
-            ChunkPtr chunk = GetChunkAt(voxelPos);
-            if(chunk.get())
-            {
-                Vec3 rel = (voxelPos - chunk->GetOrigin());
-                VoxelID voxelID = chunk->GetVoxelID(rel);
-                DistVoxel& voxel = chunk->GetDistVoxelMutable(voxelID);
-                if(voxel.GetWeight()> 0)
-                {
-                    voxel.Carve();
-                    updatedChunks->emplace(chunk->GetID(), chunk->GetOrigin());
-                    RememberCarvedVoxel(chunk, voxelID);
-                }
-            }
-            else
-            {
-                continue;
-            }
+          ChunkPtr chunk = GetChunk(passedChunks[i]);
+
+          if (!chunk)
+            continue;
+
+          //printf("chunk id: %d %d %d \n" ,passedChunk(0), passedChunk(1), passedChunk(2));
+
+          GetRayChunkIntersect(start, dir, chunk->GetOrigin(), chunk->GetOrigin() + GetChunkDimensions(), tMin, tMax);
+
+          Point3List passedVoxels;
+
+          const Vec3 startRounded = (start + tMin * dir) * roundingFactor;
+          Vec3 endRounded = (start + tMax * dir) * roundingFactor;
+
+          if (i == passedChunks.size() -1)
+            endRounded = end * roundingFactor;
+
+          //printf("start: %f %f %f \n", startRounded(0), startRounded(1), startRounded(2));
+          //printf("endRounded: %f %f %f \n", endRounded(0), endRounded(1), endRounded(2));
+
+
+          Raycast(startRounded, endRounded, passedVoxels);
+
+          for (Point3& voxelCoords: passedVoxels)
+          {
+              Vec3 voxelPos = voxelCoords.cast<float>() * voxelResolutionMeters + voxelShift;
+              if(chunk.get())
+              {
+                  Vec3 rel = (voxelPos - chunk->GetOrigin());
+                  VoxelID voxelID = chunk->GetVoxelID(rel);
+
+                  if (voxelID < 0 || voxelID >= 512) /// todo: fix
+                    continue;
+                  DistVoxel& voxel = chunk->GetDistVoxelMutable(voxelID);
+                  if(voxel.GetWeight()> 0)
+                  {
+                      voxel.Carve();
+                      updatedChunks.emplace(chunk->GetID(), chunk->GetOrigin());
+                      RememberCarvedVoxel(chunk, voxelID);
+                  }
+              }
+              else
+              {
+                  continue;
+              }
+          }
         }
     }
 

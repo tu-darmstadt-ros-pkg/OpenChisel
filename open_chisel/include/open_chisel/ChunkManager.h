@@ -279,6 +279,7 @@ namespace chisel
             inline void SetChunksPointer(boost::shared_ptr<ChunkMap> data) {chunks = data; }
 
             inline const Vec3& GetRoundingFactor() const { return roundingFactor; }
+            inline const Vec3& GetChunkDimensions() const { return chunkDimensions; }
 
             inline bool HasChunk(const ChunkID& chunk) const
             {
@@ -326,6 +327,16 @@ namespace chisel
                 return GetChunk(GetIDAt(pos));
             }
 
+            inline ChunkPtr GetOrCreateChunk(const ChunkID& chunkID)
+            {
+              ChunkPtr chunk = GetChunk(chunkID);
+
+              if (chunk)
+                return chunk;
+              else
+                return CreateChunk(chunkID);
+            }
+
             inline ChunkID GetIDAt(const Vec3& pos) const
             {
                 return ChunkID(static_cast<int>(std::floor(pos(0) * roundingFactor(0))),
@@ -347,8 +358,10 @@ namespace chisel
             void GetChunkIDsIntersecting(const AABB& box, ChunkIDList* chunkList);
             void GetChunkIDsIntersecting(const Frustum& frustum, ChunkIDList* chunkList);
             void GetChunkIDsIntersecting(const PointCloud& cloud, const Transform& cameraTransform, float truncation, float minDist, float maxDist, ChunkIDList* chunkList);
-            void CreateChunk(const ChunkID& id);
-            void ClearPassedVoxels(const Vec3& start, const Vec3& end, ChunkSet* updatedChunks);
+            void GetChunkIDsIntersecting(const Vec3& start, const Vec3& end, ChunkIDList& chunkList);
+
+            ChunkPtr CreateChunk(const ChunkID& id);
+            void ClearPassedVoxels(const Vec3& start, const Vec3& end, ChunkSet& updatedChunks);
 
             void GenerateMesh(const ChunkPtr& chunk, Mesh* mesh);
             void ColorizeMesh(Mesh* mesh);
@@ -413,6 +426,8 @@ namespace chisel
             inline void RememberUpdatedVoxel(ChunkPtr chunk, const VoxelID& voxelID) { incrementalChanges->RememberUpdatedVoxel(chunk, voxelID); }
             inline void RememberCarvedVoxel(ChunkPtr chunk, const VoxelID& voxelID) { incrementalChanges->RememberCarvedVoxel(chunk, voxelID); }
 
+            inline const Vec3& GetVoxelShift(){ return voxelShift; }
+
             EIGEN_MAKE_ALIGNED_OPERATOR_NEW
         protected:
             boost::shared_ptr<ChunkMap> chunks;
@@ -429,6 +444,9 @@ namespace chisel
 
         private:
             Vec3 roundingFactor;
+            Vec3 chunkDimensions;
+            Vec3 voxelShift;
+
     };
 
     typedef boost::shared_ptr<ChunkManager> ChunkManagerPtr;

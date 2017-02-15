@@ -182,7 +182,7 @@ namespace chisel
         //apply truncation offset towards sensor origin
         truncatedPositiveEnd -= truncationOffset * direction;
 
-        chunkManager.ClearPassedVoxels(startPoint, truncatedPositiveEnd, &updatedChunks);
+        chunkManager.ClearPassedVoxels(startPoint, truncatedPositiveEnd, updatedChunks);
     }
 
     if (integrateRay)
