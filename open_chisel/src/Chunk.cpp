@@ -84,7 +84,7 @@ namespace chisel
                          voxelID / numVoxels(0) % numVoxels(1),
                          voxelID / (numVoxels(0)*numVoxels(1)));
 
-      return voxelCoords.cast<float>() * voxelResolutionMeters + origin;
+      return (voxelCoords.cast<float>() + Vec3(0.5, 0.5, 0.5)) * voxelResolutionMeters + origin;
     }
 
     VoxelID Chunk::GetVoxelID(const Vec3& relativePos) const
