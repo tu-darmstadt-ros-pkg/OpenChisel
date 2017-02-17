@@ -81,6 +81,8 @@ namespace chisel
 
             Vec3 GetWorldCoords(const VoxelID& voxelID) const;
 
+            VoxelID GetVoxelID(const Vec3& relativePos) const;
+
             inline VoxelID GetVoxelID(const Point3& coords) const
             {
                 return GetVoxelID(coords.x(), coords.y(), coords.z());
@@ -134,8 +136,6 @@ namespace chisel
             inline const Vec3& GetOrigin() const { return origin; }
 
             Vec3 GetColorAt(const Vec3& relativedPos);
-
-            VoxelID GetVoxelID(const Vec3& relativePos) const;
 
             void SetMesh(MeshPtr mesh) { this->mesh = mesh; }
             MeshConstPtr GetMesh() const { return mesh; }
