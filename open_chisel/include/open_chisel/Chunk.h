@@ -67,10 +67,10 @@ namespace chisel
             inline const Eigen::Vector3i& GetNumVoxels() const { return numVoxels; }
             inline float GetVoxelResolutionMeters() const { return voxelResolutionMeters; }
 
-            inline const DistVoxel& GetDistVoxel(const VoxelID& voxelID) const { return voxels.at(voxelID); }
-            inline DistVoxel& GetDistVoxelMutable(const VoxelID& voxelID) { return voxels.at(voxelID); }
-            inline const ColorVoxel& GetColorVoxel(const VoxelID& voxelID) const { return colors.at(voxelID); }
-            inline ColorVoxel& GetColorVoxelMutable(const VoxelID& voxelID) { return colors.at(voxelID); }
+            inline const DistVoxel& GetDistVoxel(const VoxelID& voxelID) const { return voxels[voxelID]; }
+            inline DistVoxel& GetDistVoxelMutable(const VoxelID& voxelID) { return voxels[voxelID]; }
+            inline const ColorVoxel& GetColorVoxel(const VoxelID& voxelID) const { return colors[voxelID]; }
+            inline ColorVoxel& GetColorVoxelMutable(const VoxelID& voxelID) { return colors[voxelID]; }
 
             inline Vec3 GetCenterWorldCoords() const
             {
@@ -80,6 +80,8 @@ namespace chisel
             Point3 GetVoxelCoords(const Vec3& relativeCoords) const;
 
             Vec3 GetWorldCoords(const VoxelID& voxelID) const;
+
+            VoxelID GetVoxelID(const Vec3& relativePos) const;
 
             inline VoxelID GetVoxelID(const Point3& coords) const
             {
@@ -134,8 +136,6 @@ namespace chisel
             inline const Vec3& GetOrigin() const { return origin; }
 
             Vec3 GetColorAt(const Vec3& relativedPos);
-
-            VoxelID GetVoxelID(const Vec3& relativePos) const;
 
             void SetMesh(MeshPtr mesh) { this->mesh = mesh; }
             MeshConstPtr GetMesh() const { return mesh; }
