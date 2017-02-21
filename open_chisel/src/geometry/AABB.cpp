@@ -29,7 +29,7 @@ namespace chisel
 
     }
 
-    AABB::AABB(const Vec3& _min, const Vec3& _max) :
+    AABB::AABB(const Vec4& _min, const Vec4& _max) :
             min(_min), max(_max)
     {
 
@@ -38,18 +38,18 @@ namespace chisel
     Plane::IntersectionType AABB::Intersects(const Plane& plane) const
     {
         //check all corner side of plane
-        Vec3 ext = GetExtents();
+        Vec4 ext = GetExtents();
 
-        Vec3List corners;
+        Vec4List corners;
         corners.resize(8);
         corners[0] = max;
         corners[1] = min;
-        corners[2] = min + Vec3(ext(0), 0, 0);
-        corners[3] = min + Vec3(0, ext(1), 0);
-        corners[4] = min + Vec3(0, 0, ext(2));
-        corners[5] = min + Vec3(ext(0), 0, ext(2));
-        corners[6] = min + Vec3(ext(0), ext(1), 0);
-        corners[7] = min + Vec3(0, ext(1), ext(2));
+        corners[2] = min + Vec4(ext(0), 0, 0, 0);
+        corners[3] = min + Vec4(0, ext(1), 0, 0);
+        corners[4] = min + Vec4(0, 0, ext(2), 0);
+        corners[5] = min + Vec4(ext(0), 0, ext(2), 0);
+        corners[6] = min + Vec4(ext(0), ext(1), 0, 0);
+        corners[7] = min + Vec4(0, ext(1), ext(2), 0);
 
         float lastdistance = plane.normal.dot(corners[0]) + plane.distance;
 

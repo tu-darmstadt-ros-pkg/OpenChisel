@@ -8,7 +8,7 @@ find_package(Eigen REQUIRED)
 find_package(Boost REQUIRED)
 include_directories(${Eigen_INCLUDE_DIRS}   ${boost_INCLUDE_DIRS})
 
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --std=c++0x")
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --std=c++0x -march=native")
 SET(CMAKE_BUILD_TYPE RelWithDebInfo)
 
 file(GLOB_RECURSE HEADER_FILES include/*.h)

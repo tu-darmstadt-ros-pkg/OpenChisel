@@ -45,10 +45,10 @@ namespace chisel
             inline ChunkManager& GetMutableChunkManager() { return chunkManager; }
             inline void SetChunkManager(const ChunkManager& manager) { chunkManager = manager; }
 
-            void IntegratePointCloud(const ProjectionIntegrator& integrator, const PointCloud& cloud, const Transform& extrinsic, const Vec3& sensorOrigin, float minDist, float maxDist);
+            void IntegratePointCloud(const ProjectionIntegrator& integrator, const PointCloud& cloud, const Transform& extrinsic, const Vec4& sensorOrigin, float minDist, float maxDist);
             void IntegratePointCloud(const ProjectionIntegrator& integrator, const PointCloud& cloud, const Transform& extrinsic, float minDist, float maxDist);
-            void IntegratePointCloud(const ProjectionIntegrator& integrator, const PointCloud& cloud, const Vec3& sensorOrigin, float minDist, float maxDist);
-            void IntegrateRay(const ProjectionIntegrator& integrator, ChunkSet& updatedChunks, const Vec3& startPoint, const Vec3& endPoint, float minDist, float maxDist);
+            void IntegratePointCloud(const ProjectionIntegrator& integrator, const PointCloud& cloud, const Vec4& sensorOrigin, float minDist, float maxDist);
+            void IntegrateRay(const ProjectionIntegrator& integrator, ChunkSet& updatedChunks, const Vec4& startPoint, const Vec4& endPoint, float minDist, float maxDist);
 
             void IntegrateChunks(const ProjectionIntegrator& integrator, ChunkManager& sourceChunkManager, ChunkSet& changedChunks);
             void DeleteChunks(ChunkSet &chunks);

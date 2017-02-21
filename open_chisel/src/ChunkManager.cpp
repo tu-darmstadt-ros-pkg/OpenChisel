@@ -64,7 +64,7 @@ namespace chisel
 
     void ChunkManager::CacheCentroids()
     {
-        Vec3 halfResolution = Vec3(voxelResolutionMeters, voxelResolutionMeters, voxelResolutionMeters) * 0.5f;
+        Vec4 halfResolution = Vec4(voxelResolutionMeters, voxelResolutionMeters, voxelResolutionMeters, 0) * 0.5f;
         centroids.resize(static_cast<size_t>(chunkSize(0) * chunkSize(1) * chunkSize(2)));
         int i = 0;
         for (int z = 0; z < chunkSize(2); z++)
@@ -73,7 +73,7 @@ namespace chisel
             {
                 for(int x = 0; x < chunkSize(0); x++)
                 {
-                    centroids[i] = Vec3(x, y, z) * voxelResolutionMeters + halfResolution;
+                    centroids[i] = Vec4(x, y, z, 0) * voxelResolutionMeters + halfResolution;
                     i++;
                 }
             }
@@ -213,8 +213,8 @@ namespace chisel
             {
                 for (int z = minID(2) - 1; z <= maxID(2) + 1; z++)
                 {
-                    Vec3 min = Vec3(x * chunkSize(0), y * chunkSize(1), z * chunkSize(2)) * voxelResolutionMeters;
-                    Vec3 max = min + chunkSize.cast<float>() * voxelResolutionMeters;
+                    Vec4 min = Vec4(x * chunkSize(0), y * chunkSize(1), z * chunkSize(2), 0.0f) * voxelResolutionMeters;
+                    Vec4 max = min + Vec4(chunkSize.x(), chunkSize.y(), chunkSize.z(), 0.0f) * voxelResolutionMeters;
                     AABB chunkBox(min, max);
                     if(frustum.Intersects(chunkBox))
                     {
@@ -236,10 +236,11 @@ namespace chisel
         Point3 maxVal(std::numeric_limits<int>::max(), std::numeric_limits<int>::max(), std::numeric_limits<int>::max());
         //size_t numPoints = cloud.GetPoints().size();
         //size_t i = 0;
-        for (const Vec3& point : cloud.GetPoints())
+        for (const Vec4& point : cloud.GetPoints())
         {
-            Vec3 end = cameraTransform * point;
-            Vec3 start = cameraTransform.translation();
+            Vec4 end = cameraTransform * point;
+            const Vec4 start(cameraTransform.translation().x(), cameraTransform.translation().y(), cameraTransform.translation().z(), 0.0f);
+
             float len = (end - start).norm();
 
             if(len > maxDist || len < minDist)
@@ -247,19 +248,19 @@ namespace chisel
                 continue;
             }
 
-            Vec3 dir = (end - start).normalized();
-            Vec3 truncStart = end - dir * truncation;
-            Vec3 truncEnd = end + dir * truncation;
-            Vec3 startInt = Vec3(truncStart.x() * roundingFactor(0) , truncStart.y() * roundingFactor(1), truncStart.z() * roundingFactor(2));
-            Vec3 endInt = Vec3(truncEnd.x() * roundingFactor(0), truncEnd.y() * roundingFactor(1), truncEnd.z() * roundingFactor(2));
+            Vec4 dir = (end - start).normalized();
+            Vec4 truncStart = end - dir * truncation;
+            Vec4 truncEnd = end + dir * truncation;
+            Vec4 startInt = Vec4(truncStart.x() * roundingFactor(0) , truncStart.y() * roundingFactor(1), truncStart.z() * roundingFactor(2), 0.0f);
+            Vec4 endInt = Vec4(truncEnd.x() * roundingFactor(0), truncEnd.y() * roundingFactor(1), truncEnd.z() * roundingFactor(2), 0.0f);
 
-            Point3List intersectingChunks;
+            Point4List intersectingChunks;
             Raycast(startInt, endInt, minVal, maxVal, &intersectingChunks);
 
-            for (const Point3& id : intersectingChunks)
+            for (const Point4& id : intersectingChunks)
             {
-                if(map.find(id) == map.end())
-                    map[id] = ChunkPtr();
+                if(map.find(id.head<3>()) == map.end())
+                    map[id.head<3>()] = ChunkPtr();
             }
         }
 
@@ -270,16 +271,16 @@ namespace chisel
 
     }
 
-    void ChunkManager::ExtractInsideVoxelMesh(const ChunkPtr& chunk, const Eigen::Vector3i& index, const Vec3& coords, VertIndex* nextMeshIndex, Mesh* mesh)
+    void ChunkManager::ExtractInsideVoxelMesh(const ChunkPtr& chunk, const Eigen::Vector3i& index, const Vec4& coords, VertIndex* nextMeshIndex, Mesh* mesh)
     {
         assert(mesh != nullptr);
-        Eigen::Matrix<float, 3, 8> cubeCoordOffsets = cubeIndexOffsets.cast<float>() * voxelResolutionMeters;
-        Eigen::Matrix<float, 3, 8> cornerCoords;
+        Eigen::Matrix<float, 4, 8> cubeCoordOffsets = cubeIndexOffsets.cast<float>() * voxelResolutionMeters;
+        Eigen::Matrix<float, 4, 8> cornerCoords;
         Eigen::Matrix<float, 8, 1> cornerSDF;
         bool allNeighborsObserved = true;
         for (int i = 0; i < 8; ++i)
         {
-            Eigen::Vector3i corner_index = index + cubeIndexOffsets.col(i);
+            Eigen::Vector3i corner_index = index + cubeIndexOffsets.col(i).head<3>();
             const DistVoxel& thisVoxel = chunk->GetDistVoxel(corner_index.x(), corner_index.y(), corner_index.z());
 
             // Do not extract a mesh here if one of the corner is unobserved and
@@ -299,15 +300,15 @@ namespace chisel
         }
     }
 
-    void ChunkManager::ExtractBorderVoxelMesh(const ChunkPtr& chunk, const Eigen::Vector3i& index, const Eigen::Vector3f& coordinates, VertIndex* nextMeshIndex, Mesh* mesh)
+    void ChunkManager::ExtractBorderVoxelMesh(const ChunkPtr& chunk, const Eigen::Vector3i& index, const Eigen::Vector4f& coordinates, VertIndex* nextMeshIndex, Mesh* mesh)
     {
-        const Eigen::Matrix<float, 3, 8> cubeCoordOffsets = cubeIndexOffsets.cast<float>() * voxelResolutionMeters;
-        Eigen::Matrix<float, 3, 8> cornerCoords;
+        const Eigen::Matrix<float, 4, 8> cubeCoordOffsets = cubeIndexOffsets.cast<float>() * voxelResolutionMeters;
+        Eigen::Matrix<float, 4, 8> cornerCoords;
         Eigen::Matrix<float, 8, 1> cornerSDF;
         bool allNeighborsObserved = true;
         for (int i = 0; i < 8; ++i)
         {
-            Eigen::Vector3i cornerIDX = index + cubeIndexOffsets.col(i);
+            Eigen::Vector3i cornerIDX = index + cubeIndexOffsets.col(i).head<3>();
 
             if (chunk->IsCoordValid(cornerIDX.x(), cornerIDX.y(), cornerIDX.z()))
             {
@@ -449,33 +450,34 @@ namespace chisel
         assert(mesh->vertices.size() == mesh->indices.size());
     }
 
-    bool ChunkManager::GetSDFAndGradient(const Eigen::Vector3f& pos, double* dist, Eigen::Vector3f* grad) const
+    bool ChunkManager::GetSDFAndGradient(const Eigen::Vector4f& pos, double* dist, Eigen::Vector4f* grad) const
     {
-        Eigen::Vector3f posf = Eigen::Vector3f(std::floor(pos.x() / voxelResolutionMeters) * voxelResolutionMeters + voxelResolutionMeters / 2.0f,
-                std::floor(pos.y() / voxelResolutionMeters) * voxelResolutionMeters + voxelResolutionMeters / 2.0f,
-                std::floor(pos.z() / voxelResolutionMeters) * voxelResolutionMeters + voxelResolutionMeters / 2.0f);
+        Eigen::Vector4f posf = Eigen::Vector4f(std::floor(pos.x() / voxelResolutionMeters) * voxelResolutionMeters + voxelResolutionMeters / 2.0f,
+                                               std::floor(pos.y() / voxelResolutionMeters) * voxelResolutionMeters + voxelResolutionMeters / 2.0f,
+                                               std::floor(pos.z() / voxelResolutionMeters) * voxelResolutionMeters + voxelResolutionMeters / 2.0f,
+                                               0.0f);
         if (!GetSDF(posf, dist)) return false;
         double ddxplus, ddyplus, ddzplus = 0.0;
         double ddxminus, ddyminus, ddzminus = 0.0;
-        if (!GetSDF(posf + Eigen::Vector3f(voxelResolutionMeters, 0, 0), &ddxplus)) return false;
-        if (!GetSDF(posf + Eigen::Vector3f(0, voxelResolutionMeters, 0), &ddyplus)) return false;
-        if (!GetSDF(posf + Eigen::Vector3f(0, 0, voxelResolutionMeters), &ddzplus)) return false;
-        if (!GetSDF(posf - Eigen::Vector3f(voxelResolutionMeters, 0, 0), &ddxminus)) return false;
-        if (!GetSDF(posf - Eigen::Vector3f(0, voxelResolutionMeters, 0), &ddyminus)) return false;
-        if (!GetSDF(posf - Eigen::Vector3f(0, 0, voxelResolutionMeters), &ddzminus)) return false;
+        if (!GetSDF(posf + Eigen::Vector4f(voxelResolutionMeters, 0, 0, 0), &ddxplus)) return false;
+        if (!GetSDF(posf + Eigen::Vector4f(0, voxelResolutionMeters, 0, 0), &ddyplus)) return false;
+        if (!GetSDF(posf + Eigen::Vector4f(0, 0, voxelResolutionMeters, 0), &ddzplus)) return false;
+        if (!GetSDF(posf - Eigen::Vector4f(voxelResolutionMeters, 0, 0, 0), &ddxminus)) return false;
+        if (!GetSDF(posf - Eigen::Vector4f(0, voxelResolutionMeters, 0, 0), &ddyminus)) return false;
+        if (!GetSDF(posf - Eigen::Vector4f(0, 0, voxelResolutionMeters, 0), &ddzminus)) return false;
 
-        *grad = Eigen::Vector3f(ddxplus - ddxminus, ddyplus - ddyminus, ddzplus - ddzminus);
+        *grad = Eigen::Vector4f(ddxplus - ddxminus, ddyplus - ddyminus, ddzplus - ddzminus, 0.0f);
         grad->normalize();
         return true;
     }
 
-    bool ChunkManager::GetSDF(const Eigen::Vector3f& posf, double* dist) const
+    bool ChunkManager::GetSDF(const Vec4& posf, double* dist) const
     {
         chisel::ChunkConstPtr chunk = GetChunkAt(posf);
         if(chunk)
         {
-            Eigen::Vector3f relativePos = posf - chunk->GetOrigin();
-            Eigen::Vector3i coords = chunk->GetVoxelCoords(relativePos);
+            Vec4 relativePos = posf - chunk->GetOrigin();
+            Point3 coords = chunk->GetVoxelCoords(relativePos);
             chisel::VoxelID id = chunk->GetVoxelID(coords);
             if(id >= 0 && id < chunk->GetTotalNumVoxels())
             {
@@ -494,7 +496,7 @@ namespace chisel
         }
     }
 
-    Vec3 ChunkManager::InterpolateColor(const Vec3& colorPos)
+    Vec3 ChunkManager::InterpolateColor(const Vec4& colorPos)
     {
         const float& x = colorPos(0);
         const float& y = colorPos(1);
@@ -507,15 +509,14 @@ namespace chisel
         const int y_1 = y_0 + 1;
         const int z_1 = z_0 + 1;
 
-
-        const ColorVoxel* v_000 = GetColorVoxel(Vec3(x_0, y_0, z_0));
-        const ColorVoxel* v_001 = GetColorVoxel(Vec3(x_0, y_0, z_1));
-        const ColorVoxel* v_011 = GetColorVoxel(Vec3(x_0, y_1, z_1));
-        const ColorVoxel* v_111 = GetColorVoxel(Vec3(x_1, y_1, z_1));
-        const ColorVoxel* v_110 = GetColorVoxel(Vec3(x_1, y_1, z_0));
-        const ColorVoxel* v_100 = GetColorVoxel(Vec3(x_1, y_0, z_0));
-        const ColorVoxel* v_010 = GetColorVoxel(Vec3(x_0, y_1, z_0));
-        const ColorVoxel* v_101 = GetColorVoxel(Vec3(x_1, y_0, z_1));
+        const ColorVoxel* v_000 = GetColorVoxel(Vec4(x_0, y_0, z_0, 0));
+        const ColorVoxel* v_001 = GetColorVoxel(Vec4(x_0, y_0, z_1, 0));
+        const ColorVoxel* v_011 = GetColorVoxel(Vec4(x_0, y_1, z_1, 0));
+        const ColorVoxel* v_111 = GetColorVoxel(Vec4(x_1, y_1, z_1, 0));
+        const ColorVoxel* v_110 = GetColorVoxel(Vec4(x_1, y_1, z_0, 0));
+        const ColorVoxel* v_100 = GetColorVoxel(Vec4(x_1, y_0, z_0, 0));
+        const ColorVoxel* v_010 = GetColorVoxel(Vec4(x_0, y_1, z_0, 0));
+        const ColorVoxel* v_101 = GetColorVoxel(Vec4(x_1, y_0, z_1, 0));
 
         if(!v_000 || !v_001 || !v_011 || !v_111 || !v_110 || !v_100 || !v_010 || !v_101)
         {
@@ -570,26 +571,26 @@ namespace chisel
         return Vec3(red, green, blue);
     }
 
-    const DistVoxel* ChunkManager::GetDistanceVoxel(const Vec3& pos) const
+    const DistVoxel* ChunkManager::GetDistanceVoxel(const Vec4& pos) const
     {
         const ChunkPtr chunk = GetChunk(GetIDAt(pos));
 
         if (chunk)
         {
-            Vec3 rel = (pos - chunk->GetOrigin());
+            Vec4 rel = (pos - chunk->GetOrigin());
             return &(chunk->GetDistVoxel(chunk->GetVoxelID(rel)));
         }
         else
           return nullptr;
     }
 
-    DistVoxel* ChunkManager::GetDistanceVoxelMutable(const Vec3& pos)
+    DistVoxel* ChunkManager::GetDistanceVoxelMutable(const Vec4& pos)
     {
         ChunkPtr chunk = GetChunkAt(pos);
 
         if (chunk)
         {
-            Vec3 rel = (pos - chunk->GetOrigin());
+            Vec4 rel = (pos - chunk->GetOrigin());
             return &(chunk->GetDistVoxelMutable(chunk->GetVoxelID(rel)));
         }
         else
@@ -599,26 +600,26 @@ namespace chisel
 
 
 
-    const ColorVoxel* ChunkManager::GetColorVoxel(const Vec3& pos) const
+    const ColorVoxel* ChunkManager::GetColorVoxel(const Vec4& pos) const
     {
         const ChunkPtr chunk = GetChunk(GetIDAt(pos));
 
         if (chunk && chunk->HasColors())
         {
-            Vec3 rel = (pos - chunk->GetOrigin());
+            Vec4 rel = (pos - chunk->GetOrigin());
             return &(chunk->GetColorVoxel(chunk->GetVoxelID(rel)));
         }
         else
           return nullptr;
     }
 
-    ColorVoxel* ChunkManager::GetColorVoxelMutable(const Vec3& pos)
+    ColorVoxel* ChunkManager::GetColorVoxelMutable(const Vec4& pos)
     {
         ChunkPtr chunk = GetChunkAt(pos);
 
         if (chunk && chunk->HasColors())
         {
-            Vec3 rel = (pos - chunk->GetOrigin());
+            Vec4 rel = (pos - chunk->GetOrigin());
             return &(chunk->GetColorVoxelMutable(chunk->GetVoxelID(rel)));
         }
         else
@@ -630,10 +631,10 @@ namespace chisel
     {
         assert(mesh != nullptr);
         double dist;
-        Vec3 grad;
+        Vec4 grad;
         for (size_t i = 0; i < mesh->vertices.size(); i++)
         {
-            const Vec3& vertex = mesh->vertices.at(i);
+            const Vec4& vertex = mesh->vertices.at(i);
             if(GetSDFAndGradient(vertex, &dist, &grad))
             {
                 float mag = grad.norm();
@@ -653,7 +654,7 @@ namespace chisel
         mesh->colors.resize(mesh->vertices.size());
         for (size_t i = 0; i < mesh->vertices.size(); i++)
         {
-            const Vec3& vertex = mesh->vertices.at(i);
+            const Vec4 vertex(mesh->vertices.at(i).x(), mesh->vertices.at(i).y(), mesh->vertices.at(i).z(), 0);
             mesh->colors[i] = InterpolateColor(vertex);
         }
     }
@@ -664,8 +665,8 @@ namespace chisel
         float bigFloat = std::numeric_limits<float>::max();
 
         chisel::AABB totalBounds;
-        totalBounds.min = chisel::Vec3(bigFloat, bigFloat, bigFloat);
-        totalBounds.max = chisel::Vec3(-bigFloat, -bigFloat, -bigFloat);
+        totalBounds.min = chisel::Vec4(bigFloat, bigFloat, bigFloat, 0.0f);
+        totalBounds.max = chisel::Vec4(-bigFloat, -bigFloat, -bigFloat, 0.0f);
 
         ChunkStatistics stats;
         stats.numKnownInside = 0;
@@ -685,8 +686,8 @@ namespace chisel
         }
 
 
-        Vec3 ext = totalBounds.GetExtents();
-        Vec3 numVoxels = ext * 2 / voxelResolutionMeters;
+        Vec4 ext = totalBounds.GetExtents();
+        Vec4 numVoxels = ext * 2 / voxelResolutionMeters;
         float totalNum = numVoxels(0) * numVoxels(1) * numVoxels(2);
 
         float maxMemory = totalNum * sizeof(DistVoxel) / 1000000.0f;
@@ -700,24 +701,26 @@ namespace chisel
 
     }
 
-    void ChunkManager::ClearPassedVoxels(const Vec3& start, const Vec3& end, ChunkSet* updatedChunks)
+    void ChunkManager::ClearPassedVoxels(const Vec4& start, const Vec4& end, ChunkSet* updatedChunks)
     {
         float roundingFactor = 1/voxelResolutionMeters;
-        const Vec3 startRounded = start * roundingFactor;
-        const Vec3 endRounded = end * roundingFactor;
+        const Vec4 startRounded = start * roundingFactor;
+        const Vec4 endRounded = end * roundingFactor;
 
-        Point3List passedVoxels;
+        Point4List passedVoxels;
         Raycast(startRounded, endRounded, passedVoxels);
 
-        const Vec3 voxelShift (0.5 * voxelResolutionMeters, 0.5 * voxelResolutionMeters, 0.5 * voxelResolutionMeters);
+        const Vec4 voxelShift (0.5 * voxelResolutionMeters, 0.5 * voxelResolutionMeters, 0.5 * voxelResolutionMeters, 0.0f);
 
-        for (Point3& voxelCoords: passedVoxels)
+        for (Point4& voxelCoords: passedVoxels)
         {
-            Vec3 voxelPos = voxelCoords.cast<float>() * voxelResolutionMeters +  voxelShift;
+            Vec4 voxelPos(voxelCoords.cast<float>());
+            voxelPos = voxelPos * voxelResolutionMeters + voxelShift;
+
             ChunkPtr chunk = GetChunkAt(voxelPos);
             if(chunk.get())
             {
-                Vec3 rel = (voxelPos - chunk->GetOrigin());
+                Vec4 rel = (voxelPos - chunk->GetOrigin());
                 VoxelID voxelID = chunk->GetVoxelID(rel);
                 DistVoxel& voxel = chunk->GetDistVoxelMutable(voxelID);
                 if(voxel.GetWeight()> 0)

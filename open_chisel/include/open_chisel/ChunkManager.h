@@ -84,7 +84,7 @@ namespace chisel
 
 
     typedef std::unordered_map<ChunkID, ChunkPtr, ChunkHasher> ChunkMap;
-    typedef std::unordered_map<ChunkID, Vec3, ChunkHasher> ChunkSet;
+    typedef std::unordered_map<ChunkID, Vec4, ChunkHasher> ChunkSet;
     typedef std::unordered_map<ChunkID, MeshPtr, ChunkHasher> MeshMap;
     typedef std::unordered_set<std::pair<ChunkPtr, VoxelID>, VoxelHasher> VoxelSet;
     typedef std::unordered_map<ChunkID, VoxelSet, ChunkHasher> ChunkVoxelMap;
@@ -186,19 +186,21 @@ namespace chisel
         RememberUpdatedChunk(chunk);
 
         ChunkID chunk_id = chunk->GetID();
+
+        Vec4 chunk_size_m(chunk_size_meters.x(), chunk_size_meters.y(), chunk_size_meters.z(), 0.0f);
         for (int dx = -1; dx <= 1; dx++)
         {
             for (int dy = -1; dy <= 1; dy++)
             {
                 for (int dz = -1; dz <= 1; dz++)
                 {
-                    meshes_to_update[chunk_id + ChunkID(dx, dy, dz)] = chunk->GetOrigin() + Vec3(dx, dy, dz).cwiseProduct(chunk_size_meters);
+                    meshes_to_update[chunk_id + ChunkID(dx, dy, dz)] = chunk->GetOrigin() + Vec4(dx, dy, dz, 0.0f).cwiseProduct(chunk_size_m);
                 }
             }
         }
       }
 
-      void RememberDeletedChunk(const ChunkID& chunk_id, const Vec3& origin)
+      void RememberDeletedChunk(const ChunkID& chunk_id, const Vec4& origin)
       {
         deletedChunks.emplace(chunk_id, origin);
         addedChunks.erase(chunk_id);
@@ -326,7 +328,19 @@ namespace chisel
                 return GetChunk(GetIDAt(pos));
             }
 
+            inline ChunkPtr GetChunkAt(const Vec4& pos) const
+            {
+                return GetChunk(GetIDAt(pos));
+            }
+
             inline ChunkID GetIDAt(const Vec3& pos) const
+            {
+                return ChunkID(static_cast<int>(std::floor(pos(0) * roundingFactor(0))),
+                               static_cast<int>(std::floor(pos(1) * roundingFactor(1))),
+                               static_cast<int>(std::floor(pos(2) * roundingFactor(2))));
+            }
+
+            inline ChunkID GetIDAt(const Vec4& pos) const
             {
                 return ChunkID(static_cast<int>(std::floor(pos(0) * roundingFactor(0))),
                                static_cast<int>(std::floor(pos(1) * roundingFactor(1))),
@@ -339,24 +353,24 @@ namespace chisel
               this->threadTreshold = threadTreshold;
             }
 
-            const DistVoxel* GetDistanceVoxel(const Vec3& pos) const;
-            DistVoxel* GetDistanceVoxelMutable(const Vec3& pos);
-            const ColorVoxel* GetColorVoxel(const Vec3& pos) const;
-            ColorVoxel* GetColorVoxelMutable(const Vec3& pos);
+            const DistVoxel* GetDistanceVoxel(const Vec4& pos) const;
+            DistVoxel* GetDistanceVoxelMutable(const Vec4& pos);
+            const ColorVoxel* GetColorVoxel(const Vec4& pos) const;
+            ColorVoxel* GetColorVoxelMutable(const Vec4& pos);
 
             void GetChunkIDsIntersecting(const AABB& box, ChunkIDList* chunkList);
             void GetChunkIDsIntersecting(const Frustum& frustum, ChunkIDList* chunkList);
             void GetChunkIDsIntersecting(const PointCloud& cloud, const Transform& cameraTransform, float truncation, float minDist, float maxDist, ChunkIDList* chunkList);
             void CreateChunk(const ChunkID& id);
-            void ClearPassedVoxels(const Vec3& start, const Vec3& end, ChunkSet* updatedChunks);
+            void ClearPassedVoxels(const Vec4& start, const Vec4& end, ChunkSet* updatedChunks);
 
             void GenerateMesh(const ChunkPtr& chunk, Mesh* mesh);
             void ColorizeMesh(Mesh* mesh);
-            Vec3 InterpolateColor(const Vec3& colorPos);
+            Vec3 InterpolateColor(const Vec4& colorPos);
 
             void CacheCentroids();
-            void ExtractBorderVoxelMesh(const ChunkPtr& chunk, const Eigen::Vector3i& index, const Eigen::Vector3f& coordinates, VertIndex* nextMeshIndex, Mesh* mesh);
-            void ExtractInsideVoxelMesh(const ChunkPtr& chunk, const Eigen::Vector3i& index, const Vec3& coords, VertIndex* nextMeshIndex, Mesh* mesh);
+            void ExtractBorderVoxelMesh(const ChunkPtr& chunk, const Eigen::Vector3i& index, const Eigen::Vector4f& coordinates, VertIndex* nextMeshIndex, Mesh* mesh);
+            void ExtractInsideVoxelMesh(const ChunkPtr& chunk, const Eigen::Vector3i& index, const Vec4& coords, VertIndex* nextMeshIndex, Mesh* mesh);
 
             inline const MeshMap& GetAllMeshes() const { return *allMeshes; }
             inline MeshMap& GetAllMutableMeshes() { return *allMeshes; }
@@ -388,14 +402,14 @@ namespace chisel
             inline const Eigen::Vector3f& GetChunkSizeMeters() const { return chunkSizeMeters; }
             inline float GetResolution() const { return voxelResolutionMeters; }
 
-            inline const Vec3List& GetCentroids() const { return centroids; }
+            inline const Vec4List& GetCentroids() const { return centroids; }
 
             void PrintMemoryStatistics() const;
 
             void Reset();
 
-            bool GetSDFAndGradient(const Eigen::Vector3f& pos, double* dist, Eigen::Vector3f* grad) const;
-            bool GetSDF(const Eigen::Vector3f& pos, double* dist) const;
+            bool GetSDFAndGradient(const Eigen::Vector4f& pos, double* dist, Eigen::Vector4f *grad) const;
+            bool GetSDF(const Vec4& pos, double* dist) const;
 
             inline void DeleteEmptyChunks() { DeleteEmptyChunks(incrementalChanges->getChangedChunks()); }
             void DeleteEmptyChunks(const ChunkMap& chunk_set);
@@ -419,8 +433,8 @@ namespace chisel
             Eigen::Vector3i chunkSize;
             Eigen::Vector3f chunkSizeMeters;
             float voxelResolutionMeters;
-            Vec3List centroids;
-            Eigen::Matrix<int, 3, 8> cubeIndexOffsets;
+            Vec4List centroids;
+            Eigen::Matrix<int, 4, 8> cubeIndexOffsets;
             boost::shared_ptr<MeshMap> allMeshes;
             bool useColor;
             unsigned int maxThreads;

@@ -50,9 +50,9 @@ namespace chisel
                 indices.clear();
             }
 
-            Vec3List vertices;
+            Vec4List vertices;
             VertIndexList indices;
-            Vec3List normals;
+            Vec4List normals;
             Vec3List colors;
 
     };

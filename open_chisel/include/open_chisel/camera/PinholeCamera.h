@@ -53,10 +53,10 @@ namespace chisel
 
             void SetupFrustum(const Transform& view, Frustum* frustum) const;
 
-            Vec3 ProjectPoint(const Vec3& point) const;
-            Vec3 UnprojectPoint(const Vec3& point) const;
+            Vec4 ProjectPoint(const Vec4& point) const;
+            Vec4 UnprojectPoint(const Vec4 &point) const;
 
-            bool IsPointOnImage(const Vec3& point) const;
+            bool IsPointOnImage(const Vec4& point) const;
 
         protected:
             Intrinsics intrinsics;

@@ -39,13 +39,13 @@ namespace chisel
             virtual ~MarchingCubes();
 
 
-            static void MeshCube(const Eigen::Matrix<float, 3, 8>& vertex_coordinates, const Eigen::Matrix<float, 8, 1>& vertexSDF, TriangleVector* triangles)
+            static void MeshCube(const Eigen::Matrix<float, 4, 8>& vertex_coordinates, const Eigen::Matrix<float, 8, 1>& vertexSDF, TriangleVector* triangles)
             {
                 assert(triangles != nullptr);
 
                 const int index = CalculateVertexConfiguration(vertexSDF);
 
-                Eigen::Matrix<float, 3, 12> edgeCoords;
+                Eigen::Matrix<float, 4, 12> edgeCoords;
                 InterpolateEdgeVertices(vertex_coordinates, vertexSDF, &edgeCoords);
 
                 const int* table_row = triangleTable[index];
@@ -55,23 +55,23 @@ namespace chisel
                 while ((edgeIDX = table_row[tableCol]) != -1)
                 {
                     Eigen::Matrix3f triangle;
-                    triangle.col(0) = edgeCoords.col(edgeIDX);
+                    triangle.col(0) = edgeCoords.col(edgeIDX).head<3>();
                     edgeIDX = table_row[tableCol + 1];
-                    triangle.col(1) = edgeCoords.col(edgeIDX);
+                    triangle.col(1) = edgeCoords.col(edgeIDX).head<3>();
                     edgeIDX = table_row[tableCol + 2];
-                    triangle.col(2) = edgeCoords.col(edgeIDX);
+                    triangle.col(2) = edgeCoords.col(edgeIDX).head<3>();
                     triangles->push_back(triangle);
                     tableCol += 3;
                 }
             }
 
-            static void MeshCube(const Eigen::Matrix<float, 3, 8>& vertexCoords, const Eigen::Matrix<float, 8, 1>& vertexSDF, VertIndex* nextIDX, Mesh* mesh)
+            static void MeshCube(const Eigen::Matrix<float, 4, 8>& vertexCoords, const Eigen::Matrix<float, 8, 1>& vertexSDF, VertIndex* nextIDX, Mesh* mesh)
             {
                 assert(nextIDX != nullptr);
                 assert(mesh != nullptr);
                 const int index = CalculateVertexConfiguration(vertexSDF);
 
-                Eigen::Matrix<float, 3, 12> edge_vertex_coordinates;
+                Eigen::Matrix<float, 4, 12> edge_vertex_coordinates;
                 InterpolateEdgeVertices(vertexCoords, vertexSDF, &edge_vertex_coordinates);
 
                 const int* table_row = triangleTable[index];
@@ -85,12 +85,14 @@ namespace chisel
                     mesh->indices.push_back(*nextIDX);
                     mesh->indices.push_back((*nextIDX) + 1);
                     mesh->indices.push_back((*nextIDX) + 2);
-                    const Eigen::Vector3f& p0 = mesh->vertices[*nextIDX];
-                    const Eigen::Vector3f& p1 = mesh->vertices[*nextIDX + 1];
-                    const Eigen::Vector3f& p2 = mesh->vertices[*nextIDX + 2];
-                    Eigen::Vector3f px = (p1 - p0);
-                    Eigen::Vector3f py = (p2 - p0);
-                    Eigen::Vector3f n = px.cross(py).normalized();
+                    const Eigen::Vector4f& p0 = mesh->vertices[*nextIDX];
+                    const Eigen::Vector4f& p1 = mesh->vertices[*nextIDX + 1];
+                    const Eigen::Vector4f& p2 = mesh->vertices[*nextIDX + 2];
+                    Eigen::Vector4f px = (p1 - p0);
+                    Eigen::Vector4f py = (p2 - p0);
+                    Eigen::Vector4f n;
+                    n.w() = 0.0;
+                    n.head<3>()= px.head<3>().cross(py.head<3>()).normalized();
                     mesh->normals.push_back(n);
                     mesh->normals.push_back(n);
                     mesh->normals.push_back(n);
@@ -111,7 +113,7 @@ namespace chisel
                         (vertexSDF(7) < 0 ? (1<<7) : 0);
             }
 
-            static void InterpolateEdgeVertices(const Eigen::Matrix<float, 3, 8>& vertexCoords, const Eigen::Matrix<float, 8, 1>& vertSDF, Eigen::Matrix<float, 3, 12>* edgeCoords)
+            static void InterpolateEdgeVertices(const Eigen::Matrix<float, 4, 8>& vertexCoords, const Eigen::Matrix<float, 8, 1>& vertSDF, Eigen::Matrix<float, 4, 12>* edgeCoords)
             {
                 assert(edgeCoords != nullptr);
                 for (std::size_t i = 0; i < 12; ++i)
@@ -127,16 +129,16 @@ namespace chisel
 
             // Performs linear interpolation on two cube corners to find the approximate
             // zero crossing (surface) value.
-            static inline Vec3 InterpolateVertex(const Vec3& vertex1, const Vec3& vertex2, const float& sdf1, const float& sdf2)
+            static inline Vec4 InterpolateVertex(const Vec4& vertex1, const Vec4& vertex2, const float& sdf1, const float& sdf2)
             {
                 const float minDiff = 1e-6;
                 const float sdfDiff = sdf1 - sdf2;
                 if (fabs(sdfDiff) < minDiff)
                 {
-                    return Vec3(vertex1 + 0.5 * vertex2);
+                    return Vec4(vertex1 + 0.5 * vertex2);
                 }
                 const float t = sdf1 / sdfDiff;
-                return Vec3(vertex1 + t * (vertex2 - vertex1));
+                return Vec4(vertex1 + t * (vertex2 - vertex1));
             }
     };
 

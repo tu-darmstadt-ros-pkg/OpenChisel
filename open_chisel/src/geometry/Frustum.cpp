@@ -44,8 +44,8 @@ namespace chisel
 
         for (const Plane* plane : planes)
         {
-            Vec3 axisVert;
-            const Vec3& normal = plane->normal;
+            Vec4 axisVert;
+            const Vec4& normal = plane->normal;
 
             // x-axis
             // Which AABB vertex is furthest down (plane normals direction) the x axis.
@@ -78,7 +78,7 @@ namespace chisel
         return false;
     }
 
-    bool Frustum::Contains(const Vec3& point) const
+    bool Frustum::Contains(const Vec4& point) const
     {
         // Compute distance to all the planes of the frustum.
         const Plane* planes[] = { &far, &near, &top, &bottom, &left, &right };
@@ -103,11 +103,11 @@ namespace chisel
         assert(box != nullptr);
         float bigNum = std::numeric_limits<float>::max();
 
-        Vec3 tempMin(bigNum, bigNum, bigNum);
-        Vec3 tempMax(-bigNum, -bigNum, -bigNum);
+        Vec4 tempMin(bigNum, bigNum, bigNum, 0.0f);
+        Vec4 tempMax(-bigNum, -bigNum, -bigNum, 0.0f);
         for (int i = 0; i < 8; i++)
         {
-          const Vec3& corner = corners[i];
+          const Vec4& corner = corners[i];
           tempMin(0) = std::min<float>(tempMin(0), corner(0));
           tempMin(1) = std::min<float>(tempMin(1), corner(1));
           tempMin(2) = std::min<float>(tempMin(2), corner(2));
@@ -123,10 +123,11 @@ namespace chisel
 
     void Frustum::SetFromOpenGLViewProjection(const Mat4x4& view, const Mat4x4& proj)
     {
-        Vec3 right = view.transpose().block(0, 0, 3, 1).cast<float>();
-        Vec3 up = view.transpose().block(0, 1, 3, 1).cast<float>();
-        Vec3 d = -view.transpose().block(0, 2, 3, 1).cast<float>();
-        Vec3 p = view.block(0, 3, 3, 1).cast<float>();
+        Vec4 right, up, d, p = Vec4::Zero();
+        right.head<3>() = view.transpose().block(0, 0, 3, 1).cast<float>();
+        up.head<3>() = view.transpose().block(0, 1, 3, 1).cast<float>();
+        d.head<3>() = -view.transpose().block(0, 2, 3, 1).cast<float>();
+        p.head<3>() = view.block(0, 3, 3, 1).cast<float>();
         const float& aa = proj.data()[0];
         const float& bb = proj.data()[5];
         const float& cc = proj.data()[10];
@@ -143,33 +144,34 @@ namespace chisel
     void Frustum::SetFromParams(const Transform& view, float nearDist, float farDist, float fx, float fy, float /*cx*/, float cy, float imgWidth, float imgHeight)
     {
         Mat3x3 r = view.linear();
-        Vec3 right = r.col(0);
-        Vec3 up = -r.col(1);
-        Vec3 d = r.col(2);
-        Vec3 p = view.translation();
+        Vec4 right, up, d, p = Vec4::Zero();
+        right.head<3>() = r.col(0);
+        up.head<3>() = -r.col(1);
+        d.head<3>() = r.col(2);
+        p.head<3>() = view.translation();
         float aspect = (fx * imgWidth) / (fy * imgHeight);
         float fov = atan2(cy, fy) + atan2(imgHeight - cy, fy);
         SetFromVectors(d, p, right, up, nearDist, farDist, fov, aspect);
     }
 
-    void Frustum::SetFromVectors(const Vec3& forward, const Vec3& pos, const Vec3& rightVec, const Vec3& up, float nearDist, float farDist, float fov, float aspect)
+    void Frustum::SetFromVectors(const Vec4& forward, const Vec4& pos, const Vec4& rightVec, const Vec4& up, float nearDist, float farDist, float fov, float aspect)
     {
         float angleTangent = tan(fov / 2);
         float heightFar = angleTangent * farDist;
         float widthFar = heightFar * aspect;
         float heightNear = angleTangent * nearDist;
         float widthNear = heightNear * aspect;
-        Vec3 farCenter = pos + forward * farDist;
-        Vec3 farTopLeft = farCenter + (up * heightFar) - (rightVec * widthFar);
-        Vec3 farTopRight = farCenter + (up * heightFar) + (rightVec * widthFar);
-        Vec3 farBotLeft = farCenter - (up * heightFar) - (rightVec * widthFar);
-        Vec3 farBotRight = farCenter - (up * heightFar) + (rightVec * widthFar);
+        Vec4 farCenter = pos + forward * farDist;
+        Vec4 farTopLeft = farCenter + (up * heightFar) - (rightVec * widthFar);
+        Vec4 farTopRight = farCenter + (up * heightFar) + (rightVec * widthFar);
+        Vec4 farBotLeft = farCenter - (up * heightFar) - (rightVec * widthFar);
+        Vec4 farBotRight = farCenter - (up * heightFar) + (rightVec * widthFar);
 
-        Vec3 nearCenter = pos + forward * nearDist;
-        Vec3 nearTopLeft = nearCenter + (up * heightNear) - (rightVec * widthNear);
-        Vec3 nearTopRight = nearCenter + (up * heightNear) + (rightVec * widthNear);
-        Vec3 nearBotLeft = nearCenter - (up * heightNear) - (rightVec * widthNear);
-        Vec3 nearBotRight = nearCenter - (up * heightNear) + (rightVec * widthNear);
+        Vec4 nearCenter = pos + forward * nearDist;
+        Vec4 nearTopLeft = nearCenter + (up * heightNear) - (rightVec * widthNear);
+        Vec4 nearTopRight = nearCenter + (up * heightNear) + (rightVec * widthNear);
+        Vec4 nearBotLeft = nearCenter - (up * heightNear) - (rightVec * widthNear);
+        Vec4 nearBotRight = nearCenter - (up * heightNear) + (rightVec * widthNear);
 
         near = Plane(nearBotLeft, nearTopLeft, nearBotRight);
         far = Plane(farTopRight, farTopLeft, farBotRight);

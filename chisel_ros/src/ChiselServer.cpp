@@ -141,10 +141,10 @@ namespace chisel_ros
         marker.scale.z = 0.01;
 
         marker.type = visualization_msgs::Marker::LINE_LIST;
-        const chisel::Vec3* lines = frustum.GetLines();
+        const chisel::Vec4* lines = frustum.GetLines();
         for (int i = 0; i < 24; i++)
         {
-            const chisel::Vec3& linePoint = lines[i];
+            const chisel::Vec4& linePoint = lines[i];
             geometry_msgs::Point pt;
             pt.x = linePoint.x();
             pt.y = linePoint.y();
@@ -484,7 +484,7 @@ namespace chisel_ros
             if(chunkManager.HasChunk(id.first))
             {
                 chisel::AABB aabb = chunkManager.GetChunk(id.first)->ComputeBoundingBox();
-                chisel::Vec3 center = aabb.GetCenter();
+                chisel::Vec4 center = aabb.GetCenter();
                 geometry_msgs::Point pt;
                 pt.x = center.x();
                 pt.y = center.y();
@@ -521,7 +521,7 @@ namespace chisel_ros
         for (const std::pair<chisel::ChunkID, chisel::ChunkPtr>& pair : chunkManager.GetChunks())
         {
             chisel::AABB aabb = pair.second->ComputeBoundingBox();
-            chisel::Vec3 center = aabb.GetCenter();
+            chisel::Vec4 center = aabb.GetCenter();
             geometry_msgs::Point pt;
             pt.x = center.x();
             pt.y = center.y();
@@ -573,7 +573,7 @@ namespace chisel_ros
             const chisel::MeshPtr& mesh = meshes.second;
             for (size_t i = 0; i < mesh->vertices.size(); i++)
             {
-                const chisel::Vec3& vec = mesh->vertices[i];
+                const chisel::Vec4& vec = mesh->vertices[i];
                 geometry_msgs::Point pt;
                 pt.x = vec[0];
                 pt.y = vec[1];
@@ -594,9 +594,9 @@ namespace chisel_ros
                 {
                   if(mesh->HasNormals())
                   {
-                      const chisel::Vec3 normal = mesh->normals[i];
+                      const chisel::Vec4 normal = mesh->normals[i];
                       std_msgs::ColorRGBA color;
-                      chisel::Vec3 lambert = LAMBERT(normal, lightDir) + LAMBERT(normal, lightDir1) + ambient;
+                      chisel::Vec3 lambert = LAMBERT(normal.head<3>(), lightDir) + LAMBERT(normal.head<3>(), lightDir1) + ambient;
                       color.r = fmin(lambert[0], 1.0);
                       color.g = fmin(lambert[1], 1.0);
                       color.b = fmin(lambert[2], 1.0);
@@ -724,14 +724,14 @@ namespace chisel_ros
             {
                 if(mesh->HasNormals())
                 {
-                const chisel::Vec3& vec = mesh->vertices[i];
+                const chisel::Vec4& vec = mesh->vertices[i];
                 geometry_msgs::Point pt;
                 pt.x = vec[0];
                 pt.y = vec[1];
                 pt.z = vec[2];
                 marker->points.push_back(pt);
 
-                const chisel::Vec3 endPoint = 0.3*mesh->normals[i] + vec;
+                const chisel::Vec4 endPoint = 0.3*mesh->normals[i] + vec;
                 geometry_msgs::Point pt2;
                 pt2.x = endPoint[0];
                 pt2.y = endPoint[1];
@@ -754,7 +754,7 @@ namespace chisel_ros
       for (const std::pair<chisel::ChunkID, chisel::ChunkPtr>& pair : chunkManager.GetChunks())
       {
         const std::vector<chisel::DistVoxel>&  voxels = pair.second->GetVoxels();
-        chisel::Vec3 origin = pair.second->GetOrigin();
+        chisel::Vec4 origin = pair.second->GetOrigin();
 
         int voxelID = 0;
 

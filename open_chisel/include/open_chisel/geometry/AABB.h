@@ -36,10 +36,10 @@ namespace chisel
         public:
             EIGEN_MAKE_ALIGNED_OPERATOR_NEW
             AABB();
-            AABB(const Vec3& min, const Vec3& max);
+            AABB(const Vec4& min, const Vec4& max);
             virtual ~AABB();
 
-            inline bool Contains(const Vec3& pos) const
+            inline bool Contains(const Vec4& pos) const
             {
                 return pos(0) >= min(0) && pos(1) >= min(1) && pos(2) >= min(2) &&
                        pos(0) <= max(0) && pos(1) <= max(1) && pos(2) <= max(2);
@@ -56,20 +56,20 @@ namespace chisel
                 return true;
             }
 
-            inline Vec3 GetCenter() const
+            inline Vec4 GetCenter() const
             {
                 return (max + min) * 0.5f;
             }
 
-            inline Vec3 GetExtents() const
+            inline Vec4 GetExtents() const
             {
                 return (max - min) * 0.5f;
             }
 
             Plane::IntersectionType Intersects(const Plane& other) const;
 
-            Vec3 min;
-            Vec3 max;
+            Vec4 min;
+            Vec4 max;
     };
     typedef boost::shared_ptr<AABB> AABBPtr;
     typedef boost::shared_ptr<const AABB> AABBConstPtr;

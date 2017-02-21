@@ -53,7 +53,7 @@ namespace chisel
         stream << "end_header" << std::endl;
 
         size_t vert_idx = 0;
-        for (const Vec3& vert : mesh->vertices)
+        for (const Vec4& vert : mesh->vertices)
         {
             stream << vert(0) << " " << vert(1) << " " << vert(2);
 

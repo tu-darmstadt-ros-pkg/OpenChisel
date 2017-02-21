@@ -30,7 +30,7 @@ namespace chisel
 
   }
 
-  ProjectionIntegrator::ProjectionIntegrator(const TruncatorPtr& t, const WeighterPtr& w, const float maxWeight, float crvDist, bool enableCrv, const Vec3List& centers) :
+  ProjectionIntegrator::ProjectionIntegrator(const TruncatorPtr& t, const WeighterPtr& w, const float maxWeight, float crvDist, bool enableCrv, const Vec4List& centers) :
     truncator(t), weighter(w), maximumWeight(maxWeight), carvingDist(crvDist), enableVoxelCarving(enableCrv), centroids(centers)
   {
 
@@ -55,34 +55,32 @@ namespace chisel
   {
     const float roundingFactor = 1.0f / chunk->GetVoxelResolutionMeters();
 
-    Point3List raycastVoxels;
+    Point4List raycastVoxels;
     Point3 chunkMin = Point3::Zero();
     Point3 chunkMax = chunk->GetNumVoxels();
     bool updated = false;
-    Vec3 startCamera = cameraPose.translation();
-    for (const Vec3& point : cloud.GetPoints())
+    Vec4 startCamera = Vec4::Zero();
+    startCamera.head<3>() = cameraPose.translation();
+    for (const Vec4& point : cloud.GetPoints())
       {
-        Vec3 worldPoint = cameraPose * point;
-        const Vec3 distance = worldPoint - startCamera;
+        Vec4 worldPoint = cameraPose * point;
+        const Vec4 distance = worldPoint - startCamera;
         float depth = distance.norm();
-        Vec3 dir = distance.normalized();
+        Vec4 dir = distance.normalized();
         float truncation = truncator->GetTruncationDistance(depth);
-        Vec3 start = worldPoint - dir * truncation - chunk->GetOrigin();
-        Vec3 end = worldPoint + dir * truncation - chunk->GetOrigin();
-        start.x() *= roundingFactor;
-        start.y() *= roundingFactor;
-        start.z() *= roundingFactor;
-        end.x() *= roundingFactor;
-        end.y() *= roundingFactor;
-        end.z() *= roundingFactor;
+        Vec4 start = worldPoint - dir * truncation - chunk->GetOrigin();
+        Vec4 end = worldPoint + dir * truncation - chunk->GetOrigin();
+        start *= roundingFactor;
+        end *= roundingFactor;
+
         raycastVoxels.clear();
         Raycast(start, end, chunkMin, chunkMax, &raycastVoxels);
 
-        for (const Point3& voxelCoords : raycastVoxels)
+        for (const Point4& voxelCoords : raycastVoxels)
           {
             VoxelID id = chunk->GetVoxelID(voxelCoords);
             DistVoxel& distVoxel = chunk->GetDistVoxelMutable(id);
-            const Vec3& centroid = centroids[id] + chunk->GetOrigin();
+            const Vec4& centroid = centroids[id] + chunk->GetOrigin();
             float u = depth - (centroid - startCamera).norm();
             float weight = weighter->GetWeight(u, truncation);
             if (fabs(u) < truncation)
@@ -103,26 +101,27 @@ namespace chisel
     return updated;
   }
 
-  void ProjectionIntegrator::IntegratePoint(const Vec3& sensorOrigin, const Vec3& point, const Vec3& direction, float distance, ChunkManager& chunkManager, ChunkSet* updatedChunks) const
+  void ProjectionIntegrator::IntegratePoint(const Vec4& sensorOrigin, const Vec4& point, const Vec4& direction, float distance, ChunkManager& chunkManager, ChunkSet* updatedChunks) const
   {
     const float resolution = chunkManager.GetResolution();
     const float roundingFactor = 1.0f / resolution;
     const float halfDiag = 0.5 * sqrt(3.0f) * resolution;
 
     const float truncation = truncator->GetTruncationDistance(distance);
-    const Vec3 truncationOffset = direction.normalized() * truncation;
-    const Vec3 start = (point - truncationOffset) * roundingFactor;
-    const Vec3 end = (point + truncationOffset) * roundingFactor;
+    const Vec4 truncationOffset = direction.normalized() * truncation;
+    const Vec4 start = (point - truncationOffset) * roundingFactor;
+    const Vec4 end = (point + truncationOffset) * roundingFactor;
 
-    const Vec3 voxelShift(0.5 * resolution, 0.5 * resolution, 0.5 * resolution);
+    const Vec4 voxelShift(0.5 * resolution, 0.5 * resolution, 0.5 * resolution, 0.0f);
 
-    Point3List raycastVoxels;
-
+    Point4List raycastVoxels;
     Raycast(start, end, raycastVoxels);
 
-    for (const Point3& voxelCoords : raycastVoxels)
+    for (const Point4& voxelCoords : raycastVoxels)
     {
-        Vec3 voxelPos = voxelCoords.cast<float>() * resolution +  voxelShift;
+        Vec4 voxelPos(voxelCoords.x(), voxelCoords.y(), voxelCoords.z(), 0.0f);
+        voxelPos = voxelPos * resolution +  voxelShift;
+
         const ChunkID& chunkID = chunkManager.GetIDAt(voxelPos);
 
         if (!chunkManager.HasChunk(chunkID))
@@ -131,13 +130,13 @@ namespace chisel
         }
 
         ChunkPtr chunk = chunkManager.GetChunk(chunkID);
-        const Vec3& origin = chunk->GetOrigin();
+        const Vec4& origin = chunk->GetOrigin();
 
         voxelPos -= origin;
         VoxelID voxelID = chunk->GetVoxelID(voxelPos);
 
         DistVoxel& distVoxel = chunk->GetDistVoxelMutable(voxelID);
-        const Vec3& centroid = centroids[voxelID] + origin;
+        const Vec4& centroid = centroids[voxelID] + origin;
         float u = distance - (centroid - sensorOrigin).norm();
         float weight = weighter->GetWeight(u, truncation);
         if (fabs(u) < truncation + halfDiag)
@@ -153,38 +152,36 @@ namespace chisel
   {
     const float roundingFactor = 1.0f / chunk->GetVoxelResolutionMeters();
 
-    Point3List raycastVoxels;
+    Point4List raycastVoxels;
     Point3 chunkMin = Point3::Zero();
     Point3 chunkMax = chunk->GetNumVoxels();
     bool updated = false;
     size_t i = 0;
-    Vec3 startCamera = cameraPose.translation();
+    Vec4 startCamera = Vec4::Zero();
+    startCamera.head<3>() = cameraPose.translation();
     Transform inversePose = cameraPose.inverse();
-    for (const Vec3& point : cloud.GetPoints())
+    for (const Vec4& point : cloud.GetPoints())
       {
         const Vec3& color = cloud.GetColors()[i];
-        Vec3 worldPoint = cameraPose * point;
-        const Vec3 distance = worldPoint - startCamera;
+        Vec4 worldPoint = cameraPose * point;
+        const Vec4 distance = worldPoint - startCamera;
         float depth = distance.norm();
-        Vec3 dir = distance.normalized();
+        Vec4 dir = distance.normalized();
         float truncation = truncator->GetTruncationDistance(depth);
-        Vec3 start = worldPoint - dir * truncation - chunk->GetOrigin();
-        Vec3 end = worldPoint + dir * truncation - chunk->GetOrigin();
-        start.x() *= roundingFactor;
-        start.y() *= roundingFactor;
-        start.z() *= roundingFactor;
-        end.x() *= roundingFactor;
-        end.y() *= roundingFactor;
-        end.z() *= roundingFactor;
+        Vec4 start = worldPoint - dir * truncation - chunk->GetOrigin();
+        Vec4 end = worldPoint + dir * truncation - chunk->GetOrigin();
+        start *= roundingFactor;
+        end *= roundingFactor;
+
         raycastVoxels.clear();
         Raycast(start, end, chunkMin, chunkMax, &raycastVoxels);
 
-        for (const Point3& voxelCoords : raycastVoxels)
+        for (const Point4& voxelCoords : raycastVoxels)
           {
             VoxelID id = chunk->GetVoxelID(voxelCoords);
             ColorVoxel& voxel = chunk->GetColorVoxelMutable(id);
             DistVoxel& distVoxel = chunk->GetDistVoxelMutable(id);
-            const Vec3& centroid = centroids[id] + chunk->GetOrigin();
+            const Vec4& centroid = centroids[id] + chunk->GetOrigin();
             float u = depth - (inversePose * centroid - startCamera).norm();
             float weight = weighter->GetWeight(u, truncation);
             if (fabs(u) < truncation)

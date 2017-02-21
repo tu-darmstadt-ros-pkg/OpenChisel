@@ -23,7 +23,7 @@ inline float intbound(float s, int ds)
     }
 }
 
-void Raycast(const Vec3& start, const Vec3& end, const Point3& min, const Point3& max, Point3List* output)
+void Raycast(const Vec4& start, const Vec4& end, const Point3& min, const Point3& max, Point4List* output)
 {
     assert(!!output);
     // From "A Fast Voxel Traversal Algorithm for Ray Tracing"
@@ -80,7 +80,7 @@ void Raycast(const Vec3& start, const Vec3& end, const Point3& min, const Point3
         if(x >= min.x() && x < max.x() &&
            y >= min.y() && y < max.y() &&
            z >= min.z() && z < max.z())
-            output->push_back(Point3(x, y, z));
+            output->push_back(Point4(x, y, z, 0));
 
         if(x == endX && y == endY && z == endZ) break;
 
@@ -119,7 +119,7 @@ void Raycast(const Vec3& start, const Vec3& end, const Point3& min, const Point3
     }
 }
 
-void Raycast(const chisel::Vec3& start, const chisel::Vec3& end, chisel::Point3List& output)
+void Raycast(const chisel::Vec4& start, const chisel::Vec4& end, chisel::Point4List& output)
 {
   assert(!!output);
   // From "A Fast Voxel Traversal Algorithm for Ray Tracing"
@@ -140,48 +140,35 @@ void Raycast(const chisel::Vec3& start, const chisel::Vec3& end, chisel::Point3L
   // (i.e. change the integer part of the coordinate) in the variables
   // tMaxX, tMaxY, and tMaxZ.
 
-  // Cube containing origin point.
-  int x =  static_cast<int>(std::floor(start.x()));
-  int y = static_cast<int>(std::floor(start.y()));
-  int z = static_cast<int>(std::floor(start.z()));
-  const int endX = static_cast<int>(std::floor(end.x()));
-  const int endY = static_cast<int>(std::floor(end.y()));
-  const int endZ = static_cast<int>(std::floor(end.z()));
-
-  // Break out direction vector.
-  const int dx = endX - x;
-  const int dy = endY - y;
-  const int dz = endZ - z;
+  Point4 startInt(std::floor(start.x()), std::floor(start.y()), std::floor(start.z()), 0); // switch to floor(Point4 p) as soon it's available
+  Point4 endInt(std::floor(end.x()), std::floor(end.y()), std::floor(end.z()), 0);
+  const Point4 dir = endInt - startInt;
 
   // Direction to increment x,y,z when stepping.
-  const int stepX = signum(dx);
-  const int stepY = signum(dy);
-  const int stepZ = signum(dz);
-
-  // See description above. The initial values depend on the fractional
-  // part of the origin.
-  float tMaxX = intbound(start.x(), dx);
-  float tMaxY = intbound(start.y(), dy);
-  float tMaxZ = intbound(start.z(), dz);
-
-  // The change in t when taking a step (always positive).
-  const float tDeltaX = static_cast<float>(stepX) / dx;
-  const float tDeltaY = static_cast<float>(stepY) / dy;
-  const float tDeltaZ = static_cast<float>(stepZ) / dz;
+  const Point4 step(signum(dir.x()), signum(dir.y()), signum(dir.z()), 0); // switch to cwiseSign() as soon we use Eigen 3.3
 
   // Avoids an infinite loop.
-  if (stepX == 0 && stepY == 0 && stepZ == 0)
+  if (step.cwiseEqual(0).count() == 4)
   {
       return;
   }
 
-  Point3 point = Point3(x,y,z);
+  // See description above. The initial values depend on the fractional part of the origin.
+  float tMaxX = intbound(start.x(), dir.x());
+  float tMaxY = intbound(start.y(), dir.y());
+  float tMaxZ = intbound(start.z(), dir.z());
+
+  // The change in t when taking a step (always positive).
+  const Vec4 tDelta = step.cast<float>().cwiseQuotient(dir.cast<float>());
+  //printf("tDelta: %f %f %f %f \n", tDelta.x(), tDelta.y(), tDelta.z(), tDelta.w());
+
+  Point4 point(startInt);
 
   while (true)
   {
       output.push_back(point);
 
-      if(point(0) == endX && point(1) == endY && point(2) == endZ)
+      if(point.cwiseEqual(endInt).count() == 4)
       {
         break;
       }
@@ -195,27 +182,27 @@ void Raycast(const chisel::Vec3& start, const chisel::Vec3& end, chisel::Point3L
           if (tMaxX < tMaxZ)
           {
               // Update which cube we are now in.
-              point(0) += stepX;
+              point(0) += step(0);
               // Adjust tMaxX to the next X-oriented boundary crossing.
-              tMaxX += tDeltaX;
+              tMaxX += tDelta(0);
           }
           else
           {
-              point(2) += stepZ;
-              tMaxZ += tDeltaZ;
+              point(2) += step(2);
+              tMaxZ += tDelta(2);
           }
       }
       else
       {
           if (tMaxY < tMaxZ)
           {
-              point(1) += stepY;
-              tMaxY += tDeltaY;
+              point(1) += step(1);
+              tMaxY += tDelta(1);
           }
           else
           {
-              point(2) += stepZ;
-              tMaxZ += tDeltaZ;
+              point(2) += step(2);
+              tMaxZ += tDelta(2);
           }
       }
   }

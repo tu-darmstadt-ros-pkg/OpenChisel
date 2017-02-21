@@ -38,10 +38,10 @@ namespace chisel
             virtual ~Frustum();
 
             bool Intersects(const AABB& box) const;
-            bool Contains(const Vec3& point) const;
+            bool Contains(const Vec4& point) const;
             void ComputeBoundingBox(AABB* box) const;
             void SetFromParams(const Transform& view, float near, float far, float fx, float fy, float cx, float cy, float imgWidth, float imgHeight);
-            void SetFromVectors(const Vec3& forward, const Vec3& pos, const Vec3& right, const Vec3& up, float near, float far, float fov, float aspect);
+            void SetFromVectors(const Vec4& forward, const Vec4& pos, const Vec4& right, const Vec4& up, float near, float far, float fov, float aspect);
             void SetFromOpenGLViewProjection(const Mat4x4& view, const Mat4x4& proj);
 
             const Plane& GetBottomPlane() const { return bottom; }
@@ -51,12 +51,12 @@ namespace chisel
             const Plane& GetNearPlane() const { return near; }
             const Plane& GetFarPlane() const { return far; }
 
-            const Vec3* GetLines() const { return lines; }
-            const Vec3* GetCorners()  const { return corners; }
+            const Vec4* GetLines() const { return lines; }
+            const Vec4* GetCorners()  const { return corners; }
 
         protected:
-            Vec3 corners[8];
-            Vec3 lines[24];
+            Vec4 corners[8];
+            Vec4 lines[24];
             Plane top;
             Plane left;
             Plane right;

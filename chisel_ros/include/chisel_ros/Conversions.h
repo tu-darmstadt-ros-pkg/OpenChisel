@@ -48,10 +48,11 @@ namespace chisel_ros
         size_t i = 0;
         for (const pcl::PointXYZ& pt : cloudIn.points)
         {
-            chisel::Vec3& xyz =  cloudOut->GetMutablePoints().at(i);
+            chisel::Vec4& xyz =  cloudOut->GetMutablePoints().at(i);
             xyz(0) = pt.x;
             xyz(1) = pt.y;
             xyz(2) = pt.z;
+            xyz(3) = 0.0f;
             i++;
         }
     }
@@ -66,10 +67,11 @@ namespace chisel_ros
         float byteToFloat = 1.0f / 255.0f;
         for (const pcl::PointXYZRGB& pt : cloudIn.points)
         {
-            chisel::Vec3& xyz =  cloudOut->GetMutablePoints().at(i);
+            chisel::Vec4& xyz =  cloudOut->GetMutablePoints().at(i);
             xyz(0) = pt.x;
             xyz(1) = pt.y;
             xyz(2) = pt.z;
+            xyz(3) = 0.0f;
 
             chisel::Vec3& rgb = cloudOut->GetMutableColors().at(i);
             rgb(0) = pt.r * byteToFloat;

@@ -41,14 +41,14 @@ namespace chisel
 
             Plane();
             Plane(const Vec4& params);
-            Plane(const Vec3& normal, float distance);
-            Plane(const Vec3& p1, const Vec3& p2, const Vec3& p3);
+            Plane(const Vec4& normal, float distance);
+            Plane(const Vec4& p1, const Vec4& p2, const Vec4& p3);
             Plane(float a, float b, float c, float d);
             virtual ~Plane();
 
-            float GetSignedDistance(const Vec3& point) const;
+            float GetSignedDistance(const Vec4& point) const;
 
-            inline IntersectionType ClassifyPoint(const Vec3& point) const
+            inline IntersectionType ClassifyPoint(const Vec4& point) const
             {
                 float d = GetSignedDistance(point);
 
@@ -63,7 +63,7 @@ namespace chisel
                 return IntersectionType::Intersects;
             }
 
-            Vec3 normal;
+            Vec4 normal;
             float distance;
 
             EIGEN_MAKE_ALIGNED_OPERATOR_NEW

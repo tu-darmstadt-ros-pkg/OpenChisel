@@ -74,7 +74,7 @@ namespace chisel
     size_t v = 0;
     for (const std::pair<ChunkID, MeshPtr>& it : chunkManager.GetAllMeshes())
       {
-        for (const Vec3& vert : it.second->vertices)
+        for (const Vec4& vert : it.second->vertices)
           {
             fullMesh->vertices.push_back(vert);
             fullMesh->indices.push_back(v);
@@ -86,7 +86,7 @@ namespace chisel
             fullMesh->colors.push_back(color);
           }
 
-        for (const Vec3& normal : it.second->normals)
+        for (const Vec4& normal : it.second->normals)
           {
             fullMesh->normals.push_back(normal);
           }
@@ -104,14 +104,14 @@ namespace chisel
   }
 
   //Integrate pointcloud after transforming to target frame using a given sensor pose
-  void Chisel::IntegratePointCloud(const ProjectionIntegrator& integrator, const PointCloud& cloud, const Transform& extrinsic, const Vec3& sensorOrigin, float minDist, float maxDist)
+  void Chisel::IntegratePointCloud(const ProjectionIntegrator& integrator, const PointCloud& cloud, const Transform& extrinsic, const Vec4& sensorOrigin, float minDist, float maxDist)
   {
     ChunkSet updatedChunks;
 
     //TODO: parallelize
-    for (const Vec3& point : cloud.GetPoints())
+    for (const Vec4& point : cloud.GetPoints())
     {
-        Vec3 point_transformed = extrinsic * point;
+        Vec4 point_transformed = extrinsic * point;
         IntegrateRay(integrator, updatedChunks, sensorOrigin, point_transformed, minDist, maxDist);
     }
 
@@ -122,12 +122,12 @@ namespace chisel
   void Chisel::IntegratePointCloud(const ProjectionIntegrator& integrator, const PointCloud& cloud, const Transform& extrinsic, float minDist, float maxDist)
   {
     ChunkSet updatedChunks;
-    const Vec3& start = extrinsic.translation();
+    const Vec4 start(extrinsic.translation().x(), extrinsic.translation().y(), extrinsic.translation().z(), 0.0f);
 
     //TODO: parallelize
-    for (const Vec3& point : cloud.GetPoints())
+    for (const Vec4& point : cloud.GetPoints())
     {
-        Vec3 point_transformed = extrinsic * point;
+        Vec4 point_transformed = extrinsic * point;
         IntegrateRay(integrator, updatedChunks, start, point_transformed, minDist, maxDist);
     }
 
@@ -135,12 +135,12 @@ namespace chisel
   }
 
   //Integrate pointcloud already transformed to target frame
-  void Chisel::IntegratePointCloud(const ProjectionIntegrator& integrator, const PointCloud& cloud, const Vec3& sensorOrigin, float minDist, float maxDist)
+  void Chisel::IntegratePointCloud(const ProjectionIntegrator& integrator, const PointCloud& cloud, const Vec4& sensorOrigin, float minDist, float maxDist)
   {
     ChunkSet updatedChunks;
 
     //TODO: parallelize
-    for (const Vec3& point : cloud.GetPoints())
+    for (const Vec4& point : cloud.GetPoints())
     {
         IntegrateRay(integrator, updatedChunks, sensorOrigin, point, minDist, maxDist);
     }
@@ -149,9 +149,9 @@ namespace chisel
   }
 
   //Integrate ray already transformed to target frame
-  void Chisel::IntegrateRay(const ProjectionIntegrator& integrator, ChunkSet& updatedChunks, const Vec3& startPoint, const Vec3& endPoint, float minDist, float maxDist)
+  void Chisel::IntegrateRay(const ProjectionIntegrator& integrator, ChunkSet& updatedChunks, const Vec4& startPoint, const Vec4& endPoint, float minDist, float maxDist)
   {
-    const Vec3 difference = endPoint - startPoint;
+    const Vec4 difference = endPoint - startPoint;
 
     float distance = difference.norm();
 
@@ -174,9 +174,9 @@ namespace chisel
     if (integrator.IsCarvingEnabled())
     {
         float truncation = integrator.ComputeTruncationDistance(distance);
-        const Vec3 direction = difference.normalized();
+        const Vec4 direction = difference.normalized();
 
-        Vec3 truncatedPositiveEnd(endPoint);
+        Vec4 truncatedPositiveEnd(endPoint);
         float truncationOffset = integrator.GetCarvingDist() + truncation;
 
         //apply truncation offset towards sensor origin

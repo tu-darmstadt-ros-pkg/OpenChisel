@@ -72,18 +72,25 @@ namespace chisel
             inline const ColorVoxel& GetColorVoxel(const VoxelID& voxelID) const { return colors[voxelID]; }
             inline ColorVoxel& GetColorVoxelMutable(const VoxelID& voxelID) { return colors[voxelID]; }
 
-            inline Vec3 GetCenterWorldCoords() const
+            inline Vec4 GetCenterWorldCoords() const
             {
-                return origin + (numVoxels.cast<float>() * 0.5f * voxelResolutionMeters);
+                return origin + Vec4(numVoxels.x() * 0.5f * voxelResolutionMeters, numVoxels.y() * 0.5f * voxelResolutionMeters, numVoxels.z() * 0.5f * voxelResolutionMeters, 0.0f);
             }
 
             Point3 GetVoxelCoords(const Vec3& relativeCoords) const;
+            Point3 GetVoxelCoords(const Vec4& relativeCoords) const;
 
-            Vec3 GetWorldCoords(const VoxelID& voxelID) const;
+            Vec4 GetWorldCoords(const VoxelID& voxelID) const;
 
             VoxelID GetVoxelID(const Vec3& relativePos) const;
+            VoxelID GetVoxelID(const Vec4& relativePos) const;
 
             inline VoxelID GetVoxelID(const Point3& coords) const
+            {
+                return GetVoxelID(coords.x(), coords.y(), coords.z());
+            }
+
+            inline VoxelID GetVoxelID(const Point4& coords) const
             {
                 return GetVoxelID(coords.x(), coords.y(), coords.z());
             }
@@ -133,9 +140,9 @@ namespace chisel
 
             AABB ComputeBoundingBox();
 
-            inline const Vec3& GetOrigin() const { return origin; }
+            inline const Vec4& GetOrigin() const { return origin; }
 
-            Vec3 GetColorAt(const Vec3& relativedPos);
+            Vec3 GetColorAt(const Vec4& relativedPos);
 
             void SetMesh(MeshPtr mesh) { this->mesh = mesh; }
             MeshConstPtr GetMesh() const { return mesh; }
@@ -144,7 +151,7 @@ namespace chisel
             ChunkID ID;
             Eigen::Vector3i numVoxels;
             float voxelResolutionMeters;
-            Vec3 origin;
+            Vec4 origin;
             std::vector<DistVoxel> voxels;
             std::vector<ColorVoxel> colors;
             MeshPtr mesh;

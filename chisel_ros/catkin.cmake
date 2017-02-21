@@ -13,7 +13,7 @@ file(GLOB_RECURSE HEADER_FILES include/*.h)
 
 find_package(PCL REQUIRED)
 include_directories(${Eigen_INCLUDE_DIRS})
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --std=c++0x")
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --std=c++0x -march=native")
 
 catkin_package(CATKIN_DEPENDS roscpp tf std_msgs sensor_msgs open_chisel pcl_ros chisel_msgs
 	 	INCLUDE_DIRS include

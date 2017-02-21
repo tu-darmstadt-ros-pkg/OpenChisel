@@ -40,13 +40,13 @@ namespace chisel
                 return !colors.empty();
             }
 
-            inline const Vec3List& GetPoints() const { return points; }
-            inline Vec3List& GetMutablePoints() { return points; }
+            inline const Vec4List& GetPoints() const { return points; }
+            inline Vec4List& GetMutablePoints() { return points; }
             inline const Vec3List& GetColors() const { return colors; }
             inline Vec3List& GetMutableColors() { return colors; }
 
 
-            inline void AddPoint(const Vec3& point)
+            inline void AddPoint(const Vec4& point)
             {
                 points.push_back(point);
             }
@@ -56,7 +56,7 @@ namespace chisel
                 colors.push_back(color);
             }
 
-            inline void AddPointAndColor(const Vec3& point, const Vec3& color)
+            inline void AddPointAndColor(const Vec4& point, const Vec3& color)
             {
                 AddPoint(point);
                 AddColor(color);
@@ -70,7 +70,7 @@ namespace chisel
 
 
         protected:
-            Vec3List points;
+            Vec4List points;
             Vec3List colors;
     };
     typedef boost::shared_ptr<PointCloud> PointCloudPtr;

@@ -42,12 +42,12 @@ namespace chisel
   {
   public:
     ProjectionIntegrator();
-    ProjectionIntegrator(const TruncatorPtr& t, const WeighterPtr& w, const float maxWeight, float carvingDist, bool enableCarving, const Vec3List& centroids);
+    ProjectionIntegrator(const TruncatorPtr& t, const WeighterPtr& w, const float maxWeight, float carvingDist, bool enableCarving, const Vec4List& centroids);
     virtual ~ProjectionIntegrator();
 
     bool Integrate(const PointCloud& cloud, const Transform& cameraPose, Chunk* chunk) const;
     bool IntegratePointCloud(const PointCloud& cloud, const Transform& cameraPose, Chunk* chunk) const;
-    void IntegratePoint(const Vec3& sensorOrigin, const Vec3& point, const Vec3& direction, float distance, ChunkManager& chunkManager, ChunkSet* updatedChunks) const;
+    void IntegratePoint(const Vec4& sensorOrigin, const Vec4& point, const Vec4& direction, float distance, ChunkManager& chunkManager, ChunkSet* updatedChunks) const;
     bool IntegrateColorPointCloud(const PointCloud& cloud, const Transform& cameraPose, Chunk* chunk) const;
     bool IntegrateChunk(const Chunk* chunkToIntegrate, Chunk* chunk) const;
     bool IntegrateColorChunk(const Chunk* chunkToIntegrate, Chunk* chunk) const;
@@ -62,19 +62,19 @@ namespace chisel
       float resolution = chunkManager.GetResolution();
       const Point3& numVoxels = chunkManager.GetChunkSize();
 
-      const Vec3 origin(numVoxels(0) * chunkID(0) * resolution, numVoxels(1) * chunkID(1) * resolution, numVoxels(2) * chunkID(2) * resolution);
+      const Vec4 origin(numVoxels(0) * chunkID(0) * resolution, numVoxels(1) * chunkID(1) * resolution, numVoxels(2) * chunkID(2) * resolution, 0.0f);
 
       ChunkPtr chunk;
       bool gotChunkPointer = false;
 
       float diag = 2.0 * sqrt(3.0f) * resolution;
-      Vec3 voxelCenter;
+      Vec4 voxelCenter;
       bool updated = false;
       for (size_t i = 0; i < centroids.size(); i++)
         {
           voxelCenter = centroids[i] + origin;
-          Vec3 voxelCenterInCamera = cameraPose * voxelCenter;
-          Vec3 cameraPos = camera.ProjectPoint(voxelCenterInCamera);
+          Vec4 voxelCenterInCamera = cameraPose * voxelCenter;
+          Vec4 cameraPos = camera.ProjectPoint(voxelCenterInCamera);
 
           if (!camera.IsPointOnImage(cameraPos) || voxelCenterInCamera.z() < 0)
             continue;
@@ -136,7 +136,7 @@ namespace chisel
       float resolution = chunkManager.GetResolution();
       const Point3& numVoxels = chunkManager.GetChunkSize();
 
-      const Vec3 origin(numVoxels(0) * chunkID(0) * resolution, numVoxels(1) * chunkID(1) * resolution, numVoxels(2) * chunkID(2) * resolution);
+      const Vec4 origin(numVoxels(0) * chunkID(0) * resolution, numVoxels(1) * chunkID(1) * resolution, numVoxels(2) * chunkID(2) * resolution, 0.0f);
 
       ChunkPtr chunk;
       bool gotChunkPointer = false;
@@ -149,9 +149,9 @@ namespace chisel
       for (size_t i = 0; i < centroids.size(); i++)
         //parallel_for(centroids.begin(), centroids.end(), [&](const size_t& i)
         {
-          Vec3 voxelCenter = centroids[i] + origin;
-          Vec3 voxelCenterInCamera = depthCameraPose * voxelCenter;
-          Vec3 cameraPos = depthCamera.ProjectPoint(voxelCenterInCamera);
+          Vec4 voxelCenter = centroids[i] + origin;
+          Vec4 voxelCenterInCamera = depthCameraPose * voxelCenter;
+          Vec4 cameraPos = depthCamera.ProjectPoint(voxelCenterInCamera);
 
           if (!depthCamera.IsPointOnImage(cameraPos) || voxelCenterInCamera.z() < 0)
             {
@@ -171,8 +171,8 @@ namespace chisel
 
           if (std::abs(surfaceDist) < truncation + resolutionDiagonal)
             {
-              Vec3 voxelCenterInColorCamera = colorCameraPose* voxelCenter;
-              Vec3 colorCameraPos = colorCamera.ProjectPoint(voxelCenterInColorCamera);
+              Vec4 voxelCenterInColorCamera = colorCameraPose* voxelCenter;
+              Vec4 colorCameraPos = colorCamera.ProjectPoint(voxelCenterInColorCamera);
 
               if (!gotChunkPointer)
               {
@@ -243,7 +243,7 @@ namespace chisel
     inline void SetCarvingDist(float dist) { carvingDist = dist; }
     inline void SetCarvingEnabled(bool enabled) { enableVoxelCarving = enabled; }
 
-    inline void SetCentroids(const Vec3List& c) { centroids = c; }
+    inline void SetCentroids(const Vec4List& c) { centroids = c; }
 
     inline void SetMaximumWeight(const float maxWeight){ maximumWeight = maxWeight; }
 
@@ -252,7 +252,7 @@ namespace chisel
     WeighterPtr weighter;
     float carvingDist;
     bool enableVoxelCarving;
-    Vec3List centroids;
+    Vec4List centroids;
     float maximumWeight;
   };
 

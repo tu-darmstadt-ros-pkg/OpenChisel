@@ -35,21 +35,21 @@ namespace chisel
 
     }
 
-    Vec3 PinholeCamera::ProjectPoint(const Vec3& point) const
+    Vec4 PinholeCamera::ProjectPoint(const Vec4& point) const
     {
         const float& x = point(0);
         const float& y = point(1);
         const float& z = point(2);
         const float invZ = 1.0f / z;
-        return Vec3(intrinsics.GetFx() * x * invZ + intrinsics.GetCx(), intrinsics.GetFy() * y * invZ + intrinsics.GetCy(), z);
+        return Vec4(intrinsics.GetFx() * x * invZ + intrinsics.GetCx(), intrinsics.GetFy() * y * invZ + intrinsics.GetCy(), z, 0.0f);
     }
 
-    Vec3 PinholeCamera::UnprojectPoint(const Vec3& point) const
+    Vec4 PinholeCamera::UnprojectPoint(const Vec4& point) const
     {
         const float& u = point(0);
         const float& v = point(1);
         const float& z = point(2);
-        return Vec3(z * ((u - intrinsics.GetCx()) / intrinsics.GetFx()), z * ((v - intrinsics.GetCy()) / intrinsics.GetFy()), z);
+        return Vec4(z * ((u - intrinsics.GetCx()) / intrinsics.GetFx()), z * ((v - intrinsics.GetCy()) / intrinsics.GetFy()), z, 0.0f);
     }
 
     void PinholeCamera::SetupFrustum(const Transform& view, Frustum* frustum) const
@@ -58,7 +58,7 @@ namespace chisel
         frustum->SetFromParams(view, nearPlane, farPlane, intrinsics.GetFy(), intrinsics.GetFy(), intrinsics.GetCx(), intrinsics.GetCy(), width, height);
     }
 
-    bool PinholeCamera::IsPointOnImage(const Vec3& point) const
+    bool PinholeCamera::IsPointOnImage(const Vec4& point) const
     {
         return point(0) >= 0 && point(1) >= 0 && point(0) < width && point(1) < height;
     }

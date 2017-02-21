@@ -40,7 +40,7 @@ namespace chisel
             AllocateColorVoxels();
         }
 
-        origin = Vec3(numVoxels(0) * ID(0) * voxelResolutionMeters, numVoxels(1) * ID(1) * voxelResolutionMeters, numVoxels(2) * ID(2) * voxelResolutionMeters);
+        origin = Vec4(numVoxels(0) * ID(0) * voxelResolutionMeters, numVoxels(1) * ID(1) * voxelResolutionMeters, numVoxels(2) * ID(2) * voxelResolutionMeters, 0.0f);
     }
 
     Chunk::~Chunk()
@@ -64,8 +64,8 @@ namespace chisel
 
     AABB Chunk::ComputeBoundingBox()
     {
-        Vec3 pos = origin;
-        Vec3 size = numVoxels.cast<float>() * voxelResolutionMeters;
+        Vec4 pos = origin;
+        Vec4 size(numVoxels.x() * voxelResolutionMeters, numVoxels.y() * voxelResolutionMeters, numVoxels.z() * voxelResolutionMeters, 0.0f);
         return AABB(pos, pos + size);
     }
 
@@ -78,16 +78,31 @@ namespace chisel
                      static_cast<int>(std::floor(relativeCoords(2) * roundingFactor)));
     }
 
-    Vec3 Chunk::GetWorldCoords(const VoxelID& voxelID) const
+    Point3 Chunk::GetVoxelCoords(const Vec4& relativeCoords) const
     {
-      Point3 voxelCoords(voxelID % numVoxels(0),
-                         voxelID / numVoxels(0) % numVoxels(1),
-                         voxelID / (numVoxels(0)*numVoxels(1)));
+      const float roundingFactor = 1.0f / (voxelResolutionMeters);
 
-      return (voxelCoords.cast<float>() + Vec3(0.5, 0.5, 0.5)) * voxelResolutionMeters + origin;
+      return Point3( static_cast<int>(std::floor(relativeCoords(0) * roundingFactor)),
+                     static_cast<int>(std::floor(relativeCoords(1) * roundingFactor)),
+                     static_cast<int>(std::floor(relativeCoords(2) * roundingFactor)));
+    }
+
+    Vec4 Chunk::GetWorldCoords(const VoxelID& voxelID) const
+    {
+      Vec4 voxelCoords(voxelID % numVoxels(0),
+                       voxelID / numVoxels(0) % numVoxels(1),
+                       voxelID / (numVoxels(0)* numVoxels(1)),
+                       0.0f );
+
+      return (voxelCoords + Vec4(0.5, 0.5, 0.5, 0.0)) * voxelResolutionMeters + origin;
     }
 
     VoxelID Chunk::GetVoxelID(const Vec3& relativePos) const
+    {
+        return GetVoxelID(GetVoxelCoords(relativePos));
+    }
+
+    VoxelID Chunk::GetVoxelID(const Vec4& relativePos) const
     {
         return GetVoxelID(GetVoxelCoords(relativePos));
     }
@@ -121,7 +136,7 @@ namespace chisel
         }
     }
 
-    Vec3 Chunk::GetColorAt(const Vec3& relativedPos)
+    Vec3 Chunk::GetColorAt(const Vec4& relativedPos)
     {
         Point3 coords = GetVoxelCoords(relativedPos);
 

@@ -30,34 +30,34 @@ namespace chisel
     }
 
     Plane::Plane(const Vec4& params) :
-        normal(Vec3(params(0), params(1), params(2))), distance(params(3))
+        normal(Vec4(params(0), params(1), params(2), 0.0f)), distance(params(3))
     {
 
     }
 
-    Plane::Plane(const Vec3& _normal, float _distance) :
+    Plane::Plane(const Vec4& _normal, float _distance) :
             normal(_normal), distance()
     {
 
     }
 
-    Plane::Plane(const Vec3& a, const Vec3& b, const Vec3& c)
+    Plane::Plane(const Vec4& a, const Vec4& b, const Vec4& c)
     {
-        Vec3 ab = b - a;
-        Vec3 ac = c - a;
+        Vec4 ab = b - a;
+        Vec4 ac = c - a;
 
-        Vec3 cross = ab.cross(ac);
-        normal = cross.normalized();
-        distance = -(cross.dot(a));
+        Vec3 cross = ab.head<3>().cross(ac.head<3>()).normalized(); // TODO: check correctness
+        normal = Vec4(cross.x(), cross.y(), cross.z(), 0.0f);
+        distance = -(cross.dot(a.head<3>()));
     }
 
     Plane::Plane(float a, float b, float c, float d) :
-                normal(a, b, c), distance(d)
+                normal(a, b, c, 0.0f), distance(d)
     {
 
     }
 
-    float Plane::GetSignedDistance(const Vec3& point) const
+    float Plane::GetSignedDistance(const Vec4& point) const
     {
         return point.dot(normal) + distance;
     }
