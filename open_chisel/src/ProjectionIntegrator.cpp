@@ -21,9 +21,9 @@
 
 #include <open_chisel/ProjectionIntegrator.h>
 #include <open_chisel/geometry/Raycast.h>
+
 namespace chisel
 {
-
   ProjectionIntegrator::ProjectionIntegrator()
   {
     // TODO Auto-generated constructor stub
@@ -143,8 +143,9 @@ namespace chisel
         if (fabs(u) < truncation + halfDiag)
         {
           distVoxel.Integrate(u, weight, maximumWeight);
-          updatedChunks->emplace(chunkID, chunk->GetOrigin());
           chunkManager.RememberUpdatedVoxel(chunk, voxelID);
+          if (updatedChunks)
+            updatedChunks->emplace(chunkID, chunk->GetOrigin());
         }
     }
   }

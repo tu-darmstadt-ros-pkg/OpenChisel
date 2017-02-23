@@ -24,7 +24,10 @@
 #define SERIALIZATION_H_
 
 #include <open_chisel/Chunk.h>
+#include <open_chisel/ChunkManager.h>
 #include <chisel_msgs/ChunkMessage.h>
+
+
 
 namespace chisel_ros
 {

@@ -723,8 +723,9 @@ namespace chisel
                 if(voxel.GetWeight()> 0)
                 {
                     voxel.Carve();
-                    updatedChunks->emplace(chunk->GetID(), chunk->GetOrigin());
                     RememberCarvedVoxel(chunk, voxelID);
+                    if (updatedChunks)
+                      updatedChunks->emplace(chunk->GetID(), chunk->GetOrigin());
                 }
             }
             else
