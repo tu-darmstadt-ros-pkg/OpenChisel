@@ -41,7 +41,7 @@ namespace chisel
         chunks = boost::make_shared<ChunkMap>();
         allMeshes = boost::make_shared<MeshMap>();
         incrementalChanges = boost::make_shared<IncrementalChanges>();
-        roundingFactor = (chunkSize.cast<float>() * voxelResolutionMeters).cwiseInverse();
+        roundingFactor = chunkSizeMeters.cwiseInverse();
     }
 
     ChunkManager::~ChunkManager()
@@ -59,7 +59,7 @@ namespace chisel
         chunks = boost::make_shared<ChunkMap>();
         allMeshes = boost::make_shared<MeshMap>();
         incrementalChanges = boost::make_shared<IncrementalChanges>();
-        roundingFactor = (chunkSize.cast<float>() * voxelResolutionMeters).cwiseInverse();
+        roundingFactor = chunkSizeMeters.cwiseInverse();
     }
 
     void ChunkManager::CacheCentroids()
@@ -624,6 +624,19 @@ namespace chisel
         }
         else
           return nullptr;
+    }
+
+    bool ChunkManager::GetClosestVoxelPosition(const Vec3& pos, Vec3& voxel_pos) const
+    {
+      ChunkPtr chunk = GetChunkAt(pos);
+
+      if (chunk)
+      {
+        voxel_pos = chunk->GetWorldCoords(chunk->GetVoxelCoords(pos - chunk->GetOrigin()));
+        return true;
+      }
+      else
+        return false;
     }
 
 

@@ -69,29 +69,9 @@ namespace chisel
 
             inline const DistVoxel& GetDistVoxel(const VoxelID& voxelID) const { return voxels[voxelID]; }
             inline DistVoxel& GetDistVoxelMutable(const VoxelID& voxelID) { return voxels[voxelID]; }
+
             inline const ColorVoxel& GetColorVoxel(const VoxelID& voxelID) const { return colors[voxelID]; }
             inline ColorVoxel& GetColorVoxelMutable(const VoxelID& voxelID) { return colors[voxelID]; }
-
-            inline Vec3 GetCenterWorldCoords() const
-            {
-                return origin + (numVoxels.cast<float>() * 0.5f * voxelResolutionMeters);
-            }
-
-            Point3 GetVoxelCoords(const Vec3& relativeCoords) const;
-
-            Vec3 GetWorldCoords(const VoxelID& voxelID) const;
-
-            VoxelID GetVoxelID(const Vec3& relativePos) const;
-
-            inline VoxelID GetVoxelID(const Point3& coords) const
-            {
-                return GetVoxelID(coords.x(), coords.y(), coords.z());
-            }
-
-            inline VoxelID GetVoxelID(int x, int y, int z) const
-            {
-                return (z * numVoxels(1) + y) * numVoxels(0) + x;
-            }
 
             inline const DistVoxel& GetDistVoxel(int x, int y, int z) const
             {
@@ -101,6 +81,16 @@ namespace chisel
             inline DistVoxel& GetDistVoxelMutable(int x, int y, int z)
             {
                 return GetDistVoxelMutable(GetVoxelID(x, y, z));
+            }
+
+            inline const DistVoxel& GetDistVoxel(const Vec3& relativePos) const
+            {
+                return GetDistVoxel(GetVoxelID(relativePos));
+            }
+
+            inline DistVoxel& GetDistVoxelMutable(const Vec3& relativePos)
+            {
+                return GetDistVoxelMutable(GetVoxelID(relativePos));
             }
 
             inline const ColorVoxel& GetColorVoxel(int x, int y, int z) const
@@ -113,11 +103,45 @@ namespace chisel
                 return GetColorVoxelMutable(GetVoxelID(x, y, z));
             }
 
+            inline const ColorVoxel& GetColorVoxel(const Vec3& relativePos) const
+            {
+                return GetColorVoxel(GetVoxelID(relativePos));
+            }
+
+            inline ColorVoxel& GetColorVoxelMutable(const Vec3& relativePos)
+            {
+                return GetColorVoxelMutable(GetVoxelID(relativePos));
+            }
+
             inline bool IsCoordValid(int x, int y, int z) const
             {
                 return (x >= 0 && x < numVoxels(0) && y >= 0 && y < numVoxels(1) && z >= 0 && z < numVoxels(2));
             }
 
+            inline Vec3 GetCenterWorldCoords() const
+            {
+                return origin + (numVoxels.cast<float>() * 0.5f * voxelResolutionMeters);
+            }
+
+            Point3 GetVoxelCoords(const Vec3& relativeCoords) const;
+
+            Vec3 GetWorldCoords(const Point3& coords) const;
+            Vec3 GetWorldCoords(const VoxelID& voxelID) const;
+
+            inline VoxelID GetVoxelID(const Vec3& relativePos) const
+            {
+                return GetVoxelID(GetVoxelCoords(relativePos));
+            }
+
+            inline VoxelID GetVoxelID(const Point3& coords) const
+            {
+                return GetVoxelID(coords.x(), coords.y(), coords.z());
+            }
+
+            inline VoxelID GetVoxelID(int x, int y, int z) const
+            {
+                return (z * numVoxels(1) + y) * numVoxels(0) + x;
+            }
 
             inline size_t GetTotalNumVoxels() const
             {

@@ -344,6 +344,8 @@ namespace chisel
             const ColorVoxel* GetColorVoxel(const Vec3& pos) const;
             ColorVoxel* GetColorVoxelMutable(const Vec3& pos);
 
+            bool GetClosestVoxelPosition(const Vec3& pos, Vec3& voxel_pos) const;
+
             void GetChunkIDsIntersecting(const AABB& box, ChunkIDList* chunkList);
             void GetChunkIDsIntersecting(const Frustum& frustum, ChunkIDList* chunkList);
             void GetChunkIDsIntersecting(const PointCloud& cloud, const Transform& cameraTransform, float truncation, float minDist, float maxDist, ChunkIDList* chunkList);
