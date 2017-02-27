@@ -60,10 +60,18 @@ namespace chisel
                 SetWeight(oldWeight + weightUpdate, maxWeight);
             }
 
-            inline void Carve()
+            inline bool Carve(const float voxelResetTresh = std::numeric_limits<float>::max())
             {
-                Reset();
-                //Integrate(0.0, 1.5);
+                if (weight < voxelResetTresh)
+                {
+                    Reset();
+                    return true;
+                }
+                else
+                {
+                    weight *= 0.5f;
+                    return false;
+                }
             }
 
             inline void Reset()

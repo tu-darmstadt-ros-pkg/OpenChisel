@@ -122,8 +122,8 @@ namespace chisel
               DistVoxel& voxel = chunk->GetDistVoxelMutable(i);
               if (voxel.GetWeight() > 0)
                 {
-                  voxel.Carve();
-                  chunkManager.RememberCarvedVoxel(chunk, i);
+                  if (voxel.Carve(voxelCarvingResetTresh))
+                    chunkManager.RememberCarvedVoxel(chunk, i);
                   updated = true;
                 }
             }
@@ -216,8 +216,8 @@ namespace chisel
               DistVoxel& voxel = chunk->GetDistVoxelMutable(i);
               if (voxel.GetWeight() > 0)
                 {
-                  voxel.Carve();
-                  chunkManager.RememberCarvedVoxel(chunk, i);
+                  if (voxel.Carve(voxelCarvingResetTresh))
+                    chunkManager.RememberCarvedVoxel(chunk, i);
                   updated = true;
                 }
             }
@@ -246,6 +246,10 @@ namespace chisel
     inline void SetCentroids(const Vec3List& c) { centroids = c; }
 
     inline void SetMaximumWeight(const float maxWeight){ maximumWeight = maxWeight; }
+    inline float GetMaxVoxelWeight() const { return maximumWeight; }
+
+    inline void SetVoxelCarvingResetTresh(const float tresh){ voxelCarvingResetTresh = tresh; }
+    inline float GetVoxelCarvingResetTresh() const { return voxelCarvingResetTresh; }
 
   protected:
     TruncatorPtr truncator;
@@ -254,6 +258,7 @@ namespace chisel
     bool enableVoxelCarving;
     Vec3List centroids;
     float maximumWeight;
+    float voxelCarvingResetTresh;
   };
 
 } // namespace chisel 
