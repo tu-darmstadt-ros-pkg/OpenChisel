@@ -92,7 +92,7 @@ namespace chisel
               }
             else if (enableVoxelCarving && u > truncation + carvingDist)
               {
-                if (distVoxel.GetWeight() > 0)
+                if (distVoxel.IsValid())
                   {
                     distVoxel.Carve();
                     updated = true;
@@ -196,7 +196,7 @@ namespace chisel
               }
             else if (enableVoxelCarving && u > truncation + carvingDist)
               {
-                if (distVoxel.GetWeight() > 0)
+                if (distVoxel.IsValid())
                   {
                     distVoxel.Carve();
                     updated = true;

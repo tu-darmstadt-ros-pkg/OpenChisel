@@ -714,7 +714,7 @@ namespace chisel
 
     }
 
-    void ChunkManager::ClearPassedVoxels(const Vec3& start, const Vec3& end, ChunkSet* updatedChunks)
+    void ChunkManager::ClearPassedVoxels(const Vec3& start, const Vec3& end, ChunkSet* updatedChunks, float voxelCarvingResetTresh)
     {
         float roundingFactor = 1/voxelResolutionMeters;
         const Vec3 startRounded = start * roundingFactor;
@@ -734,10 +734,10 @@ namespace chisel
                 Vec3 rel = (voxelPos - chunk->GetOrigin());
                 VoxelID voxelID = chunk->GetVoxelID(rel);
                 DistVoxel& voxel = chunk->GetDistVoxelMutable(voxelID);
-                if(voxel.GetWeight()> 0)
+                if(voxel.IsValid())
                 {
-                    voxel.Carve();
-                    RememberCarvedVoxel(chunk, voxelID);
+                    if (voxel.Carve(voxelCarvingResetTresh))
+                      RememberCarvedVoxel(chunk, voxelID);
                     if (updatedChunks)
                       updatedChunks->emplace(chunk->GetID(), chunk->GetOrigin());
                 }
