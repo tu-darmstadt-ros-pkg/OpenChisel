@@ -714,7 +714,7 @@ namespace chisel
 
     }
 
-    void ChunkManager::ClearPassedVoxels(const Vec3& start, const Vec3& end, ChunkSet* updatedChunks, float voxelCarvingResetTresh)
+    void ChunkManager::ClearPassedVoxels(const Vec3& start, const Vec3& end, float voxelCarvingResetTresh, ChunkVoxelMap* carvedVoxels)
     {
         float roundingFactor = 1/voxelResolutionMeters;
         const Vec3 startRounded = start * roundingFactor;
@@ -725,21 +725,35 @@ namespace chisel
 
         const Vec3 voxelShift (0.5 * voxelResolutionMeters, 0.5 * voxelResolutionMeters, 0.5 * voxelResolutionMeters);
 
-        for (Point3& voxelCoords: passedVoxels)
+        for (const Point3& voxelCoords: passedVoxels)
         {
             Vec3 voxelPos = voxelCoords.cast<float>() * voxelResolutionMeters +  voxelShift;
             ChunkPtr chunk = GetChunkAt(voxelPos);
-            if(chunk.get())
+            if(chunk)
             {
                 Vec3 rel = (voxelPos - chunk->GetOrigin());
                 VoxelID voxelID = chunk->GetVoxelID(rel);
+
+                VoxelSet* voxel_set;
+                std::pair<ChunkPtr, VoxelID> voxel_entry;
+
+                if (carvedVoxels)
+                {
+                  voxel_set = &(*carvedVoxels)[chunk->GetID()];
+                  voxel_entry = std::make_pair(chunk, voxelID);
+
+                  // never carve recently updated voxels
+                  if (voxel_set->find(voxel_entry) != voxel_set->end())
+                    continue;
+                }
+
                 DistVoxel& voxel = chunk->GetDistVoxelMutable(voxelID);
                 if(voxel.IsValid())
                 {
                     if (voxel.Carve(voxelCarvingResetTresh))
                       RememberCarvedVoxel(chunk, voxelID);
-                    if (updatedChunks)
-                      updatedChunks->emplace(chunk->GetID(), chunk->GetOrigin());
+                    if (voxel_set)
+                      voxel_set->insert(voxel_entry);
                 }
             }
             else

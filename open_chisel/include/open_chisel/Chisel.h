@@ -48,7 +48,7 @@ namespace chisel
             void IntegratePointCloud(const ProjectionIntegrator& integrator, const PointCloud& cloud, const Transform& extrinsic, const Vec3& sensorOrigin, float minDist, float maxDist);
             void IntegratePointCloud(const ProjectionIntegrator& integrator, const PointCloud& cloud, const Transform& extrinsic, float minDist, float maxDist);
             void IntegratePointCloud(const ProjectionIntegrator& integrator, const PointCloud& cloud, const Vec3& sensorOrigin, float minDist, float maxDist);
-            void IntegrateRay(const ProjectionIntegrator& integrator, ChunkSet& updatedChunks, const Vec3& startPoint, const Vec3& endPoint, float minDist, float maxDist);
+            void IntegrateRay(const ProjectionIntegrator& integrator, ChunkVoxelMap& updatedVoxels, const Vec3& startPoint, const Vec3& endPoint, float minDist, float maxDist);
 
             void IntegrateChunks(const ProjectionIntegrator& integrator, ChunkManager& sourceChunkManager, ChunkSet& changedChunks);
             void DeleteChunks(ChunkSet &chunks);
@@ -134,7 +134,7 @@ namespace chisel
             unsigned int threadTreshold;
 
         private:
-            void DetermineMeshesToUpdate(ChunkSet& updatedChunks);
+            void DetermineUpdatedChunks(ChunkVoxelMap& updatedVoxels);
 
 
     };
