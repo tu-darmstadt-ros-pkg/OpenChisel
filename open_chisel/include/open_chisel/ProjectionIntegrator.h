@@ -104,8 +104,12 @@ namespace chisel
 
             //mutex.unlock();
               DistVoxel& voxel = chunk->GetDistVoxelMutable(i);
+              float weight_diff = - voxel.GetWeight();
+              float sdf_diff = - voxel.GetSDF();
               voxel.Integrate(surfaceDist, weighter->GetWeight(surfaceDist, truncation), maximumWeight);
-              chunkManager.RememberUpdatedVoxel(chunk, i);
+              weight_diff += voxel.GetWeight();
+              sdf_diff += voxel.GetSDF();
+              chunkManager.RememberUpdatedVoxel(chunk, i, weight_diff, sdf_diff);
               updated = true;
             }
           else if (enableVoxelCarving && surfaceDist > truncation + carvingDist)
@@ -198,9 +202,13 @@ namespace chisel
                 }
 
               DistVoxel& voxel = chunk->GetDistVoxelMutable(i);
+              float weight_diff = - voxel.GetWeight();
+              float sdf_diff = - voxel.GetSDF();
               voxel.Integrate(surfaceDist, weighter->GetWeight(surfaceDist, truncation), maximumWeight);
-              chunkManager.RememberUpdatedVoxel(chunk, i);
 
+              weight_diff += voxel.GetWeight();
+              sdf_diff += voxel.GetSDF();
+              chunkManager.RememberUpdatedVoxel(chunk, i, weight_diff, sdf_diff);
               updated = true;
             }
           else if (enableVoxelCarving && surfaceDist > truncation + carvingDist)

@@ -117,7 +117,6 @@ namespace chisel
     const Vec3 voxelShift(0.5 * resolution, 0.5 * resolution, 0.5 * resolution);
 
     Point3List raycastVoxels;
-
     Raycast(start, end, raycastVoxels);
 
     for (const Point3& voxelCoords : raycastVoxels)
@@ -142,8 +141,13 @@ namespace chisel
         float weight = weighter->GetWeight(u, truncation);
         if (fabs(u) < truncation + halfDiag)
         {
+          float weight_diff = - distVoxel.GetWeight();
+          float sdf_diff = - distVoxel.GetSDF();
           distVoxel.Integrate(u, weight, maximumWeight);
-          chunkManager.RememberUpdatedVoxel(chunk, voxelID);
+          weight_diff += distVoxel.GetWeight();
+          sdf_diff += distVoxel.GetSDF();
+          chunkManager.RememberUpdatedVoxel(chunk, voxelID, weight_diff, sdf_diff);
+
           if (updatedChunks)
             (*updatedChunks)[chunkID].insert(std::make_pair(chunk, voxelID));
         }

@@ -81,13 +81,45 @@ namespace chisel
             }
     };
 
+    struct UpdatedVoxel
+    {
+      UpdatedVoxel(ChunkPtr chunk_, const int voxel_id_, const float weight_diff_, const float sdf_diff_):
+        chunk(chunk_), voxel_id(voxel_id_), weight_diff(weight_diff_), sdf_diff(sdf_diff_){}
 
+      UpdatedVoxel(ChunkPtr chunk_, const int voxel_id_):
+        chunk(chunk_), voxel_id(voxel_id_), weight_diff(0.0f), sdf_diff(0.0f){}
+
+      bool operator==(const UpdatedVoxel& other) const
+      {
+        return (this->voxel_id == other.voxel_id && this->chunk->GetID() == other.chunk->GetID());
+      }
+
+      bool operator!=(const UpdatedVoxel &other) const
+      {
+          return !(*this == other);
+      }
+
+      ChunkPtr chunk;
+      int voxel_id;
+      float weight_diff;
+      float sdf_diff;
+    };
+
+    struct UpdatedVoxelHasher
+    {
+            std::size_t operator()(const UpdatedVoxel& key) const
+            {
+                return key.voxel_id;
+            }
+    };
 
     typedef std::unordered_map<ChunkID, ChunkPtr, ChunkHasher> ChunkMap;
     typedef std::unordered_map<ChunkID, Vec3, ChunkHasher> ChunkSet;
     typedef std::unordered_map<ChunkID, MeshPtr, ChunkHasher> MeshMap;
     typedef std::unordered_set<std::pair<ChunkPtr, VoxelID>, VoxelHasher> VoxelSet;
     typedef std::unordered_map<ChunkID, VoxelSet, ChunkHasher> ChunkVoxelMap;
+    typedef std::unordered_set<UpdatedVoxel, UpdatedVoxelHasher> UpdatedVoxelSet;
+    typedef std::unordered_map<ChunkID, UpdatedVoxelSet, ChunkHasher> ChunkUpdatedVoxelMap;
 
     struct IncrementalChanges
     {
@@ -96,7 +128,7 @@ namespace chisel
       ChunkMap addedChunks;
 
       // for all chunks contained in the updated chunk set, the updated and carved voxel ids are stored
-      ChunkVoxelMap updatedVoxels;
+      ChunkUpdatedVoxelMap updatedVoxels;
       ChunkVoxelMap carvedVoxels;
 
       IncrementalChanges()
@@ -218,10 +250,10 @@ namespace chisel
         }
       }
 
-      void RememberUpdatedVoxel(ChunkPtr chunk, const VoxelID& voxelID)
+      void RememberUpdatedVoxel(ChunkPtr chunk, const VoxelID& voxelID, const float weight_diff, const float sdf_diff)
       {
         const ChunkID& chunk_id = chunk->GetID();
-        updatedVoxels[chunk_id].insert(std::make_pair(chunk, voxelID));
+        updatedVoxels[chunk_id].emplace(UpdatedVoxel(chunk, voxelID, weight_diff, sdf_diff));
 
         // delete any carve information
         if (RemoveFromChunkVoxelMap(carvedVoxels, chunk, voxelID))
@@ -259,7 +291,29 @@ namespace chisel
 
         return false;
       }
-    };
+
+      bool RemoveFromChunkVoxelMap(ChunkUpdatedVoxelMap& map, ChunkPtr chunk, const VoxelID& voxelID)
+      {
+        // find voxel entry
+        auto itr = map.find(chunk->GetID());
+        if (itr != map.end())
+        {
+          UpdatedVoxelSet& changed_voxel_set = itr->second;
+
+          // remove entry from voxelset
+          changed_voxel_set.erase(UpdatedVoxel(chunk, voxelID));
+
+          // also delete voxel set itself if empty
+          if (changed_voxel_set.empty())
+          {
+            map.erase(itr);
+            return true;
+          }
+        }
+
+        return false;
+      }
+  };
 
     typedef boost::shared_ptr<IncrementalChanges> IncrementalChangesPtr;
     typedef boost::shared_ptr<const IncrementalChanges> IncrementalChangesConstPtr;
@@ -412,7 +466,7 @@ namespace chisel
 
             inline void RememberDeletedChunk(ChunkPtr chunk) { incrementalChanges->RememberDeletedChunk(chunk); }
 
-            inline void RememberUpdatedVoxel(ChunkPtr chunk, const VoxelID& voxelID) { incrementalChanges->RememberUpdatedVoxel(chunk, voxelID); }
+            inline void RememberUpdatedVoxel(ChunkPtr chunk, const VoxelID& voxelID, const float weight_diff, const float sdf_diff) { incrementalChanges->RememberUpdatedVoxel(chunk, voxelID, weight_diff, sdf_diff); }
             inline void RememberCarvedVoxel(ChunkPtr chunk, const VoxelID& voxelID) { incrementalChanges->RememberCarvedVoxel(chunk, voxelID); }
 
             EIGEN_MAKE_ALIGNED_OPERATOR_NEW
