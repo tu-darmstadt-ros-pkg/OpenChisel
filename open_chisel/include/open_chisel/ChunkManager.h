@@ -301,21 +301,18 @@ namespace chisel
 
             inline bool RemoveChunk(const ChunkID& chunk)
             {
-                ChunkPtr chunk_ptr = GetChunk(chunk);
-
-                if (chunk_ptr)
-                {
-                    RememberDeletedChunk(chunk_ptr);
-                    chunks->erase(chunk_ptr->GetID());
-                    return true;
-                }
-
-                return false;
+              return RemoveChunk(GetChunk(chunk));
             }
 
             inline bool RemoveChunk(const ChunkPtr& chunk)
             {
-                return RemoveChunk(chunk->GetID());
+                if (chunk)
+                {
+                    RememberDeletedChunk(chunk);
+                    chunks->erase(chunk->GetID());
+                    return true;
+                }
+                return false;
             }
 
             inline bool HasChunk(int x, int y, int z) const { return HasChunk(ChunkID(x, y, z)); }
