@@ -31,11 +31,13 @@ namespace chisel
     // TODO Auto-generated constructor stub
     maxThreads = 4;
     threadTreshold = 500;
+    chunkManager = boost::make_shared<ChunkManager>();
   }
 
-  Chisel::Chisel(const Eigen::Vector3i& chunkSize, float voxelResolution, bool useColor) :
-    chunkManager(chunkSize, voxelResolution, useColor)
+  Chisel::Chisel(const Eigen::Vector3i& chunkSize, float voxelResolution, bool useColor)
   {
+    chunkManager = boost::make_shared<ChunkManager>(chunkSize, voxelResolution, useColor);
+
     maxThreads = 4;
     threadTreshold = 500;
   }
@@ -47,13 +49,13 @@ namespace chisel
 
   void Chisel::Reset()
   {
-    chunkManager.Reset();
+    chunkManager->Reset();
     meshesToUpdate.clear();
   }
 
   void Chisel::UpdateMeshes()
   {
-    chunkManager.RecomputeMeshes(meshesToUpdate);
+    chunkManager->RecomputeMeshes(meshesToUpdate);
     meshesToUpdate.clear();
   }
 
@@ -61,7 +63,7 @@ namespace chisel
   {
     for (const ChunkID& chunkID : chunks)
       {
-        chunkManager.RemoveChunk(chunkID);
+        chunkManager->RemoveChunk(chunkID);
       }
   }
 
@@ -72,7 +74,7 @@ namespace chisel
     chisel::MeshPtr fullMesh(new chisel::Mesh());
 
     size_t v = 0;
-    for (const std::pair<ChunkID, MeshPtr>& it : chunkManager.GetAllMeshes())
+    for (const std::pair<ChunkID, MeshPtr>& it : chunkManager->GetAllMeshes())
       {
         for (const Vec3& vert : it.second->vertices)
           {
@@ -181,19 +183,19 @@ namespace chisel
 
         //apply truncation offset towards sensor origin
         truncatedPositiveEnd -= truncationOffset * direction;
-        chunkManager.ClearPassedVoxels(startPoint, truncatedPositiveEnd, integrator.GetVoxelCarvingResetTresh(), &updatedVoxels);
+        chunkManager->ClearPassedVoxels(startPoint, truncatedPositiveEnd, integrator.GetVoxelCarvingResetTresh(), &updatedVoxels);
     }
 
     if (integrateRay)
-      integrator.IntegratePoint(startPoint, endPoint, difference, distance, chunkManager, &updatedVoxels);
+      integrator.IntegratePoint(startPoint, endPoint, difference, distance, *chunkManager, &updatedVoxels);
   }
 
   void Chisel::DetermineUpdatedChunks(ChunkVoxelMap& updatedVoxels)
   {
     for (const auto& entry : updatedVoxels)
     {
-      ChunkPtr chunk = chunkManager.GetChunk(entry.first);
-      chunkManager.RememberUpdatedChunk(chunk, meshesToUpdate);
+      ChunkPtr chunk = chunkManager->GetChunk(entry.first);
+      chunkManager->RememberUpdatedChunk(chunk, meshesToUpdate);
     }
   }
 

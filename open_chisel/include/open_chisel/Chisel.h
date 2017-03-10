@@ -41,9 +41,9 @@ namespace chisel
             Chisel(const Eigen::Vector3i& chunkSize, float voxelResolution, bool useColor);
             virtual ~Chisel();
 
-            inline const ChunkManager& GetChunkManager() const { return chunkManager; }
-            inline ChunkManager& GetMutableChunkManager() { return chunkManager; }
-            inline void SetChunkManager(const ChunkManager& manager) { chunkManager = manager; }
+            inline const ChunkManager& GetChunkManager() const { return *chunkManager; }
+            inline ChunkManager& GetMutableChunkManager() { return *chunkManager; }
+            inline void SetChunkManager(ChunkManagerPtr manager) { chunkManager = manager; }
 
             void IntegratePointCloud(const ProjectionIntegrator& integrator, const PointCloud& cloud, const Transform& extrinsic, const Vec3& sensorOrigin, float minDist, float maxDist);
             void IntegratePointCloud(const ProjectionIntegrator& integrator, const PointCloud& cloud, const Transform& extrinsic, float minDist, float maxDist);
@@ -59,7 +59,7 @@ namespace chisel
                     camera.SetupFrustum(extrinsic, &frustum);
 
                     ChunkIDList chunksIntersecting;
-                    chunkManager.GetChunkIDsIntersecting(frustum, &chunksIntersecting);
+                    chunkManager->GetChunkIDsIntersecting(frustum, &chunksIntersecting);
 
                     Transform inverseExtrinsic = extrinsic.inverse();
 
@@ -68,13 +68,13 @@ namespace chisel
                     for(const ChunkID& chunkID : chunksIntersecting)
                     //parallel_for(chunksIntersecting.begin(), chunksIntersecting.end(), [&](const ChunkID& chunkID)
                     {
-                        bool needsUpdate = integrator.Integrate(depthImage, camera, inverseExtrinsic, chunkManager, chunkID);
+                        bool needsUpdate = integrator.Integrate(depthImage, camera, inverseExtrinsic, *chunkManager, chunkID);
 
                         mutex.lock();
                         if (needsUpdate)
                         {
-                            ChunkPtr chunk = chunkManager.GetChunk(chunkID);
-                            chunkManager.RememberUpdatedChunk(chunk, meshesToUpdate);
+                            ChunkPtr chunk = chunkManager->GetChunk(chunkID);
+                            chunkManager->RememberUpdatedChunk(chunk, meshesToUpdate);
                         }
 
                         mutex.unlock();
@@ -91,19 +91,19 @@ namespace chisel
                     Transform inverseColorExtrinsic = colorExtrinsic.inverse();
 
                     ChunkIDList chunksIntersecting;
-                    chunkManager.GetChunkIDsIntersecting(frustum, &chunksIntersecting);
+                    chunkManager->GetChunkIDsIntersecting(frustum, &chunksIntersecting);
                     std::mutex mutex;
                     //ChunkIDList garbageChunks;
                     for ( const ChunkID& chunkID : chunksIntersecting)
                     //parallel_for(chunksIntersecting.begin(), chunksIntersecting.end(), [&](const ChunkID& chunkID)
                     {
-                        bool needsUpdate = integrator.IntegrateColor(depthImage, depthCamera, inverseDepthExtrinsic, colorImage, colorCamera, inverseColorExtrinsic, chunkManager, chunkID);
+                        bool needsUpdate = integrator.IntegrateColor(depthImage, depthCamera, inverseDepthExtrinsic, colorImage, colorCamera, inverseColorExtrinsic, *chunkManager, chunkID);
 
                         mutex.lock();
                         if (needsUpdate)
                         {
-                            ChunkPtr chunk = chunkManager.GetChunk(chunkID);
-                            chunkManager.RememberUpdatedChunk(chunk, meshesToUpdate);
+                            ChunkPtr chunk = chunkManager->GetChunk(chunkID);
+                            chunkManager->RememberUpdatedChunk(chunk, meshesToUpdate);
                         }
                         mutex.unlock();
                     }//, maxThreads, threadTreshold
@@ -116,7 +116,7 @@ namespace chisel
               this->maxThreads = maxThreads;
               this->threadTreshold = threadTreshold;
 
-              chunkManager.SetThreadingParameters(maxThreads, threadTreshold);
+              chunkManager->SetThreadingParameters(maxThreads, threadTreshold);
             }
 
             void GarbageCollect(const ChunkIDList& chunks);
@@ -128,7 +128,7 @@ namespace chisel
             const ChunkSet& GetMeshesToUpdate() const { return meshesToUpdate; }
 
         protected:
-            ChunkManager chunkManager;
+            ChunkManagerPtr chunkManager;
             ChunkSet meshesToUpdate;
             unsigned int maxThreads;
             unsigned int threadTreshold;
