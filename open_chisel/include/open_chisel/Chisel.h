@@ -43,7 +43,7 @@ namespace chisel
 
             inline const ChunkManager& GetChunkManager() const { return *chunkManager; }
             inline ChunkManager& GetMutableChunkManager() { return *chunkManager; }
-            inline void SetChunkManager(ChunkManagerPtr manager) { chunkManager = manager; }
+            inline void SetChunkManager(ChunkManagerPtr manager) {if (manager) chunkManager = manager; }
 
             void IntegratePointCloud(const ProjectionIntegrator& integrator, const PointCloud& cloud, const Transform& extrinsic, const Vec3& sensorOrigin, float minDist, float maxDist);
             void IntegratePointCloud(const ProjectionIntegrator& integrator, const PointCloud& cloud, const Transform& extrinsic, float minDist, float maxDist);
