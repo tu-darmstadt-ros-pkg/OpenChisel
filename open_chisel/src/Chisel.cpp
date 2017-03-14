@@ -33,8 +33,15 @@ namespace chisel
     threadTreshold = 500;
   }
 
+  Chisel::Chisel(const Eigen::Vector3i& chunkSize, float voxelResolution, bool useColor, float minimumWeight) :
+    chunkManager(chunkSize, voxelResolution, useColor, minimumWeight)
+  {
+    maxThreads = 4;
+    threadTreshold = 500;
+  }
+
   Chisel::Chisel(const Eigen::Vector3i& chunkSize, float voxelResolution, bool useColor) :
-    chunkManager(chunkSize, voxelResolution, useColor)
+    chunkManager(chunkSize, voxelResolution, useColor, 0.0f)
   {
     maxThreads = 4;
     threadTreshold = 500;
