@@ -224,7 +224,7 @@ namespace chisel
         DistVoxel& voxel = chunk->GetDistVoxelMutable(i);
         DistVoxel voxelToIntegrate = chunkToIntegrate->GetDistVoxel(i);
 
-        if (voxelToIntegrate.GetWeight() > 0 && voxelToIntegrate.GetSDF() <99999)
+        if (voxelToIntegrate.IsValid())
         {
           voxel.Integrate(voxelToIntegrate.GetSDF(), voxelToIntegrate.GetWeight(), maximumWeight);
           updated = true;
@@ -256,7 +256,7 @@ namespace chisel
         const DistVoxel& distVoxelToIntegrate = chunkToIntegrate->GetDistVoxel(i);
         const ColorVoxel& colorVoxelToIntegrate = chunkToIntegrate->GetColorVoxel(i);
 
-        if (distVoxelToIntegrate.GetWeight() > 0 && distVoxelToIntegrate.GetSDF() <99999)
+        if (distVoxelToIntegrate.IsValid())
         {
           distVoxel.Integrate(distVoxelToIntegrate.GetSDF(), distVoxelToIntegrate.GetWeight(), maximumWeight);
           colorVoxel.Integrate((uint8_t) colorVoxelToIntegrate.GetRed(), (uint8_t) colorVoxelToIntegrate.GetGreen(), (uint8_t)  colorVoxelToIntegrate.GetBlue(), colorVoxelToIntegrate.GetWeight());
