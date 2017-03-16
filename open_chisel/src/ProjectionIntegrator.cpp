@@ -24,14 +24,15 @@
 
 namespace chisel
 {
-  ProjectionIntegrator::ProjectionIntegrator()
+  ProjectionIntegrator::ProjectionIntegrator():
+    minimumWeight(0.0f), maximumWeight(std::numeric_limits<float>::max()), carvingDist(0.1f), enableVoxelCarving(false), rememberAllUpdatedVoxels(true)
   {
     // TODO Auto-generated constructor stub
 
   }
 
-  ProjectionIntegrator::ProjectionIntegrator(const TruncatorPtr& t, const WeighterPtr& w, const float maxWeight, float crvDist, bool enableCrv, const Vec3List& centers) :
-    truncator(t), weighter(w), maximumWeight(maxWeight), carvingDist(crvDist), enableVoxelCarving(enableCrv), centroids(centers)
+  ProjectionIntegrator::ProjectionIntegrator(const TruncatorPtr& t, const WeighterPtr& w, const float minWeight, const float maxWeight, float crvDist, bool enableCrv, const Vec3List& centers, bool rememberAllUpdatedVoxels) :
+    truncator(t), weighter(w), minimumWeight(minWeight), maximumWeight(maxWeight), carvingDist(crvDist), enableVoxelCarving(enableCrv), centroids(centers), rememberAllUpdatedVoxels(rememberAllUpdatedVoxels)
   {
 
   }
@@ -146,7 +147,9 @@ namespace chisel
           distVoxel.Integrate(u, weight, maximumWeight);
           weight_diff += distVoxel.GetWeight();
           sdf_diff += distVoxel.GetSDF();
-          chunkManager.RememberUpdatedVoxel(chunk, voxelID, weight_diff, sdf_diff);
+
+          if(rememberAllUpdatedVoxels || distVoxel.IsValid(minimumWeight))
+            chunkManager.RememberUpdatedVoxel(chunk, voxelID, weight_diff, sdf_diff);
 
           if (updatedChunks)
             (*updatedChunks)[chunkID].insert(std::make_pair(chunk, voxelID));
