@@ -49,8 +49,8 @@ namespace chisel
 
     }
 
-    ChunkManager::ChunkManager(const Eigen::Vector3i& size, float res, bool color, float minWeight) :
-            chunkSize(size), voxelResolutionMeters(res), useColor(color), minimumWeight(minWeight)
+    ChunkManager::ChunkManager(const Eigen::Vector3i& size, float res, bool color, float minWeight, const Vec3& mapOffset) :
+            chunkSize(size), voxelResolutionMeters(res), useColor(color), minimumWeight(minWeight), mapOffset_(mapOffset)
     {
         chunkSizeMeters = chunkSize.cast<float>() * voxelResolutionMeters;
         CacheCentroids();
@@ -578,6 +578,20 @@ namespace chisel
         if (chunk)
         {
             Vec3 rel = (pos - chunk->GetOrigin());
+            return &(chunk->GetDistVoxel(chunk->GetVoxelID(rel)));
+        }
+        else
+          return nullptr;
+    }
+
+    const DistVoxel* ChunkManager::GetDistanceVoxelGlobal(const Vec3& global_pos) const
+    {
+        Vec3 local_pos = global_pos - mapOffset_;
+        const ChunkPtr chunk = GetChunk(GetIDAt(local_pos));
+
+        if (chunk)
+        {
+            Vec3 rel = (local_pos - chunk->GetOrigin());
             return &(chunk->GetDistVoxel(chunk->GetVoxelID(rel)));
         }
         else

@@ -33,15 +33,15 @@ namespace chisel
     threadTreshold = 500;
   }
 
-  Chisel::Chisel(const Eigen::Vector3i& chunkSize, float voxelResolution, bool useColor, float minimumWeight) :
-    chunkManager(chunkSize, voxelResolution, useColor, minimumWeight)
+  Chisel::Chisel(const Eigen::Vector3i& chunkSize, float voxelResolution, bool useColor, float minimumWeight, Vec3 mapOffset) :
+    chunkManager(chunkSize, voxelResolution, useColor, minimumWeight, mapOffset)
   {
     maxThreads = 4;
     threadTreshold = 500;
   }
 
-  Chisel::Chisel(const Eigen::Vector3i& chunkSize, float voxelResolution, bool useColor) :
-    chunkManager(chunkSize, voxelResolution, useColor, 0.0f)
+  Chisel::Chisel(const Eigen::Vector3i& chunkSize, float voxelResolution, bool useColor, Vec3 mapOffset) :
+    chunkManager(chunkSize, voxelResolution, useColor, 0.0f, mapOffset)
   {
     maxThreads = 4;
     threadTreshold = 500;
@@ -116,10 +116,11 @@ namespace chisel
     ChunkVoxelMap updatedVoxels;
 
     //TODO: parallelize
+    Vec3 sensorOriginTransformed = sensorOrigin - chunkManager.GetMapOffset();
     for (const Vec3& point : cloud.GetPoints())
     {
-        Vec3 point_transformed = extrinsic * point;
-        IntegrateRay(integrator, updatedVoxels, sensorOrigin, point_transformed, minDist, maxDist);
+        Vec3 point_transformed = extrinsic * point - chunkManager.GetMapOffset();
+        IntegrateRay(integrator, updatedVoxels, sensorOriginTransformed, point_transformed, minDist, maxDist);
     }
 
     DetermineUpdatedChunks(updatedVoxels);
@@ -129,12 +130,12 @@ namespace chisel
   void Chisel::IntegratePointCloud(const ProjectionIntegrator& integrator, const PointCloud& cloud, const Transform& extrinsic, float minDist, float maxDist)
   {
     ChunkVoxelMap updatedVoxels;
-    const Vec3& start = extrinsic.translation();
+    const Vec3& start = extrinsic.translation() - chunkManager.GetMapOffset();
 
     //TODO: parallelize
     for (const Vec3& point : cloud.GetPoints())
     {
-        Vec3 point_transformed = extrinsic * point;
+        Vec3 point_transformed = extrinsic * point - chunkManager.GetMapOffset();
         IntegrateRay(integrator, updatedVoxels, start, point_transformed, minDist, maxDist);
     }
 
@@ -147,9 +148,11 @@ namespace chisel
     ChunkVoxelMap updatedVoxels;
 
     //TODO: parallelize
+    Vec3 sensorOriginTransformed = sensorOrigin - chunkManager.GetMapOffset();
     for (const Vec3& point : cloud.GetPoints())
     {
-        IntegrateRay(integrator, updatedVoxels, sensorOrigin, point, minDist, maxDist);
+        Vec3 point_transformed = point - chunkManager.GetMapOffset();
+        IntegrateRay(integrator, updatedVoxels, sensorOriginTransformed, point_transformed, minDist, maxDist);
     }
 
     DetermineUpdatedChunks(updatedVoxels);

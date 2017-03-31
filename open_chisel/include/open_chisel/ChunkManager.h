@@ -322,7 +322,7 @@ namespace chisel
     {
         public:
             ChunkManager();
-            ChunkManager(const Eigen::Vector3i& chunkSize, float voxelResolution, bool color, float minWeight);
+            ChunkManager(const Eigen::Vector3i& chunkSize, float voxelResolution, bool color, float minWeight,const Vec3& mapOffset = Vec3());
             virtual ~ChunkManager();
 
             inline const ChunkMap& GetChunks() const { return *chunks; }
@@ -391,6 +391,7 @@ namespace chisel
             }
 
             const DistVoxel* GetDistanceVoxel(const Vec3& pos) const;
+            const DistVoxel* GetDistanceVoxelGlobal(const Vec3& global_pos) const;
             DistVoxel* GetDistanceVoxelMutable(const Vec3& pos);
             const ColorVoxel* GetColorVoxel(const Vec3& pos) const;
             ColorVoxel* GetColorVoxelMutable(const Vec3& pos);
@@ -438,6 +439,7 @@ namespace chisel
             void ComputeNormalsFromGradients(Mesh* mesh);
 
             inline const Eigen::Vector3i& GetChunkSize() const { return chunkSize; }
+            inline const Vec3& GetMapOffset() const { return mapOffset_; }
             inline const Eigen::Vector3f& GetChunkSizeMeters() const { return chunkSizeMeters; }
             inline float GetResolution() const { return voxelResolutionMeters; }
 
@@ -480,6 +482,7 @@ namespace chisel
             unsigned int threadTreshold;
             IncrementalChangesPtr incrementalChanges;
             float minimumWeight;
+            Vec3 mapOffset_;
 
         private:
             Vec3 roundingFactor;
