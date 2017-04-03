@@ -69,8 +69,6 @@ namespace chisel
 
             void transformPointcloud(const chisel::Transform& chisel_data_transform);
 
-            void transformPointcloud(const chisel::Transform& chisel_data_transform);
-
         protected:
             Vec4List points;
             Vec3List colors;
