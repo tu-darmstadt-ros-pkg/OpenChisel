@@ -69,22 +69,19 @@ namespace chisel
         return AABB(pos, pos + size);
     }
 
-    Point3 Chunk::GetVoxelCoords(const Vec3& relativeCoords) const
+    Vec4 Chunk::GetWorldCoords(const Point4& coords) const
     {
-      const float roundingFactor = 1.0f / (voxelResolutionMeters);
-
-      return Point3( static_cast<int>(std::floor(relativeCoords(0) * roundingFactor)),
-                     static_cast<int>(std::floor(relativeCoords(1) * roundingFactor)),
-                     static_cast<int>(std::floor(relativeCoords(2) * roundingFactor)));
+      return (coords.cast<float>() + Vec4(0.5, 0.5, 0.5, 0.0)) * voxelResolutionMeters + origin;
     }
 
-    Point3 Chunk::GetVoxelCoords(const Vec4& relativeCoords) const
+    Point4 Chunk::GetVoxelCoords(const Vec4& relativeCoords) const
     {
       const float roundingFactor = 1.0f / (voxelResolutionMeters);
 
-      return Point3( static_cast<int>(std::floor(relativeCoords(0) * roundingFactor)),
+      return Point4( static_cast<int>(std::floor(relativeCoords(0) * roundingFactor)),
                      static_cast<int>(std::floor(relativeCoords(1) * roundingFactor)),
-                     static_cast<int>(std::floor(relativeCoords(2) * roundingFactor)));
+                     static_cast<int>(std::floor(relativeCoords(2) * roundingFactor)),
+                     0);
     }
 
     Vec4 Chunk::GetWorldCoords(const VoxelID& voxelID) const
@@ -95,11 +92,6 @@ namespace chisel
                        0.0f );
 
       return (voxelCoords + Vec4(0.5, 0.5, 0.5, 0.0)) * voxelResolutionMeters + origin;
-    }
-
-    VoxelID Chunk::GetVoxelID(const Vec3& relativePos) const
-    {
-        return GetVoxelID(GetVoxelCoords(relativePos));
     }
 
     VoxelID Chunk::GetVoxelID(const Vec4& relativePos) const
@@ -138,7 +130,7 @@ namespace chisel
 
     Vec3 Chunk::GetColorAt(const Vec4& relativedPos)
     {
-        Point3 coords = GetVoxelCoords(relativedPos);
+        Point4 coords = GetVoxelCoords(relativedPos);
 
         if (IsCoordValid(coords.x(), coords.y(), coords.z()))
         {

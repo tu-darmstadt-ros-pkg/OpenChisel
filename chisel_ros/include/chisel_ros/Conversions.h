@@ -57,6 +57,29 @@ namespace chisel_ros
         }
     }
 
+    inline void PclPointCloudToChisel(const pcl::PointCloud<pcl::PointXYZI>& cloudIn, chisel::PointCloud* cloudOut)
+    {
+        assert(!!cloudOut);
+        cloudOut->GetMutablePoints().resize(cloudIn.points.size());
+        cloudOut->GetMutableColors().resize(cloudIn.points.size());
+
+        size_t i = 0;
+        float byteToFloat = 1.0f / 255.0f;
+        for (const pcl::PointXYZI& pt : cloudIn.points)
+        {
+            chisel::Vec4& xyz =  cloudOut->GetMutablePoints().at(i);
+            xyz(0) = pt.x;
+            xyz(1) = pt.y;
+            xyz(2) = pt.z;
+
+            chisel::Vec3& rgb = cloudOut->GetMutableColors().at(i);
+            rgb(0) = pt.intensity * byteToFloat;
+            rgb(1) = pt.intensity * byteToFloat;
+            rgb(2) = pt.intensity * byteToFloat;
+            i++;
+        }
+    }
+
     inline void PclColorPointCloudToChisel(const pcl::PointCloud<pcl::PointXYZRGB>& cloudIn, chisel::PointCloud* cloudOut)
     {
         assert(!!cloudOut);

@@ -34,4 +34,14 @@ namespace chisel
 
     }
 
+    void PointCloud::transformPointcloud(const chisel::Transform& transform)
+    {
+      for (Vec4& point : GetMutablePoints())
+      {
+          point.w() = 1.0f;
+          point = transform * point;
+          point.w() = 0.0f;
+      }
+    }
+
 } // namespace chisel 

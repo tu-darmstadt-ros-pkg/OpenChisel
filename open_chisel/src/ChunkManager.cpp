@@ -32,7 +32,7 @@ namespace chisel
 {
 
     ChunkManager::ChunkManager() :
-            chunkSize(16, 16, 16), voxelResolutionMeters(0.03)
+            chunkSize(16, 16, 16), voxelResolutionMeters(0.03f), minimumWeight(0.0f)
     {
         chunkSizeMeters = chunkSize.cast<float>() * voxelResolutionMeters;
         CacheCentroids();
@@ -41,7 +41,7 @@ namespace chisel
         chunks = boost::make_shared<ChunkMap>();
         allMeshes = boost::make_shared<MeshMap>();
         incrementalChanges = boost::make_shared<IncrementalChanges>();
-        roundingFactor = (chunkSize.cast<float>() * voxelResolutionMeters).cwiseInverse();
+        roundingFactor = chunkSizeMeters.cwiseInverse();
     }
 
     ChunkManager::~ChunkManager()
@@ -49,8 +49,8 @@ namespace chisel
 
     }
 
-    ChunkManager::ChunkManager(const Eigen::Vector3i& size, float res, bool color) :
-            chunkSize(size), voxelResolutionMeters(res), useColor(color)
+    ChunkManager::ChunkManager(const Eigen::Vector3i& size, float res, bool color, float minWeight) :
+            chunkSize(size), voxelResolutionMeters(res), useColor(color), minimumWeight(minWeight)
     {
         chunkSizeMeters = chunkSize.cast<float>() * voxelResolutionMeters;
         CacheCentroids();
@@ -59,7 +59,7 @@ namespace chisel
         chunks = boost::make_shared<ChunkMap>();
         allMeshes = boost::make_shared<MeshMap>();
         incrementalChanges = boost::make_shared<IncrementalChanges>();
-        roundingFactor = (chunkSize.cast<float>() * voxelResolutionMeters).cwiseInverse();
+        roundingFactor = chunkSizeMeters.cwiseInverse();
     }
 
     void ChunkManager::CacheCentroids()
@@ -181,11 +181,12 @@ namespace chisel
         //);
     }
 
-    void ChunkManager::CreateChunk(const ChunkID& id)
+    ChunkPtr ChunkManager::CreateChunk(const ChunkID& id)
     {
         ChunkPtr chunk = boost::allocate_shared<Chunk>(Eigen::aligned_allocator<Chunk>(), id, chunkSize, voxelResolutionMeters, useColor);
         AddChunk(chunk);
         RememberAddedChunk(chunk);
+        return chunk;
     }
 
     void ChunkManager::Reset()
@@ -285,7 +286,7 @@ namespace chisel
 
             // Do not extract a mesh here if one of the corner is unobserved and
             // outside the truncation region.
-            if (thisVoxel.GetWeight() <= 1e-15)
+            if (!thisVoxel.IsValid(minimumWeight))
             {
                 allNeighborsObserved = false;
                 break;
@@ -315,7 +316,7 @@ namespace chisel
                 const DistVoxel& thisVoxel = chunk->GetDistVoxel(cornerIDX.x(), cornerIDX.y(), cornerIDX.z());
                 // Do not extract a mesh here if one of the corners is unobserved
                 // and outside the truncation region.
-                if (thisVoxel.GetWeight() <= 1e-15)
+                if (!thisVoxel.IsValid(minimumWeight))
                 {
                     allNeighborsObserved = false;
                     break;
@@ -356,7 +357,7 @@ namespace chisel
                     const DistVoxel& thisVoxel = neighborChunk->GetDistVoxel(cornerIDX.x(), cornerIDX.y(), cornerIDX.z());
                     // Do not extract a mesh here if one of the corners is unobserved
                     // and outside the truncation region.
-                    if (thisVoxel.GetWeight() <= 1e-15)
+                    if (!thisVoxel.IsValid(minimumWeight))
                     {
                         allNeighborsObserved = false;
                         break;
@@ -477,7 +478,7 @@ namespace chisel
         if(chunk)
         {
             Vec4 relativePos = posf - chunk->GetOrigin();
-            Point3 coords = chunk->GetVoxelCoords(relativePos);
+            Point4 coords = chunk->GetVoxelCoords(relativePos);
             chisel::VoxelID id = chunk->GetVoxelID(coords);
             if(id >= 0 && id < chunk->GetTotalNumVoxels())
             {
@@ -626,6 +627,19 @@ namespace chisel
           return nullptr;
     }
 
+    bool ChunkManager::GetClosestVoxelPosition(const Vec4& pos, Vec4& voxel_pos) const
+    {
+      ChunkPtr chunk = GetChunkAt(pos);
+
+      if (chunk)
+      {
+        voxel_pos = chunk->GetWorldCoords(chunk->GetVoxelCoords(pos - chunk->GetOrigin()));
+        return true;
+      }
+      else
+        return false;
+    }
+
 
     void ChunkManager::ComputeNormalsFromGradients(Mesh* mesh)
     {
@@ -701,7 +715,7 @@ namespace chisel
 
     }
 
-    void ChunkManager::ClearPassedVoxels(const Vec4& start, const Vec4& end, ChunkSet* updatedChunks)
+    void ChunkManager::ClearPassedVoxels(const Vec4& start, const Vec4& end, float voxelCarvingResetTresh, ChunkVoxelMap* carvedVoxels)
     {
         float roundingFactor = 1/voxelResolutionMeters;
         const Vec4 startRounded = start * roundingFactor;
@@ -712,22 +726,37 @@ namespace chisel
 
         const Vec4 voxelShift (0.5 * voxelResolutionMeters, 0.5 * voxelResolutionMeters, 0.5 * voxelResolutionMeters, 0.0f);
 
-        for (Point4& voxelCoords: passedVoxels)
+        for (const Point4& voxelCoords: passedVoxels)
         {
             Vec4 voxelPos(voxelCoords.cast<float>());
             voxelPos = voxelPos * voxelResolutionMeters + voxelShift;
 
             ChunkPtr chunk = GetChunkAt(voxelPos);
-            if(chunk.get())
+            if(chunk)
             {
                 Vec4 rel = (voxelPos - chunk->GetOrigin());
                 VoxelID voxelID = chunk->GetVoxelID(rel);
-                DistVoxel& voxel = chunk->GetDistVoxelMutable(voxelID);
-                if(voxel.GetWeight()> 0)
+
+                VoxelSet* voxel_set;
+                std::pair<ChunkPtr, VoxelID> voxel_entry;
+
+                if (carvedVoxels)
                 {
-                    voxel.Carve();
-                    updatedChunks->emplace(chunk->GetID(), chunk->GetOrigin());
-                    RememberCarvedVoxel(chunk, voxelID);
+                  voxel_set = &(*carvedVoxels)[chunk->GetID()];
+                  voxel_entry = std::make_pair(chunk, voxelID);
+
+                  // never carve recently updated voxels
+                  if (voxel_set->find(voxel_entry) != voxel_set->end())
+                    continue;
+                }
+
+                DistVoxel& voxel = chunk->GetDistVoxelMutable(voxelID);
+                if(voxel.IsValid())
+                {
+                    if (voxel.Carve(voxelCarvingResetTresh))
+                      RememberCarvedVoxel(chunk, voxelID);
+                    if (voxel_set)
+                      voxel_set->insert(voxel_entry);
                 }
             }
             else
@@ -749,7 +778,7 @@ namespace chisel
         bool chunkContainsData = false;
         for (int i = 0; i < chunk->GetTotalNumVoxels(); i++)
         {
-          if (chunk->GetDistVoxel(i).GetWeight() > 0)
+          if (chunk->GetDistVoxel(i).IsValid()) /// todo: also require weight > minweight?
           {
             chunkContainsData = true;
             break;

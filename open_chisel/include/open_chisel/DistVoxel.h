@@ -60,21 +60,29 @@ namespace chisel
                 SetWeight(oldWeight + weightUpdate, maxWeight);
             }
 
-            inline void Carve()
+            inline bool Carve(const float voxelResetTresh = std::numeric_limits<float>::max())
             {
-                Reset();
-                //Integrate(0.0, 1.5);
+                if (weight < voxelResetTresh)
+                {
+                    Reset();
+                    return true;
+                }
+                else
+                {
+                    weight *= 0.5f;
+                    return false;
+                }
             }
 
             inline void Reset()
             {
-                sdf = 99999;
-                weight = 0;
+                sdf = 99999.0f;
+                weight = 0.0f;
             }
 
-            inline bool IsValid() const
+            inline bool IsValid(float minWeight = 0.0f) const
             {
-              return (weight > 0 && sdf < 99999);
+              return (weight > minWeight && sdf < 99999.0f);
             }
 
         protected:

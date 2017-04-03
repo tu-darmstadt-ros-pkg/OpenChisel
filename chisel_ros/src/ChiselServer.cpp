@@ -629,7 +629,6 @@ namespace chisel_ros
     {
         const chisel::ChunkMap& chunkmap = chiselMap->GetChunkManager().GetChunks();
         response.chunks.chunks.resize(chunkmap.size());
-        response.chunks.header.stamp = ros::Time::now();
         size_t i = 0;
         for (const std::pair<chisel::ChunkID, chisel::ChunkPtr>& chunkPair : chiselMap->GetChunkManager().GetChunks())
         {
@@ -650,7 +649,6 @@ namespace chisel_ros
         int i = 0;
 
         response.chunks.chunks.resize(latestChunks.size());
-        response.chunks.header.stamp = ros::Time::now();
 
         for (auto id : latestChunks)
         {
