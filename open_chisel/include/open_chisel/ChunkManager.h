@@ -322,7 +322,7 @@ namespace chisel
     {
         public:
             ChunkManager();
-            ChunkManager(const Eigen::Vector3i& chunkSize, float voxelResolution, bool color);
+            ChunkManager(const Eigen::Vector3i& chunkSize, float voxelResolution, bool color, float minWeight);
             virtual ~ChunkManager();
 
             inline const ChunkMap& GetChunks() const { return *chunks; }
@@ -479,6 +479,7 @@ namespace chisel
             unsigned int maxThreads;
             unsigned int threadTreshold;
             IncrementalChangesPtr incrementalChanges;
+            float minimumWeight;
 
         private:
             Vec3 roundingFactor;

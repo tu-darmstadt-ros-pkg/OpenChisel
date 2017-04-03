@@ -28,18 +28,23 @@ namespace chisel
 
   Chisel::Chisel()
   {
-    // TODO Auto-generated constructor stub
     maxThreads = 4;
     threadTreshold = 500;
     chunkManager = boost::make_shared<ChunkManager>();
   }
 
-  Chisel::Chisel(const Eigen::Vector3i& chunkSize, float voxelResolution, bool useColor)
+  Chisel::Chisel(const Eigen::Vector3i& chunkSize, float voxelResolution, bool useColor, float minimumWeight)
   {
-    chunkManager = boost::make_shared<ChunkManager>(chunkSize, voxelResolution, useColor);
-
     maxThreads = 4;
     threadTreshold = 500;
+    chunkManager = boost::make_shared<ChunkManager>(chunkSize, voxelResolution, useColor, minimumWeight);
+  }
+
+  Chisel::Chisel(const Eigen::Vector3i& chunkSize, float voxelResolution, bool useColor)
+  {
+    maxThreads = 4;
+    threadTreshold = 500;
+    chunkManager = boost::make_shared<ChunkManager>(chunkSize, voxelResolution, useColor, 0.0f);
   }
 
   Chisel::~Chisel()

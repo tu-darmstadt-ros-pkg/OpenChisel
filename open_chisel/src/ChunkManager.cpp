@@ -32,7 +32,7 @@ namespace chisel
 {
 
     ChunkManager::ChunkManager() :
-            chunkSize(16, 16, 16), voxelResolutionMeters(0.03)
+            chunkSize(16, 16, 16), voxelResolutionMeters(0.03f), minimumWeight(0.0f)
     {
         chunkSizeMeters = chunkSize.cast<float>() * voxelResolutionMeters;
         CacheCentroids();
@@ -49,8 +49,8 @@ namespace chisel
 
     }
 
-    ChunkManager::ChunkManager(const Eigen::Vector3i& size, float res, bool color) :
-            chunkSize(size), voxelResolutionMeters(res), useColor(color)
+    ChunkManager::ChunkManager(const Eigen::Vector3i& size, float res, bool color, float minWeight) :
+            chunkSize(size), voxelResolutionMeters(res), useColor(color), minimumWeight(minWeight)
     {
         chunkSizeMeters = chunkSize.cast<float>() * voxelResolutionMeters;
         CacheCentroids();
@@ -285,7 +285,7 @@ namespace chisel
 
             // Do not extract a mesh here if one of the corner is unobserved and
             // outside the truncation region.
-            if (thisVoxel.GetWeight() <= 1e-15)
+            if (!thisVoxel.IsValid(minimumWeight))
             {
                 allNeighborsObserved = false;
                 break;
@@ -315,7 +315,7 @@ namespace chisel
                 const DistVoxel& thisVoxel = chunk->GetDistVoxel(cornerIDX.x(), cornerIDX.y(), cornerIDX.z());
                 // Do not extract a mesh here if one of the corners is unobserved
                 // and outside the truncation region.
-                if (thisVoxel.GetWeight() <= 1e-15)
+                if (!thisVoxel.IsValid(minimumWeight))
                 {
                     allNeighborsObserved = false;
                     break;
@@ -356,7 +356,7 @@ namespace chisel
                     const DistVoxel& thisVoxel = neighborChunk->GetDistVoxel(cornerIDX.x(), cornerIDX.y(), cornerIDX.z());
                     // Do not extract a mesh here if one of the corners is unobserved
                     // and outside the truncation region.
-                    if (thisVoxel.GetWeight() <= 1e-15)
+                    if (!thisVoxel.IsValid(minimumWeight))
                     {
                         allNeighborsObserved = false;
                         break;
@@ -775,7 +775,7 @@ namespace chisel
         bool chunkContainsData = false;
         for (int i = 0; i < chunk->GetTotalNumVoxels(); i++)
         {
-          if (chunk->GetDistVoxel(i).GetWeight() > 0)
+          if (chunk->GetDistVoxel(i).IsValid()) /// todo: also require weight > minweight?
           {
             chunkContainsData = true;
             break;
