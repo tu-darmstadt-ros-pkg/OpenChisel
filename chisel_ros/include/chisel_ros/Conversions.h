@@ -71,6 +71,7 @@ namespace chisel_ros
             xyz(0) = pt.x;
             xyz(1) = pt.y;
             xyz(2) = pt.z;
+            xyz(3) = 0.0f;
 
             chisel::Vec3& rgb = cloudOut->GetMutableColors().at(i);
             rgb(0) = pt.intensity * byteToFloat;

@@ -45,7 +45,6 @@ namespace chisel
             inline const Vec3List& GetColors() const { return colors; }
             inline Vec3List& GetMutableColors() { return colors; }
 
-
             inline void AddPoint(const Vec4& point)
             {
                 points.push_back(point);
@@ -67,6 +66,8 @@ namespace chisel
                 points.clear();
                 colors.clear();
             }
+
+            void transformPointcloud(const chisel::Transform& chisel_data_transform);
 
             void transformPointcloud(const chisel::Transform& chisel_data_transform);
 
