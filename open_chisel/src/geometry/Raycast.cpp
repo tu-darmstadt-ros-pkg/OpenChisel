@@ -23,6 +23,11 @@ inline float intbound(float s, int ds)
     }
 }
 
+inline float computeTMax(int ds)
+{
+    return (ds == 0 ? std::numeric_limits<float>::max() : 0.0f);
+}
+
 void Raycast(const Vec3& start, const Vec3& end, const Point3& min, const Point3& max, Point3List* output)
 {
     assert(!!output);
@@ -66,6 +71,7 @@ void Raycast(const Vec3& start, const Vec3& end, const Point3& min, const Point3
     float tMaxX = intbound(start.x(), dx);
     float tMaxY = intbound(start.y(), dy);
     float tMaxZ = intbound(start.z(), dz);
+
     // The change in t when taking a step (always positive).
     float tDeltaX = ((float)stepX) / dx;
     float tDeltaY = ((float)stepY) / dy;
@@ -160,9 +166,9 @@ void Raycast(const chisel::Vec3& start, const chisel::Vec3& end, chisel::Point3L
 
   // See description above. The initial values depend on the fractional
   // part of the origin.
-  float tMaxX = intbound(start.x(), dx);
-  float tMaxY = intbound(start.y(), dy);
-  float tMaxZ = intbound(start.z(), dz);
+  float tMaxX = computeTMax(dx);
+  float tMaxY = computeTMax(dy);
+  float tMaxZ = computeTMax(dz);
 
   // The change in t when taking a step (always positive).
   const float tDeltaX = static_cast<float>(stepX) / dx;
