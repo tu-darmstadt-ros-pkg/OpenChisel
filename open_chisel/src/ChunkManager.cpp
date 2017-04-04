@@ -233,10 +233,7 @@ namespace chisel
         assert(!!chunkList);
         chunkList->clear();
         ChunkMap map;
-        Point3 minVal(-std::numeric_limits<int>::max(), -std::numeric_limits<int>::max(), -std::numeric_limits<int>::max());
-        Point3 maxVal(std::numeric_limits<int>::max(), std::numeric_limits<int>::max(), std::numeric_limits<int>::max());
-        //size_t numPoints = cloud.GetPoints().size();
-        //size_t i = 0;
+
         for (const Vec3& point : cloud.GetPoints())
         {
             Vec3 end = cameraTransform * point;
@@ -255,7 +252,7 @@ namespace chisel
             Vec3 endInt = Vec3(truncEnd.x() * roundingFactor(0), truncEnd.y() * roundingFactor(1), truncEnd.z() * roundingFactor(2));
 
             Point3List intersectingChunks;
-            Raycast(startInt, endInt, minVal, maxVal, &intersectingChunks);
+            Raycast(startInt, endInt, intersectingChunks);
 
             for (const Point3& id : intersectingChunks)
             {
