@@ -23,7 +23,11 @@ inline float intbound(float s, int ds)
     }
 }
 
-void Raycast(const Vec4& start, const Vec4& end, const Point3& min, const Point3& max, Point4List* output)
+inline float computeTMax(int ds)
+{
+    return (ds == 0 ? std::numeric_limits<float>::max() : 0.0f);
+}
+
 {
     assert(!!output);
     // From "A Fast Voxel Traversal Algorithm for Ray Tracing"
@@ -66,6 +70,7 @@ void Raycast(const Vec4& start, const Vec4& end, const Point3& min, const Point3
     float tMaxX = intbound(start.x(), dx);
     float tMaxY = intbound(start.y(), dy);
     float tMaxZ = intbound(start.z(), dz);
+
     // The change in t when taking a step (always positive).
     float tDeltaX = ((float)stepX) / dx;
     float tDeltaY = ((float)stepY) / dy;
