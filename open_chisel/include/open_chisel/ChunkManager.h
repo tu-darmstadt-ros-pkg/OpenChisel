@@ -392,6 +392,7 @@ namespace chisel
 
             const DistVoxel* GetDistanceVoxel(const Vec3& pos) const;
             const DistVoxel* GetDistanceVoxelGlobal(const Vec3& global_pos) const;
+            const DistVoxel* GetDistanceVoxelGlobal(const Vec3& global_pos, float coarsening_factor) const;
             DistVoxel* GetDistanceVoxelMutable(const Vec3& pos);
             const ColorVoxel* GetColorVoxel(const Vec3& pos) const;
             ColorVoxel* GetColorVoxelMutable(const Vec3& pos);
