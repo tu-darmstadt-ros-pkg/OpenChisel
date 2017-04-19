@@ -28,6 +28,7 @@ inline float computeTMax(int ds)
     return (ds == 0 ? std::numeric_limits<float>::max() : 0.0f);
 }
 
+void Raycast(const chisel::Vec4& start, const chisel::Vec4& end, const chisel::Point4& min, const chisel::Point4& max, chisel::Point4List* output)
 {
     assert(!!output);
     // From "A Fast Voxel Traversal Algorithm for Ray Tracing"
@@ -159,9 +160,9 @@ void Raycast(const chisel::Vec4& start, const chisel::Vec4& end, chisel::Point4L
   }
 
   // See description above. The initial values depend on the fractional part of the origin.
-  float tMaxX = intbound(start.x(), dir.x());
-  float tMaxY = intbound(start.y(), dir.y());
-  float tMaxZ = intbound(start.z(), dir.z());
+  float tMaxX = computeTMax(dir.x());
+  float tMaxY = computeTMax(dir.y());
+  float tMaxZ = computeTMax(dir.z());
 
   // The change in t when taking a step (always positive).
   const Vec4 tDelta = step.cast<float>().cwiseQuotient(dir.cast<float>());

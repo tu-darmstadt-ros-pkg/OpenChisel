@@ -34,7 +34,7 @@
 namespace chisel
 {
 
-    typedef Eigen::Vector3i ChunkID;
+    typedef chisel::Point4 ChunkID;
     typedef int VoxelID;
 
     struct ChunkStatistics
@@ -50,7 +50,7 @@ namespace chisel
         public:
             EIGEN_MAKE_ALIGNED_OPERATOR_NEW
             Chunk();
-            Chunk(const ChunkID id, const Eigen::Vector3i& numVoxels, float resolution, bool useColor);
+            Chunk(const ChunkID id, const Point4& numVoxels, float resolution, bool useColor);
             virtual ~Chunk();
 
             void AllocateDistVoxels();
@@ -64,7 +64,7 @@ namespace chisel
             inline bool HasVoxels() const { return !voxels.empty(); }
             inline const std::vector<DistVoxel>& GetVoxels() const { return voxels; }
 
-            inline const Eigen::Vector3i& GetNumVoxels() const { return numVoxels; }
+            inline const Point4& GetNumVoxels() const { return numVoxels; }
             inline float GetVoxelResolutionMeters() const { return voxelResolutionMeters; }
 
             inline const DistVoxel& GetDistVoxel(const VoxelID& voxelID) const { return voxels[voxelID]; }
@@ -173,7 +173,7 @@ namespace chisel
 
         protected:
             ChunkID ID;
-            Eigen::Vector3i numVoxels;
+            Point4 numVoxels;
             float voxelResolutionMeters;
             Vec4 origin;
             std::vector<DistVoxel> voxels;

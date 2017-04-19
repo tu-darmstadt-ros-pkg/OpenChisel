@@ -57,8 +57,8 @@ namespace chisel
     const float roundingFactor = 1.0f / chunk->GetVoxelResolutionMeters();
 
     Point4List raycastVoxels;
-    Point3 chunkMin = Point3::Zero();
-    Point3 chunkMax = chunk->GetNumVoxels();
+    Point4 chunkMin = Point4::Zero();
+    Point4 chunkMax = chunk->GetNumVoxels();
     bool updated = false;
     Vec4 startCamera = Vec4::Zero();
     startCamera.head<3>() = cameraPose.translation();
@@ -162,8 +162,8 @@ namespace chisel
     const float roundingFactor = 1.0f / chunk->GetVoxelResolutionMeters();
 
     Point4List raycastVoxels;
-    Point3 chunkMin = Point3::Zero();
-    Point3 chunkMax = chunk->GetNumVoxels();
+    Point4 chunkMin = Point4::Zero();
+    Point4 chunkMax = chunk->GetNumVoxels();
     bool updated = false;
     size_t i = 0;
     Vec4 startCamera = Vec4::Zero();

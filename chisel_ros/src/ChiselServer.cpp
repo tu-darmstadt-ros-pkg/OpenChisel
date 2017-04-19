@@ -199,7 +199,7 @@ namespace chisel_ros
     ChiselServer::ChiselServer(const ros::NodeHandle& nodeHanlde, int chunkSizeX, int chunkSizeY, int chunkSizeZ, float resolution, bool color, FusionMode fusionMode) :
             nh(nodeHanlde), useColor(color), hasNewData(false), isPaused(false), mode(fusionMode)
     {
-        chiselMap.reset(new chisel::Chisel(Eigen::Vector3i(chunkSizeX, chunkSizeY, chunkSizeZ), resolution, color));
+        chiselMap.reset(new chisel::Chisel(chisel::Point4(chunkSizeX, chunkSizeY, chunkSizeZ, 0), resolution, color));
         maxThreads = 4;
         threadTreshold = 500;
     }

@@ -213,20 +213,19 @@ namespace chisel
         deletedChunks.erase(chunk_id);
       }
 
-      void RememberUpdatedChunk(ChunkPtr chunk, const Vec3& chunk_size_meters, ChunkSet& meshes_to_update)
+      void RememberUpdatedChunk(ChunkPtr chunk, const Vec4& chunk_size_meters, ChunkSet& meshes_to_update)
       {
         RememberUpdatedChunk(chunk);
 
         ChunkID chunk_id = chunk->GetID();
 
-        Vec4 chunk_size_m(chunk_size_meters.x(), chunk_size_meters.y(), chunk_size_meters.z(), 0.0f);
         for (int dx = -1; dx <= 1; dx++)
         {
             for (int dy = -1; dy <= 1; dy++)
             {
                 for (int dz = -1; dz <= 1; dz++)
                 {
-                    meshes_to_update[chunk_id + ChunkID(dx, dy, dz)] = chunk->GetOrigin() + Vec4(dx, dy, dz, 0.0f).cwiseProduct(chunk_size_m);
+                    meshes_to_update[chunk_id + ChunkID(dx, dy, dz, 0)] = chunk->GetOrigin() + Vec4(dx, dy, dz, 0.0f).cwiseProduct(chunk_size_meters);
                 }
             }
         }
@@ -324,7 +323,7 @@ namespace chisel
     {
         public:
             ChunkManager();
-            ChunkManager(const Eigen::Vector3i& chunkSize, float voxelResolution, bool color, float minWeight);
+            ChunkManager(const Point4& chunkSize, float voxelResolution, bool color, float minWeight);
             virtual ~ChunkManager();
 
             inline const ChunkMap& GetChunks() const { return *chunks; }
@@ -334,7 +333,7 @@ namespace chisel
             inline boost::shared_ptr<const ChunkMap> GetChunksPointer() const { return chunks; }
             inline void SetChunksPointer(boost::shared_ptr<ChunkMap> data) {chunks = data; }
 
-            inline const Vec3& GetRoundingFactor() const { return roundingFactor; }
+            inline const Vec4& GetInvChunkSize() const { return invChunkSizeMeters; }
 
             inline bool HasChunk(const ChunkID& chunk) const
             {
@@ -371,8 +370,8 @@ namespace chisel
                 return false;
             }
 
-            inline bool HasChunk(int x, int y, int z) const { return HasChunk(ChunkID(x, y, z)); }
-            inline ChunkPtr GetChunk(int x, int y, int z) const { return GetChunk(ChunkID(x, y, z)); }
+            inline bool HasChunk(int x, int y, int z) const { return HasChunk(ChunkID(x, y, z, 0)); }
+            inline ChunkPtr GetChunk(int x, int y, int z) const { return GetChunk(ChunkID(x, y, z, 0)); }
 
             inline ChunkPtr GetChunkAt(const Vec3& pos) const
             {
@@ -386,16 +385,18 @@ namespace chisel
 
             inline ChunkID GetIDAt(const Vec3& pos) const
             {
-                return ChunkID(static_cast<int>(std::floor(pos(0) * roundingFactor(0))),
-                               static_cast<int>(std::floor(pos(1) * roundingFactor(1))),
-                               static_cast<int>(std::floor(pos(2) * roundingFactor(2))));
+                return ChunkID(static_cast<int>(std::floor(pos(0) * invChunkSizeMeters(0))),
+                               static_cast<int>(std::floor(pos(1) * invChunkSizeMeters(1))),
+                               static_cast<int>(std::floor(pos(2) * invChunkSizeMeters(2))),
+                               0);
             }
 
             inline ChunkID GetIDAt(const Vec4& pos) const
             {
-                return ChunkID(static_cast<int>(std::floor(pos(0) * roundingFactor(0))),
-                               static_cast<int>(std::floor(pos(1) * roundingFactor(1))),
-                               static_cast<int>(std::floor(pos(2) * roundingFactor(2))));
+                return ChunkID(static_cast<int>(std::floor(pos(0) * invChunkSizeMeters(0))),
+                               static_cast<int>(std::floor(pos(1) * invChunkSizeMeters(1))),
+                               static_cast<int>(std::floor(pos(2) * invChunkSizeMeters(2))),
+                               0);
             }
 
             inline void SetThreadingParameters(unsigned int maxThreads, unsigned int threadTreshold)
@@ -423,8 +424,8 @@ namespace chisel
             Vec3 InterpolateColor(const Vec4& colorPos);
 
             void CacheCentroids();
-            void ExtractBorderVoxelMesh(const ChunkPtr& chunk, const Eigen::Vector3i& index, const Eigen::Vector4f& coordinates, VertIndex* nextMeshIndex, Mesh* mesh);
-            void ExtractInsideVoxelMesh(const ChunkPtr& chunk, const Eigen::Vector3i& index, const Vec4& coords, VertIndex* nextMeshIndex, Mesh* mesh);
+            void ExtractBorderVoxelMesh(const ChunkPtr& chunk, const Point4& index, const Eigen::Vector4f& coordinates, VertIndex* nextMeshIndex, Mesh* mesh);
+            void ExtractInsideVoxelMesh(const ChunkPtr& chunk, const Point4& index, const Vec4& coords, VertIndex* nextMeshIndex, Mesh* mesh);
 
             inline const MeshMap& GetAllMeshes() const { return *allMeshes; }
             inline MeshMap& GetAllMutableMeshes() { return *allMeshes; }
@@ -452,8 +453,8 @@ namespace chisel
             void RecomputeMeshes(const ChunkMap& chunks);
             void ComputeNormalsFromGradients(Mesh* mesh);
 
-            inline const Eigen::Vector3i& GetChunkSize() const { return chunkSize; }
-            inline const Eigen::Vector3f& GetChunkSizeMeters() const { return chunkSizeMeters; }
+            inline const Point4& GetChunkSize() const { return chunkSize; }
+            inline const Vec4& GetChunkSizeMeters() const { return chunkSizeMeters; }
             inline float GetResolution() const { return voxelResolutionMeters; }
 
             inline const Vec4List& GetCentroids() const { return centroids; }
@@ -484,8 +485,8 @@ namespace chisel
             EIGEN_MAKE_ALIGNED_OPERATOR_NEW
         protected:
             boost::shared_ptr<ChunkMap> chunks;
-            Eigen::Vector3i chunkSize;
-            Eigen::Vector3f chunkSizeMeters;
+            Point4 chunkSize;
+            Vec4 chunkSizeMeters;
             float voxelResolutionMeters;
             Vec4List centroids;
             Eigen::Matrix<int, 4, 8> cubeIndexOffsets;
@@ -497,7 +498,7 @@ namespace chisel
             float minimumWeight;
 
         private:
-            Vec3 roundingFactor;
+            Vec4 invChunkSizeMeters;
     };
 
     typedef boost::shared_ptr<ChunkManager> ChunkManagerPtr;

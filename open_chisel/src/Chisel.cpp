@@ -33,14 +33,14 @@ namespace chisel
     chunkManager = boost::make_shared<ChunkManager>();
   }
 
-  Chisel::Chisel(const Eigen::Vector3i& chunkSize, float voxelResolution, bool useColor, float minimumWeight)
+  Chisel::Chisel(const Point4& chunkSize, float voxelResolution, bool useColor, float minimumWeight)
   {
     maxThreads = 4;
     threadTreshold = 500;
     chunkManager = boost::make_shared<ChunkManager>(chunkSize, voxelResolution, useColor, minimumWeight);
   }
 
-  Chisel::Chisel(const Eigen::Vector3i& chunkSize, float voxelResolution, bool useColor)
+  Chisel::Chisel(const Point4& chunkSize, float voxelResolution, bool useColor)
   {
     maxThreads = 4;
     threadTreshold = 500;

@@ -32,7 +32,7 @@ namespace chisel
 {
 
     ChunkManager::ChunkManager() :
-            chunkSize(16, 16, 16), voxelResolutionMeters(0.03f), minimumWeight(0.0f)
+            chunkSize(16, 16, 16, 0), voxelResolutionMeters(0.03f), minimumWeight(0.0f)
     {
         chunkSizeMeters = chunkSize.cast<float>() * voxelResolutionMeters;
         CacheCentroids();
@@ -41,7 +41,7 @@ namespace chisel
         chunks = boost::make_shared<ChunkMap>();
         allMeshes = boost::make_shared<MeshMap>();
         incrementalChanges = boost::make_shared<IncrementalChanges>();
-        roundingFactor = chunkSizeMeters.cwiseInverse();
+        invChunkSizeMeters = chunkSizeMeters.cwiseInverse();
     }
 
     ChunkManager::~ChunkManager()
@@ -49,7 +49,7 @@ namespace chisel
 
     }
 
-    ChunkManager::ChunkManager(const Eigen::Vector3i& size, float res, bool color, float minWeight) :
+    ChunkManager::ChunkManager(const Point4& size, float res, bool color, float minWeight) :
             chunkSize(size), voxelResolutionMeters(res), useColor(color), minimumWeight(minWeight)
     {
         chunkSizeMeters = chunkSize.cast<float>() * voxelResolutionMeters;
@@ -59,7 +59,7 @@ namespace chisel
         chunks = boost::make_shared<ChunkMap>();
         allMeshes = boost::make_shared<MeshMap>();
         incrementalChanges = boost::make_shared<IncrementalChanges>();
-        roundingFactor = chunkSizeMeters.cwiseInverse();
+        invChunkSizeMeters = chunkSizeMeters.cwiseInverse();
     }
 
     void ChunkManager::CacheCentroids()
@@ -89,7 +89,7 @@ namespace chisel
         assert(chunkList != nullptr);
 
         ChunkID minID = GetIDAt(box.min);
-        ChunkID maxID = GetIDAt(box.max) + Eigen::Vector3i(1, 1, 1);
+        ChunkID maxID = GetIDAt(box.max) + chisel::Point4(1, 1, 1, 0);
 
         for (int x = minID(0); x < maxID(0); x++)
         {
@@ -97,7 +97,7 @@ namespace chisel
             {
                 for (int z = minID(2); z < maxID(2); z++)
                 {
-                    chunkList->push_back(ChunkID(x, y, z));
+                    chunkList->push_back(ChunkID(x, y, z, 0));
                 }
             }
         }
@@ -219,7 +219,7 @@ namespace chisel
                     AABB chunkBox(min, max);
                     if(frustum.Intersects(chunkBox))
                     {
-                        chunkList->push_back(ChunkID(x, y, z));
+                        chunkList->push_back(ChunkID(x, y, z, 0));
                     }
                 }
             }
@@ -233,8 +233,8 @@ namespace chisel
         assert(!!chunkList);
         chunkList->clear();
         ChunkMap map;
-        Point3 minVal(-std::numeric_limits<int>::max(), -std::numeric_limits<int>::max(), -std::numeric_limits<int>::max());
-        Point3 maxVal(std::numeric_limits<int>::max(), std::numeric_limits<int>::max(), std::numeric_limits<int>::max());
+        Point4 minVal(-std::numeric_limits<int>::max(), -std::numeric_limits<int>::max(), -std::numeric_limits<int>::max(), 0);
+        Point4 maxVal(std::numeric_limits<int>::max(), std::numeric_limits<int>::max(), std::numeric_limits<int>::max(), 0);
         //size_t numPoints = cloud.GetPoints().size();
         //size_t i = 0;
         for (const Vec4& point : cloud.GetPoints())
@@ -252,16 +252,16 @@ namespace chisel
             Vec4 dir = (end - start).normalized();
             Vec4 truncStart = end - dir * truncation;
             Vec4 truncEnd = end + dir * truncation;
-            Vec4 startInt = Vec4(truncStart.x() * roundingFactor(0) , truncStart.y() * roundingFactor(1), truncStart.z() * roundingFactor(2), 0.0f);
-            Vec4 endInt = Vec4(truncEnd.x() * roundingFactor(0), truncEnd.y() * roundingFactor(1), truncEnd.z() * roundingFactor(2), 0.0f);
+            Vec4 startInt = Vec4(truncStart.x() * invChunkSizeMeters(0) , truncStart.y() * invChunkSizeMeters(1), truncStart.z() * invChunkSizeMeters(2), 0.0f);
+            Vec4 endInt = Vec4(truncEnd.x() * invChunkSizeMeters(0), truncEnd.y() * invChunkSizeMeters(1), truncEnd.z() * invChunkSizeMeters(2), 0.0f);
 
             Point4List intersectingChunks;
             Raycast(startInt, endInt, minVal, maxVal, &intersectingChunks);
 
             for (const Point4& id : intersectingChunks)
             {
-                if(map.find(id.head<3>()) == map.end())
-                    map[id.head<3>()] = ChunkPtr();
+                if(map.find(id) == map.end())
+                    map[id] = ChunkPtr();
             }
         }
 
@@ -272,7 +272,7 @@ namespace chisel
 
     }
 
-    void ChunkManager::ExtractInsideVoxelMesh(const ChunkPtr& chunk, const Eigen::Vector3i& index, const Vec4& coords, VertIndex* nextMeshIndex, Mesh* mesh)
+    void ChunkManager::ExtractInsideVoxelMesh(const ChunkPtr& chunk, const Point4& index, const Vec4& coords, VertIndex* nextMeshIndex, Mesh* mesh)
     {
         assert(mesh != nullptr);
         Eigen::Matrix<float, 4, 8> cubeCoordOffsets = cubeIndexOffsets.cast<float>() * voxelResolutionMeters;
@@ -281,7 +281,7 @@ namespace chisel
         bool allNeighborsObserved = true;
         for (int i = 0; i < 8; ++i)
         {
-            Eigen::Vector3i corner_index = index + cubeIndexOffsets.col(i).head<3>();
+            Point4 corner_index = index + cubeIndexOffsets.col(i);
             const DistVoxel& thisVoxel = chunk->GetDistVoxel(corner_index.x(), corner_index.y(), corner_index.z());
 
             // Do not extract a mesh here if one of the corner is unobserved and
@@ -301,7 +301,7 @@ namespace chisel
         }
     }
 
-    void ChunkManager::ExtractBorderVoxelMesh(const ChunkPtr& chunk, const Eigen::Vector3i& index, const Eigen::Vector4f& coordinates, VertIndex* nextMeshIndex, Mesh* mesh)
+    void ChunkManager::ExtractBorderVoxelMesh(const ChunkPtr& chunk, const Point4& index, const Vec4& coordinates, VertIndex* nextMeshIndex, Mesh* mesh)
     {
         const Eigen::Matrix<float, 4, 8> cubeCoordOffsets = cubeIndexOffsets.cast<float>() * voxelResolutionMeters;
         Eigen::Matrix<float, 4, 8> cornerCoords;
@@ -309,7 +309,7 @@ namespace chisel
         bool allNeighborsObserved = true;
         for (int i = 0; i < 8; ++i)
         {
-            Eigen::Vector3i cornerIDX = index + cubeIndexOffsets.col(i).head<3>();
+            Point4 cornerIDX = index + cubeIndexOffsets.col(i);
 
             if (chunk->IsCoordValid(cornerIDX.x(), cornerIDX.y(), cornerIDX.z()))
             {
@@ -326,8 +326,7 @@ namespace chisel
             }
             else
             {
-                Eigen::Vector3i chunkOffset = Eigen::Vector3i::Zero();
-
+                chisel::Point4 chunkOffset = chisel::Point4::Zero();
 
                 for (int j = 0; j < 3; j++)
                 {
@@ -391,8 +390,7 @@ namespace chisel
         const int maxY = chunkSize(1);
         const int maxZ = chunkSize(2);
 
-
-        Eigen::Vector3i index;
+        chisel::Point4 index = chisel::Point4::Zero();
         VoxelID i = 0;
         VertIndex nextIndex = 0;
 

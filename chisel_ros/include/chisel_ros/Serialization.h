@@ -45,7 +45,7 @@ namespace chisel_ros
 
         message->resolution_meters = chunk->GetVoxelResolutionMeters();
 
-        Eigen::Vector3i size = chunk->GetNumVoxels();
+        chisel::Point4 size = chunk->GetNumVoxels();
         message->num_voxels_x = size.x();
         message->num_voxels_y = size.y();
         message->num_voxels_z = size.z();

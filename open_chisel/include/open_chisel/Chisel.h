@@ -38,9 +38,9 @@ namespace chisel
     {
         public:
             Chisel();
-            Chisel(const Eigen::Vector3i& chunkSize, float voxelResolution, bool useColor, float minimumWeight);
+            Chisel(const Point4& chunkSize, float voxelResolution, bool useColor, float minimumWeight);
             // uses minimumWeight = 0.0f
-            Chisel(const Eigen::Vector3i& chunkSize, float voxelResolution, bool useColor);
+            Chisel(const Point4& chunkSize, float voxelResolution, bool useColor);
             virtual ~Chisel();
 
             inline const ChunkManager& GetChunkManager() const { return *chunkManager; }

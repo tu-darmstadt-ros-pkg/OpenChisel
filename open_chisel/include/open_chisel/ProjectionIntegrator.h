@@ -60,9 +60,8 @@ namespace chisel
     template<class DataType> bool Integrate(const boost::shared_ptr<const DepthImage<DataType> >& depthImage, const PinholeCamera& camera, const Transform& cameraPose, ChunkManager& chunkManager, const ChunkID& chunkID) const
     {
       float resolution = chunkManager.GetResolution();
-      const Point3& numVoxels = chunkManager.GetChunkSize();
-
-      const Vec4 origin(numVoxels(0) * chunkID(0) * resolution, numVoxels(1) * chunkID(1) * resolution, numVoxels(2) * chunkID(2) * resolution, 0.0f);
+      const Point4& numVoxels = chunkManager.GetChunkSize();
+      const Vec4 origin = (numVoxels.cwiseProduct(chunkID)).cast<float>() * resolution;
 
       ChunkPtr chunk;
       bool gotChunkPointer = false;
@@ -141,10 +140,9 @@ namespace chisel
     template<class DataType, class ColorType> bool IntegrateColor(const boost::shared_ptr<const DepthImage<DataType> >& depthImage, const PinholeCamera& depthCamera, const Transform& depthCameraPose, const boost::shared_ptr<const ColorImage<ColorType> >& colorImage, const PinholeCamera& colorCamera, const Transform& colorCameraPose, ChunkManager& chunkManager, const ChunkID& chunkID) const
     {
       float resolution = chunkManager.GetResolution();
-      const Point3& numVoxels = chunkManager.GetChunkSize();
+      const Point4& numVoxels = chunkManager.GetChunkSize();
 
-      const Vec4 origin(numVoxels(0) * chunkID(0) * resolution, numVoxels(1) * chunkID(1) * resolution, numVoxels(2) * chunkID(2) * resolution, 0.0f);
-
+      const Vec4 origin = (numVoxels.cwiseProduct(chunkID)).cast<float>() * resolution;
       ChunkPtr chunk;
       bool gotChunkPointer = false;
 

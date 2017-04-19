@@ -30,7 +30,7 @@ namespace chisel
 
     }
 
-    Chunk::Chunk(const ChunkID id, const Eigen::Vector3i& nv, float r, bool useColor) :
+    Chunk::Chunk(const ChunkID id, const Point4& nv, float r, bool useColor) :
             ID(id), numVoxels(nv), voxelResolutionMeters(r)
     {
         AllocateDistVoxels();
