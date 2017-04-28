@@ -45,7 +45,7 @@ namespace chisel
             float totalWeight;
     };
 
-    template<class VoxelType = DistVoxel>
+    template<class VoxelType>
     class Chunk
     {
         public:
@@ -63,7 +63,7 @@ namespace chisel
                 origin = Vec3(numVoxels(0) * ID(0) * voxelResolutionMeters, numVoxels(1) * ID(1) * voxelResolutionMeters, numVoxels(2) * ID(2) * voxelResolutionMeters);
             }
 
-            //virtual ~Chunk();
+            virtual ~Chunk(){}
 
             void AllocateDistVoxels()
             {
@@ -259,8 +259,12 @@ namespace chisel
             MeshPtr mesh;
     };
 
-    typedef boost::shared_ptr<Chunk<>> ChunkPtr; //todo(kdaun) handle template correctly
-    typedef boost::shared_ptr<const Chunk<>> ChunkConstPtr; //todo(kdaun) handle template correctly
+    template<class VoxelType>
+    using ChunkPtr = boost::shared_ptr<Chunk<VoxelType>>;
+
+    template<class VoxelType>
+    using ChunkConstPtr = boost::shared_ptr<const Chunk<VoxelType>>;
+
     typedef std::vector<ChunkID, Eigen::aligned_allocator<ChunkID> > ChunkIDList;
 
 } // namespace chisel 

@@ -199,7 +199,7 @@ namespace chisel_ros
     ChiselServer::ChiselServer(const ros::NodeHandle& nodeHanlde, int chunkSizeX, int chunkSizeY, int chunkSizeZ, float resolution, bool color, FusionMode fusionMode) :
             nh(nodeHanlde), useColor(color), hasNewData(false), isPaused(false), mode(fusionMode)
     {
-        chiselMap.reset(new chisel::Chisel(Eigen::Vector3i(chunkSizeX, chunkSizeY, chunkSizeZ), resolution, color));
+        chiselMap.reset(new chisel::Chisel<chisel::DistVoxel>(Eigen::Vector3i(chunkSizeX, chunkSizeY, chunkSizeZ), resolution, color));
         maxThreads = 4;
         threadTreshold = 500;
     }
@@ -410,7 +410,7 @@ namespace chisel_ros
 
     void ChiselServer::SetupProjectionIntegrator(const chisel::Vec4& truncation, uint16_t weight, bool useCarving, float carvingDist)
     {
-        projectionIntegrator.SetCentroids(GetChiselMap()->GetChunkManager().GetCentroids());
+        projectionIntegrator.SetCentroids(GetChiselMap<chisel::DistVoxel>()->GetChunkManager().GetCentroids());
         projectionIntegrator.SetTruncator(chisel::TruncatorPtr(new chisel::QuadraticTruncator(truncation(0), truncation(1), truncation(2), truncation(3))));
         projectionIntegrator.SetWeighter(chisel::WeighterPtr(new chisel::ConstantWeighter(weight)));
         projectionIntegrator.SetCarvingDist(carvingDist);
@@ -457,7 +457,7 @@ namespace chisel_ros
     void ChiselServer::PublishLatestChunkBoxes()
     {
         if (!latestChunkPublisher) return;
-        const chisel::ChunkManager& chunkManager = chiselMap->GetChunkManager();
+        const chisel::ChunkManager<chisel::DistVoxel>& chunkManager = chiselMap->GetChunkManager();
         visualization_msgs::Marker marker;
         marker.header.stamp = ros::Time::now();
         marker.header.frame_id = baseTransform;
@@ -498,7 +498,7 @@ namespace chisel_ros
 
     void ChiselServer::PublishChunkBoxes()
     {
-        const chisel::ChunkManager& chunkManager = chiselMap->GetChunkManager();
+        const chisel::ChunkManager<chisel::DistVoxel>& chunkManager = chiselMap->GetChunkManager();
         visualization_msgs::Marker marker;
         marker.header.stamp = ros::Time::now();
         marker.header.frame_id = baseTransform;
@@ -518,7 +518,7 @@ namespace chisel_ros
         marker.color.g = 0.3f;
         marker.color.b = 0.3f;
         marker.color.a = 0.6f;
-        for (const std::pair<chisel::ChunkID, chisel::ChunkPtr>& pair : chunkManager.GetChunks())
+        for (const std::pair<chisel::ChunkID, chisel::ChunkPtr<chisel::DistVoxel>>& pair : chunkManager.GetChunks())
         {
             chisel::AABB aabb = pair.second->ComputeBoundingBox();
             chisel::Vec3 center = aabb.GetCenter();
@@ -627,13 +627,13 @@ namespace chisel_ros
 
     bool ChiselServer::GetAllChunks(chisel_msgs::GetAllChunksService::Request& request, chisel_msgs::GetAllChunksService::Response& response)
     {
-        const chisel::ChunkMap& chunkmap = chiselMap->GetChunkManager().GetChunks();
+        const chisel::ChunkMap<chisel::DistVoxel>& chunkmap = chiselMap->GetChunkManager().GetChunks();
         response.chunks.chunks.resize(chunkmap.size());
         size_t i = 0;
-        for (const std::pair<chisel::ChunkID, chisel::ChunkPtr>& chunkPair : chiselMap->GetChunkManager().GetChunks())
+        for (const std::pair<chisel::ChunkID, chisel::ChunkPtr<chisel::DistVoxel>>& chunkPair : chiselMap->GetChunkManager().GetChunks())
         {
             chisel_msgs::ChunkMessage& msg = response.chunks.chunks.at(i);
-            FillChunkMessage(chunkPair.second, &msg);
+            FillChunkMessage<chisel::DistVoxel>(chunkPair.second, &msg);
             i++;
         }
 
@@ -643,7 +643,7 @@ namespace chisel_ros
     bool ChiselServer::GetLatestChunks(chisel_msgs::GetLatestChunksService::Request& request, chisel_msgs::GetLatestChunksService::Response& response)
     {
 
-        chisel::ChunkManager& chunkManager = chiselMap->GetMutableChunkManager();
+        chisel::ChunkManager<chisel::DistVoxel>& chunkManager = chiselMap->GetMutableChunkManager();
         const chisel::ChunkSet& latestChunks = chunkManager.getIncrementalChanges()->getChunkSet(chunkManager.getIncrementalChanges()->getChangedChunks());
 
         int i = 0;
@@ -655,7 +655,7 @@ namespace chisel_ros
             if(chunkManager.HasChunk(id.first))
             {
               chisel_msgs::ChunkMessage& msg = response.chunks.chunks.at(i);
-              FillChunkMessage(chunkManager.GetChunk(id.first), &msg);
+              FillChunkMessage<chisel::DistVoxel>(chunkManager.GetChunk(id.first), &msg);
               i++;
             }
         }
@@ -665,7 +665,7 @@ namespace chisel_ros
 
     bool ChiselServer::GetDeletedChunks(chisel_msgs::GetDeletedChunksService::Request& request, chisel_msgs::GetDeletedChunksService::Response& response)
     {
-        chisel::ChunkManager& chunkManager = chiselMap->GetMutableChunkManager();
+        chisel::ChunkManager<chisel::DistVoxel>& chunkManager = chiselMap->GetMutableChunkManager();
         const chisel::ChunkSet& deletedChunks =  chunkManager.getIncrementalChanges()->deletedChunks;
 
         int i = 0;
@@ -742,14 +742,14 @@ namespace chisel_ros
 
     void ChiselServer::PublishTSDFMarkers()
     {
-      const chisel::ChunkManager& chunkManager = chiselMap->GetChunkManager();
+      const chisel::ChunkManager<chisel::DistVoxel>& chunkManager = chiselMap->GetChunkManager();
       const float resolution = chunkManager.GetResolution();
       pcl::PointCloud<pcl::PointXYZRGB> cloud;
       cloud.clear();
 
       int stepSize=1;
 
-      for (const std::pair<chisel::ChunkID, chisel::ChunkPtr>& pair : chunkManager.GetChunks())
+      for (const std::pair<chisel::ChunkID, chisel::ChunkPtr<chisel::DistVoxel>>& pair : chunkManager.GetChunks())
       {
         const std::vector<chisel::DistVoxel>&  voxels = pair.second->GetVoxels();
         chisel::Vec3 origin = pair.second->GetOrigin();

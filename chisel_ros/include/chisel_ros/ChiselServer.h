@@ -36,6 +36,7 @@
 #include <open_chisel/camera/DepthImage.h>
 #include <open_chisel/camera/ColorImage.h>
 #include <open_chisel/pointcloud/PointCloud.h>
+#include <open_chisel/DistVoxel.h>
 #include <sensor_msgs/Image.h>
 #include <sensor_msgs/CameraInfo.h>
 #include <sensor_msgs/PointCloud2.h>
@@ -90,8 +91,11 @@ namespace chisel_ros
             ChiselServer(const ros::NodeHandle& nodeHanlde, int chunkSizeX, int chunkSizeY, int chunkSizeZ, float resolution, bool color, FusionMode fusionMode);
             virtual ~ChiselServer();
 
-            inline chisel::ChiselPtr GetChiselMap() { return chiselMap; }
-            inline void SetChiselMap(const chisel::ChiselPtr value) { chiselMap = value; }
+
+            template<class VoxelType>
+            inline chisel::ChiselPtr<VoxelType> GetChiselMap() { return chiselMap; }
+            template<class VoxelType>
+            inline void SetChiselMap(const chisel::ChiselPtr<VoxelType> value) { chiselMap = value; }
 
             inline const std::string& GetBaseTransform() const { return baseTransform; }
             inline const std::string& GetMeshTopic() const { return meshTopic; }
@@ -173,7 +177,7 @@ namespace chisel_ros
             visualization_msgs::Marker CreateFrustumMarker(const chisel::Frustum& frustum);
 
             ros::NodeHandle nh;
-            chisel::ChiselPtr chiselMap;
+            chisel::ChiselPtr<chisel::DistVoxel> chiselMap;
             tf::TransformListener transformListener;
             boost::shared_ptr<chisel::DepthImage<DepthData> > lastDepthImage;
             boost::shared_ptr<chisel::ColorImage<ColorData> > lastColorImage;

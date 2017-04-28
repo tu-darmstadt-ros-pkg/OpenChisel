@@ -31,7 +31,8 @@
 
 namespace chisel_ros
 {
-    void FillChunkMessage(chisel::ChunkConstPtr chunk, chisel_msgs::ChunkMessage* message)
+    template<class VoxelType>
+    void FillChunkMessage(chisel::ChunkConstPtr<VoxelType> chunk, chisel_msgs::ChunkMessage* message)
     {
         chisel::ChunkHasher hasher;
         assert(message != nullptr);
@@ -60,9 +61,9 @@ namespace chisel_ros
             message->color_data.reserve(chunk->GetTotalNumVoxels());
         }
 
-        const std::vector<chisel::DistVoxel>& voxels = chunk->GetVoxels();
+        const std::vector<VoxelType>& voxels = chunk->GetVoxels();
 
-        for (const chisel::DistVoxel& voxel : voxels)
+        for (const VoxelType& voxel : voxels)
         {
             float sdf = voxel.GetSDF();
             float weight = voxel.GetWeight();

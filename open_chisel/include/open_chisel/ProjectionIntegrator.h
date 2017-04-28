@@ -46,7 +46,7 @@ namespace chisel
     ProjectionIntegrator(const TruncatorPtr& t, const WeighterPtr& w, const float minWeight, const float maxWeight, float carvingDist, bool enableCarving, const Vec3List& centroids, bool rememberAllUpdatedVoxels);
     virtual ~ProjectionIntegrator();
 
-    template<class VoxelType = DistVoxel>
+    template<class VoxelType>
     bool Integrate(const PointCloud& cloud, const Transform& cameraPose, Chunk<VoxelType>* chunk) const
     {
       assert(!!chunk);
@@ -61,7 +61,7 @@ namespace chisel
         }
     }
 
-    template<class VoxelType = DistVoxel>
+    template<class VoxelType>
     bool IntegratePointCloud(const PointCloud& cloud, const Transform& cameraPose, Chunk<VoxelType>* chunk) const
     {
       const float roundingFactor = 1.0f / chunk->GetVoxelResolutionMeters();
@@ -114,9 +114,62 @@ namespace chisel
       return updated;
     }
 
-    void IntegratePoint(const Vec3& sensorOrigin, const Vec3& point, const Vec3& direction, float distance, ChunkManager& chunkManager, ChunkVoxelMap* updatedChunks) const;
+    template<class VoxelType>
+    void IntegratePoint(const Vec3& sensorOrigin, const Vec3& point, const Vec3& direction, float distance, ChunkManager<VoxelType>& chunkManager, ChunkVoxelMap<VoxelType>* updatedChunks) const
+    {
+      const float resolution = chunkManager.GetResolution();
+      const float roundingFactor = 1.0f / resolution;
+      const float halfDiag = 0.5 * sqrt(3.0f) * resolution;
 
-    template<class VoxelType = DistVoxel>
+      const float truncation = truncator->GetTruncationDistance(distance);
+      const Vec3 truncationOffset = direction.normalized() * truncation;
+      const Vec3 start = (point - truncationOffset) * roundingFactor;
+      const Vec3 end = (point + truncationOffset) * roundingFactor;
+
+      const Vec3 voxelShift(0.5 * resolution, 0.5 * resolution, 0.5 * resolution);
+
+      Point3List raycastVoxels;
+      Raycast(start, end, raycastVoxels);
+
+      for (const Point3& voxelCoords : raycastVoxels)
+      {
+          Vec3 voxelPos = voxelCoords.cast<float>() * resolution +  voxelShift;
+          const ChunkID& chunkID = chunkManager.GetIDAt(voxelPos);
+
+          if (!chunkManager.HasChunk(chunkID))
+          {
+            chunkManager.CreateChunk(chunkID);
+          }
+
+          ChunkPtr<VoxelType> chunk = chunkManager.GetChunk(chunkID);
+          const Vec3& origin = chunk->GetOrigin();
+
+          voxelPos -= origin;
+          VoxelID voxelID = chunk->GetVoxelID(voxelPos);
+
+          VoxelType& distVoxel = chunk->GetDistVoxelMutable(voxelID);
+          const Vec3& centroid = centroids[voxelID] + origin;
+          float u = distance - (centroid - sensorOrigin).norm();
+          float weight = weighter->GetWeight(u, truncation);
+          if (fabs(u) < truncation + halfDiag)
+          {
+            float weight_diff = - distVoxel.GetWeight();
+            float sdf_diff = - distVoxel.GetSDF();
+            distVoxel.Integrate(u, weight, maximumWeight);
+            weight_diff += distVoxel.GetWeight();
+            sdf_diff += distVoxel.GetSDF();
+
+            if(rememberAllUpdatedVoxels || distVoxel.IsValid(minimumWeight))
+              chunkManager.RememberUpdatedVoxel(chunk, voxelID, weight_diff, sdf_diff);
+
+            if (updatedChunks)
+              (*updatedChunks)[chunkID].insert(std::make_pair(chunk, voxelID));
+          }
+      }
+    }
+
+
+    template<class VoxelType>
     bool IntegrateColorPointCloud(const PointCloud& cloud, const Transform& cameraPose, Chunk<VoxelType>* chunk) const
     {
       const float roundingFactor = 1.0f / chunk->GetVoxelResolutionMeters();
@@ -177,7 +230,7 @@ namespace chisel
     }
 
 
-    template<class VoxelType = DistVoxel>
+    template<class VoxelType>
     bool IntegrateChunk(const Chunk<VoxelType>* chunkToIntegrate, Chunk<VoxelType>* chunk) const{
 
         assert(chunk != nullptr && chunkToIntegrate != nullptr);
@@ -207,7 +260,7 @@ namespace chisel
         return updated;
       }
 
-    template<class VoxelType = DistVoxel>
+    template<class VoxelType>
     bool IntegrateColorChunk(const Chunk<VoxelType>* chunkToIntegrate, Chunk<VoxelType>* chunk) const{
 
         assert(chunk != nullptr && chunkToIntegrate != nullptr);
@@ -248,15 +301,15 @@ namespace chisel
         return truncator->GetTruncationDistance(depth);
     }
 
-    template<class DataType>
-    bool Integrate(const boost::shared_ptr<const DepthImage<DataType> >& depthImage, const PinholeCamera& camera, const Transform& cameraPose, ChunkManager& chunkManager, const ChunkID& chunkID) const
+    template<class DataType, class VoxelType>
+    bool Integrate(const boost::shared_ptr<const DepthImage<DataType> >& depthImage, const PinholeCamera& camera, const Transform& cameraPose, ChunkManager<VoxelType>& chunkManager, const ChunkID& chunkID) const
     {
       float resolution = chunkManager.GetResolution();
       const Point3& numVoxels = chunkManager.GetChunkSize();
 
       const Vec3 origin(numVoxels(0) * chunkID(0) * resolution, numVoxels(1) * chunkID(1) * resolution, numVoxels(2) * chunkID(2) * resolution);
 
-      ChunkPtr chunk;
+      ChunkPtr<VoxelType> chunk;
       bool gotChunkPointer = false;
 
       float diag = 2.0 * sqrt(3.0f) * resolution;
@@ -295,7 +348,7 @@ namespace chisel
             }
 
             //mutex.unlock();
-              DistVoxel& voxel = chunk->GetDistVoxelMutable(i);
+              VoxelType& voxel = chunk->GetDistVoxelMutable(i);
               float weight_diff = - voxel.GetWeight();
               float sdf_diff = - voxel.GetSDF();
               voxel.Integrate(surfaceDist, weighter->GetWeight(surfaceDist, truncation), maximumWeight);
@@ -318,7 +371,7 @@ namespace chisel
               chunk = chunkManager.GetChunk(chunkID);
               gotChunkPointer = true;
             }
-              DistVoxel& voxel = chunk->GetDistVoxelMutable(i);
+              VoxelType& voxel = chunk->GetDistVoxelMutable(i);
               if (voxel.GetWeight() > 0)
                 {
                   if (voxel.Carve(voxelCarvingResetTresh))
@@ -330,15 +383,15 @@ namespace chisel
       return updated;
     }
 
-    template<class DataType, class ColorType>
-    bool IntegrateColor(const boost::shared_ptr<const DepthImage<DataType> >& depthImage, const PinholeCamera& depthCamera, const Transform& depthCameraPose, const boost::shared_ptr<const ColorImage<ColorType> >& colorImage, const PinholeCamera& colorCamera, const Transform& colorCameraPose, ChunkManager& chunkManager, const ChunkID& chunkID) const
+    template<class DataType, class ColorType, class VoxelType>
+    bool IntegrateColor(const boost::shared_ptr<const DepthImage<DataType> >& depthImage, const PinholeCamera& depthCamera, const Transform& depthCameraPose, const boost::shared_ptr<const ColorImage<ColorType> >& colorImage, const PinholeCamera& colorCamera, const Transform& colorCameraPose, ChunkManager<VoxelType>& chunkManager, const ChunkID& chunkID) const
     {
       float resolution = chunkManager.GetResolution();
       const Point3& numVoxels = chunkManager.GetChunkSize();
 
       const Vec3 origin(numVoxels(0) * chunkID(0) * resolution, numVoxels(1) * chunkID(1) * resolution, numVoxels(2) * chunkID(2) * resolution);
 
-      ChunkPtr chunk;
+      ChunkPtr<VoxelType> chunk;
       bool gotChunkPointer = false;
 
       float resolutionDiagonal = 2.0 * sqrt(3.0f) * resolution;
@@ -397,7 +450,7 @@ namespace chisel
                     }
                 }
 
-              DistVoxel& voxel = chunk->GetDistVoxelMutable(i);
+              VoxelType& voxel = chunk->GetDistVoxelMutable(i);
               float weight_diff = - voxel.GetWeight();
               float sdf_diff = - voxel.GetSDF();
               voxel.Integrate(surfaceDist, weighter->GetWeight(surfaceDist, truncation), maximumWeight);
@@ -420,7 +473,7 @@ namespace chisel
                 chunk = chunkManager.GetChunk(chunkID);
                 gotChunkPointer = true;
               }
-              DistVoxel& voxel = chunk->GetDistVoxelMutable(i);
+              VoxelType& voxel = chunk->GetDistVoxelMutable(i);
               if (voxel.GetWeight() > 0)
                 {
                   if (voxel.Carve(voxelCarvingResetTresh))

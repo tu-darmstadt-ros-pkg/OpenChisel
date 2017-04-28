@@ -37,60 +37,6 @@ namespace chisel
   }
 
 
-  void ProjectionIntegrator::IntegratePoint(const Vec3& sensorOrigin, const Vec3& point, const Vec3& direction, float distance, ChunkManager& chunkManager, ChunkVoxelMap* updatedChunks) const
-  {
-    const float resolution = chunkManager.GetResolution();
-    const float roundingFactor = 1.0f / resolution;
-    const float halfDiag = 0.5 * sqrt(3.0f) * resolution;
-
-    const float truncation = truncator->GetTruncationDistance(distance);
-    const Vec3 truncationOffset = direction.normalized() * truncation;
-    const Vec3 start = (point - truncationOffset) * roundingFactor;
-    const Vec3 end = (point + truncationOffset) * roundingFactor;
-
-    const Vec3 voxelShift(0.5 * resolution, 0.5 * resolution, 0.5 * resolution);
-
-    Point3List raycastVoxels;
-    Raycast(start, end, raycastVoxels);
-
-    for (const Point3& voxelCoords : raycastVoxels)
-    {
-        Vec3 voxelPos = voxelCoords.cast<float>() * resolution +  voxelShift;
-        const ChunkID& chunkID = chunkManager.GetIDAt(voxelPos);
-
-        if (!chunkManager.HasChunk(chunkID))
-        {
-          chunkManager.CreateChunk(chunkID);
-        }
-
-        ChunkPtr chunk = chunkManager.GetChunk(chunkID);
-        const Vec3& origin = chunk->GetOrigin();
-
-        voxelPos -= origin;
-        VoxelID voxelID = chunk->GetVoxelID(voxelPos);
-
-        DistVoxel& distVoxel = chunk->GetDistVoxelMutable(voxelID);
-        const Vec3& centroid = centroids[voxelID] + origin;
-        float u = distance - (centroid - sensorOrigin).norm();
-        float weight = weighter->GetWeight(u, truncation);
-        if (fabs(u) < truncation + halfDiag)
-        {
-          float weight_diff = - distVoxel.GetWeight();
-          float sdf_diff = - distVoxel.GetSDF();
-          distVoxel.Integrate(u, weight, maximumWeight);
-          weight_diff += distVoxel.GetWeight();
-          sdf_diff += distVoxel.GetSDF();
-
-          if(rememberAllUpdatedVoxels || distVoxel.IsValid(minimumWeight))
-            chunkManager.RememberUpdatedVoxel(chunk, voxelID, weight_diff, sdf_diff);
-
-          if (updatedChunks)
-            (*updatedChunks)[chunkID].insert(std::make_pair(chunk, voxelID));
-        }
-    }
-  }
-
-
 
 
   ProjectionIntegrator::~ProjectionIntegrator()
