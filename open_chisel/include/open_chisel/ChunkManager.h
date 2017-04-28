@@ -400,7 +400,15 @@ namespace chisel
             void GetChunkIDsIntersecting(const AABB& box, ChunkIDList* chunkList);
             void GetChunkIDsIntersecting(const Frustum& frustum, ChunkIDList* chunkList);
             void GetChunkIDsIntersecting(const PointCloud& cloud, const Transform& cameraTransform, float truncation, float minDist, float maxDist, ChunkIDList* chunkList);
-            ChunkPtr CreateChunk(const ChunkID& id);
+
+            template<class VoxelType = DistVoxel>
+            ChunkPtr CreateChunk(const ChunkID& id)
+            {
+                auto chunk = boost::allocate_shared<Chunk<VoxelType>>(Eigen::aligned_allocator<Chunk<VoxelType>>(), id, chunkSize, voxelResolutionMeters, useColor);
+                AddChunk(chunk);
+                RememberAddedChunk(chunk);
+                return chunk;
+            }
             void ClearPassedVoxels(const Vec3& start, const Vec3& end, float voxelCarvingResetTresh = std::numeric_limits<float>::max(), ChunkVoxelMap* carvedVoxels = nullptr);
 
             void GenerateMesh(const ChunkPtr& chunk, Mesh* mesh);

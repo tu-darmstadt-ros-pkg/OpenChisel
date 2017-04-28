@@ -45,16 +45,39 @@ namespace chisel
             float totalWeight;
     };
 
+    template<class VoxelType = DistVoxel>
     class Chunk
     {
         public:
             EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-            Chunk();
-            Chunk(const ChunkID id, const Eigen::Vector3i& numVoxels, float resolution, bool useColor);
-            virtual ~Chunk();
+            Chunk() {}
 
-            void AllocateDistVoxels();
-            void AllocateColorVoxels();
+            Chunk(const ChunkID id, const Eigen::Vector3i& numVoxels, float resolution, bool useColor) :
+                ID(id), numVoxels(numVoxels), voxelResolutionMeters(resolution)
+            {
+                AllocateDistVoxels();
+                if(useColor)
+                {
+                    AllocateColorVoxels();
+                }
+                origin = Vec3(numVoxels(0) * ID(0) * voxelResolutionMeters, numVoxels(1) * ID(1) * voxelResolutionMeters, numVoxels(2) * ID(2) * voxelResolutionMeters);
+            }
+
+            //virtual ~Chunk();
+
+            void AllocateDistVoxels()
+            {
+                int totalNum = GetTotalNumVoxels();
+                voxels.clear();
+                voxels.resize(totalNum, DistVoxel());
+            }
+
+            void AllocateColorVoxels()
+            {
+                int totalNum = GetTotalNumVoxels();
+                colors.clear();
+                colors.resize(totalNum, ColorVoxel());
+            }
 
             inline const ChunkID& GetID() const { return ID; }
             inline ChunkID& GetIDMutable() { return ID; }
@@ -62,33 +85,33 @@ namespace chisel
 
             inline bool HasColors() const { return !colors.empty(); }
             inline bool HasVoxels() const { return !voxels.empty(); }
-            inline const std::vector<DistVoxel>& GetVoxels() const { return voxels; }
+            inline const std::vector<VoxelType>& GetVoxels() const { return voxels; }
 
             inline const Eigen::Vector3i& GetNumVoxels() const { return numVoxels; }
             inline float GetVoxelResolutionMeters() const { return voxelResolutionMeters; }
 
-            inline const DistVoxel& GetDistVoxel(const VoxelID& voxelID) const { return voxels[voxelID]; }
-            inline DistVoxel& GetDistVoxelMutable(const VoxelID& voxelID) { return voxels[voxelID]; }
+            inline const VoxelType& GetDistVoxel(const VoxelID& voxelID) const { return voxels[voxelID]; }
+            inline VoxelType& GetDistVoxelMutable(const VoxelID& voxelID) { return voxels[voxelID]; }
 
             inline const ColorVoxel& GetColorVoxel(const VoxelID& voxelID) const { return colors[voxelID]; }
             inline ColorVoxel& GetColorVoxelMutable(const VoxelID& voxelID) { return colors[voxelID]; }
 
-            inline const DistVoxel& GetDistVoxel(int x, int y, int z) const
+            inline const VoxelType& GetDistVoxel(int x, int y, int z) const
             {
                 return GetDistVoxel(GetVoxelID(x, y, z));
             }
 
-            inline DistVoxel& GetDistVoxelMutable(int x, int y, int z)
+            inline VoxelType& GetDistVoxelMutable(int x, int y, int z)
             {
                 return GetDistVoxelMutable(GetVoxelID(x, y, z));
             }
 
-            inline const DistVoxel& GetDistVoxel(const Vec3& relativePos) const
+            inline const VoxelType& GetDistVoxel(const Vec3& relativePos) const
             {
                 return GetDistVoxel(GetVoxelID(relativePos));
             }
 
-            inline DistVoxel& GetDistVoxelMutable(const Vec3& relativePos)
+            inline VoxelType& GetDistVoxelMutable(const Vec3& relativePos)
             {
                 return GetDistVoxelMutable(GetVoxelID(relativePos));
             }
@@ -123,10 +146,28 @@ namespace chisel
                 return origin + (numVoxels.cast<float>() * 0.5f * voxelResolutionMeters);
             }
 
-            Point3 GetVoxelCoords(const Vec3& relativeCoords) const;
+            Point3 GetVoxelCoords(const Vec3& relativeCoords) const
+            {
+              const float roundingFactor = 1.0f / (voxelResolutionMeters);
 
-            Vec3 GetWorldCoords(const Point3& coords) const;
-            Vec3 GetWorldCoords(const VoxelID& voxelID) const;
+              return Point3(static_cast<int>(std::floor(relativeCoords(0) * roundingFactor)),
+                            static_cast<int>(std::floor(relativeCoords(1) * roundingFactor)),
+                            static_cast<int>(std::floor(relativeCoords(2) * roundingFactor)));
+            }
+
+            Vec3 GetWorldCoords(const Point3& coords) const
+            {
+              return (coords.cast<float>() + Vec3(0.5, 0.5, 0.5)) * voxelResolutionMeters + origin;
+            }
+
+            Vec3 GetWorldCoords(const VoxelID& voxelID) const
+            {
+              Point3 voxelCoords(voxelID % numVoxels(0),
+                                 voxelID / numVoxels(0) % numVoxels(1),
+                                 voxelID / (numVoxels(0)*numVoxels(1)));
+
+              return GetWorldCoords(voxelCoords);
+            }
 
             inline VoxelID GetVoxelID(const Vec3& relativePos) const
             {
@@ -153,13 +194,57 @@ namespace chisel
                 return colors;
             }
 
-            void ComputeStatistics(ChunkStatistics* stats);
+            void ComputeStatistics(ChunkStatistics* stats)
+            {
+                assert(stats != nullptr);
 
-            AABB ComputeBoundingBox();
+                for (const DistVoxel& vox : voxels)
+                {
+                    float weight = vox.GetWeight();
+                    if (weight > 0)
+                    {
+                        float sdf = vox.GetSDF();
+                        if (sdf < 0)
+                        {
+                            stats->numKnownInside++;
+                        }
+                        else
+                        {
+                            stats->numKnownOutside++;
+                        }
+                    }
+                    else
+                    {
+                        stats->numUnknown++;
+                    }
+
+                    stats->totalWeight += weight;
+
+                }
+            }
+
+            AABB ComputeBoundingBox()
+            {
+                Vec3 pos = origin;
+                Vec3 size = numVoxels.cast<float>() * voxelResolutionMeters;
+                return AABB(pos, pos + size);
+            }
 
             inline const Vec3& GetOrigin() const { return origin; }
 
-            Vec3 GetColorAt(const Vec3& relativedPos);
+            Vec3 GetColorAt(const Vec3& relativedPos)
+            {
+                Point3 coords = GetVoxelCoords(relativedPos);
+
+                if (IsCoordValid(coords.x(), coords.y(), coords.z()))
+                {
+                    const ColorVoxel& color = GetColorVoxel(coords.x(), coords.y(), coords.z());
+                    float maxVal = static_cast<float>(std::numeric_limits<uint8_t>::max());
+                    return Vec3(static_cast<float>(color.GetRed()) / maxVal, static_cast<float>(color.GetGreen()) / maxVal, static_cast<float>(color.GetBlue()) / maxVal);
+                }
+
+                return Vec3::Zero();
+            }
 
             void SetMesh(MeshPtr mesh) { this->mesh = mesh; }
             MeshConstPtr GetMesh() const { return mesh; }
@@ -169,13 +254,13 @@ namespace chisel
             Eigen::Vector3i numVoxels;
             float voxelResolutionMeters;
             Vec3 origin;
-            std::vector<DistVoxel> voxels;
+            std::vector<VoxelType> voxels;
             std::vector<ColorVoxel> colors;
             MeshPtr mesh;
     };
 
-    typedef boost::shared_ptr<Chunk> ChunkPtr;
-    typedef boost::shared_ptr<const Chunk> ChunkConstPtr;
+    typedef boost::shared_ptr<Chunk<>> ChunkPtr; //todo(kdaun) handle template correctly
+    typedef boost::shared_ptr<const Chunk<>> ChunkConstPtr; //todo(kdaun) handle template correctly
     typedef std::vector<ChunkID, Eigen::aligned_allocator<ChunkID> > ChunkIDList;
 
 } // namespace chisel 

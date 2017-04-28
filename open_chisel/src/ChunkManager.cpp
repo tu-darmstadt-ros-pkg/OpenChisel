@@ -181,14 +181,6 @@ namespace chisel
         //);
     }
 
-    ChunkPtr ChunkManager::CreateChunk(const ChunkID& id)
-    {
-        ChunkPtr chunk = boost::allocate_shared<Chunk>(Eigen::aligned_allocator<Chunk>(), id, chunkSize, voxelResolutionMeters, useColor);
-        AddChunk(chunk);
-        RememberAddedChunk(chunk);
-        return chunk;
-    }
-
     void ChunkManager::Reset()
     {
         allMeshes->clear();
