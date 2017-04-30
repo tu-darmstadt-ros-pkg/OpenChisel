@@ -50,7 +50,7 @@ int main(int argc, char** argv)
     double farPlaneDist;
     int maxThreads;
     int threadTreshold;
-    chisel_ros::ChiselServer::FusionMode mode;
+    chisel_ros::FusionMode mode;
     std::string modeString;
     std::string pointCloudTopic;
 
@@ -86,12 +86,12 @@ int main(int argc, char** argv)
     if(modeString == "DepthImage")
     {
         ROS_INFO("Mode depth image");
-        mode = chisel_ros::ChiselServer::FusionMode::DepthImage;
+        mode = chisel_ros::FusionMode::DepthImage;
     }
     else if(modeString == "PointCloud")
     {
         ROS_INFO("Mode point cloud");
-        mode = chisel_ros::ChiselServer::FusionMode::PointCloud;
+        mode = chisel_ros::FusionMode::PointCloud;
     }
     else
     {
@@ -102,11 +102,11 @@ int main(int argc, char** argv)
     ROS_INFO("Subscribing.");
     chisel::Vec4 truncation(truncationDistQuad, truncationDistLinear, truncationDistConst, truncationDistScale);
 
-    chisel_ros::ChiselServerPtr server(new chisel_ros::ChiselServer(nh, chunkSizeX, chunkSizeY, chunkSizeZ, voxelResolution, useColor, mode));
+    chisel_ros::ChiselServerPtr<> server(new chisel_ros::ChiselServer<>(nh, chunkSizeX, chunkSizeY, chunkSizeZ, voxelResolution, useColor, mode));
     server->SetThreadingParameters(std::abs(maxThreads), std::abs(threadTreshold));
     server->SetupProjectionIntegrator(truncation, static_cast<uint16_t>(weight), useCarving, carvingDist);
 
-    if (mode == chisel_ros::ChiselServer::FusionMode::DepthImage)
+    if (mode == chisel_ros::FusionMode::DepthImage)
     {
         server->SubscribeDepthImage(depthImageTopic, depthImageInfoTopic, depthImageTransform);
     }
@@ -122,7 +122,7 @@ int main(int argc, char** argv)
     server->SetFarPlaneDist(farPlaneDist);
     server->AdvertiseServices();
 
-    if (useColor && mode == chisel_ros::ChiselServer::FusionMode::DepthImage)
+    if (useColor && mode == chisel_ros::FusionMode::DepthImage)
     {
         server->SubscribeColorImage(colorImageTopic, colorImageInfoTopic, colorImageTransform);
         server->SetupColorPosePublisher("last_color_pose");
@@ -152,10 +152,10 @@ int main(int argc, char** argv)
 
             switch (server->GetMode())
             {
-                case chisel_ros::ChiselServer::FusionMode::DepthImage:
+                case chisel_ros::FusionMode::DepthImage:
                     server->IntegrateLastDepthImage();
                     break;
-                case chisel_ros::ChiselServer::FusionMode::PointCloud:
+                case chisel_ros::FusionMode::PointCloud:
                     server->IntegrateLastPointCloud();
                     break;
             }

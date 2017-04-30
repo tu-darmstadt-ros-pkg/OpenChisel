@@ -29,6 +29,8 @@
 #include <Eigen/Geometry>
 #include <open_chisel/geometry/Geometry.h>
 #include <open_chisel/camera/DepthImage.h>
+#include <open_chisel/camera/ColorImage.h>
+#include <open_chisel/camera/PinholeCamera.h>
 #include <sensor_msgs/Image.h>
 #include <sensor_msgs/CameraInfo.h>
 #include <geometry_msgs/TransformStamped.h>
@@ -37,6 +39,7 @@
 #include <open_chisel/pointcloud/PointCloud.h>
 #include <pcl/filters/filter.h>
 #include <sensor_msgs/point_cloud_conversion.h>
+#include <tf/tf.h>
 
 namespace chisel_ros
 {
