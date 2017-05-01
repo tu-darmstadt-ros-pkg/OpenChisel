@@ -1218,11 +1218,14 @@ namespace chisel
             Vec3 roundingFactor;
     };
 
-    typedef boost::shared_ptr<ChunkManager<DistVoxel>> ChunkManagerPtr; //todo(kdaun) fix with template
-    typedef boost::shared_ptr<const ChunkManager<DistVoxel>> ChunkManagerConstPtr; //todo(kdaun) fix with template
 
-    typedef boost::shared_ptr<ChunkSet> ChunkSetPtr; //todo(kdaun) fix with template
-    typedef boost::shared_ptr<const ChunkSet> ChunkSetConstPtr; //todo(kdaun) fix with template
+    template<class VoxelType>
+    using ChunkManagerPtr = boost::shared_ptr<ChunkManager<VoxelType>>;
+    template<class VoxelType>
+    using ChunkManagerConstPtr = boost::shared_ptr<const ChunkManager<VoxelType>>;
+
+    typedef boost::shared_ptr<ChunkSet> ChunkSetPtr;
+    typedef boost::shared_ptr<const ChunkSet> ChunkSetConstPtr;
 } // namespace chisel 
 
 #endif // CHUNKMANAGER_H_ 
