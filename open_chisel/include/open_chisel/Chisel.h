@@ -150,9 +150,6 @@ namespace chisel
                 integrator.IntegratePoint(startPoint, endPoint, difference, distance, chunkManager, &updatedVoxels);
             }
 
-            void IntegrateChunks(const ProjectionIntegrator& integrator, ChunkManager<VoxelType>& sourceChunkManager, ChunkSet& changedChunks); //todo(kdaun) check not implemented
-            void DeleteChunks(ChunkSet &chunks); //todo(kdaun) check not implemented
-
             template <class DataType> void IntegrateDepthScan(const ProjectionIntegrator& integrator, const boost::shared_ptr<const DepthImage<DataType> >& depthImage, const Transform& extrinsic, const PinholeCamera& camera)
             {
                     Frustum frustum;
@@ -182,7 +179,8 @@ namespace chisel
                     //);
             }
 
-            template <class DataType, class ColorType> void IntegrateDepthScanColor(const ProjectionIntegrator& integrator, const boost::shared_ptr<const DepthImage<DataType> >& depthImage,  const Transform& depthExtrinsic, const PinholeCamera& depthCamera, const boost::shared_ptr<const ColorImage<ColorType> >& colorImage, const Transform& colorExtrinsic, const PinholeCamera& colorCamera)
+            template <class DataType, class ColorType>
+            void IntegrateDepthScanColor(const ProjectionIntegrator& integrator, const boost::shared_ptr<const DepthImage<DataType> >& depthImage,  const Transform& depthExtrinsic, const PinholeCamera& depthCamera, const boost::shared_ptr<const ColorImage<ColorType> >& colorImage, const Transform& colorExtrinsic, const PinholeCamera& colorCamera)
             {
                     Frustum frustum;
                     depthCamera.SetupFrustum(depthExtrinsic, &frustum);
