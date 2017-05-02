@@ -464,6 +464,38 @@ namespace chisel
                   return nullptr;
             }
 
+            const VoxelType* GetDistanceVoxelGlobal(const Vec3& global_pos) const
+            {
+                Vec3 local_pos = global_pos - origin;
+                const ChunkPtr<VoxelType> chunk = GetChunk(GetIDAt(local_pos));
+
+                if (chunk)
+                {
+                    Vec3 rel = (local_pos - chunk->GetOrigin());
+                    return &(chunk->GetDistVoxel(chunk->GetVoxelID(rel)));
+                }
+                else
+                  return nullptr;
+            }
+
+            const VoxelType* GetCoarsedDistanceVoxelGlobal(const Vec3& global_pos, float coarsening_factor) const
+            {
+                Vec3 local_pos = global_pos - origin;
+                float scaled_res = voxelResolutionMeters * coarsening_factor;
+                local_pos.x() = floor(local_pos.x() * (1 / scaled_res)) * scaled_res;
+                local_pos.y() = floor(local_pos.y() * (1 / scaled_res)) * scaled_res;
+                local_pos.z() = floor(local_pos.z() * (1 / scaled_res)) * scaled_res;
+
+                const ChunkPtr<VoxelType> chunk = GetChunk(GetIDAt(local_pos));
+
+                if (chunk)
+                {
+                    Vec3 rel = (local_pos - chunk->GetOrigin());
+                    return &(chunk->GetDistVoxel(chunk->GetVoxelID(rel)));
+                }
+                else
+                  return nullptr;
+            }
 
             const ColorVoxel* GetColorVoxel(const Vec3& pos) const
             {
