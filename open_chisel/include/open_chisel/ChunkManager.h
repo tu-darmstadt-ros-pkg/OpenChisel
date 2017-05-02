@@ -358,8 +358,8 @@ namespace chisel
                 roundingFactor = chunkSizeMeters.cwiseInverse();
             }
 
-            ChunkManager(const Eigen::Vector3i& chunkSize, float voxelResolution, bool color, float minWeight) :
-                chunkSize(chunkSize), voxelResolutionMeters(voxelResolution), useColor(color), minimumWeight(minWeight)
+            ChunkManager(const Eigen::Vector3i& chunkSize, float voxelResolution, bool color, float minWeight, const Vec3& mapOrigin) :
+                chunkSize(chunkSize), voxelResolutionMeters(voxelResolution), useColor(color), minimumWeight(minWeight), origin(mapOrigin)
             {
                 chunkSizeMeters = chunkSize.cast<float>() * voxelResolutionMeters;
                 CacheCentroids();
@@ -463,6 +463,7 @@ namespace chisel
                 else
                   return nullptr;
             }
+
 
             const ColorVoxel* GetColorVoxel(const Vec3& pos) const
             {
@@ -1063,6 +1064,7 @@ namespace chisel
             inline const Eigen::Vector3i& GetChunkSize() const { return chunkSize; }
             inline const Eigen::Vector3f& GetChunkSizeMeters() const { return chunkSizeMeters; }
             inline float GetResolution() const { return voxelResolutionMeters; }
+            inline const Vec3& GetOrigin() const { return origin; }
 
             inline const Vec3List& GetCentroids() const { return centroids; }
 
@@ -1213,6 +1215,7 @@ namespace chisel
             unsigned int threadTreshold;
             IncrementalChangesPtr<VoxelType> incrementalChanges;
             float minimumWeight;
+            Vec3 origin;
 
         private:
             Vec3 roundingFactor;
