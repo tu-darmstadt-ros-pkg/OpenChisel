@@ -19,7 +19,8 @@ add_library(${PROJECT_NAME}
 	${HEADER_FILES}
 	src/Chunk.cpp 
 	src/ChunkManager.cpp 
-	src/DistVoxel.cpp  
+        src/DistVoxel.cpp
+        src/MultiDistVoxel.cpp
 	src/ColorVoxel.cpp
 	src/geometry/AABB.cpp
 	src/geometry/Plane.cpp
