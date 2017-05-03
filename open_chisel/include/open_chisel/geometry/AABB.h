@@ -66,6 +66,8 @@ namespace chisel
                 return (max - min) * 0.5f;
             }
 
+            void ExtendToInclude(const AABB& aabb);
+
             Plane::IntersectionType Intersects(const Plane& other) const;
 
             Vec3 min;

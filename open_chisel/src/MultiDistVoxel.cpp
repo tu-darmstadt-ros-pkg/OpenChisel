@@ -21,12 +21,16 @@
 
 #include <open_chisel/MultiDistVoxel.h>
 #include <stdexcept>
+#include <iostream>
 namespace chisel
 {
 
     MultiDistVoxel::MultiDistVoxel() :
             DistVoxel(), expanded(false)
     {
+
+        expanded_sdf_.resize(8, 99999); //todo(kdaun) remove dummy initialization
+        expanded = true;
 
     }
 
@@ -36,13 +40,7 @@ namespace chisel
     }
 
 
-    void MultiDistVoxel::SetExpandedSDF(std::vector<float> expanded_sdf)
-    {
-        expanded_sdf_ = expanded_sdf;
-        expanded = true;
-    }
-
-    inline float MultiDistVoxel::GetExpandedSDF(int level) const
+    float MultiDistVoxel::GetExpandedSDF(int level) const
     {
         if(level > expanded_sdf_.size() || !expanded)
         {
@@ -51,16 +49,29 @@ namespace chisel
                 std::out_of_range e("Requested level > expanded_sdf_.size(), " + std::to_string(level) + " > " + std::to_string(expanded_sdf_.size()));
                 throw(e);
             }
-            else
-            {
-                std::runtime_error e("Requesting ExpandedSDF data on non-expanded voxel");
-                throw(e);
-            }
         }
         if(level == 0)
             return sdf;
         else
             return expanded_sdf_[level - 1];
+    }
+
+    void MultiDistVoxel::SetExpandedSDF(std::vector<float> expanded_sdf)
+    {
+        expanded_sdf_ = expanded_sdf;
+        expanded = true;
+    }
+
+    void MultiDistVoxel::SetExpandedSDF(int level, float value)
+    {
+        expanded_sdf_[level - 1] = value;
+        expanded = true;
+    }
+
+    void MultiDistVoxel::SetExpandedSDFSize(int n_level)
+    {
+        expanded_sdf_.resize(n_level, 99999);
+        expanded = true;
     }
 
 } // namespace chisel 

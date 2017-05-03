@@ -46,14 +46,14 @@ namespace chisel
               threadTreshold = 500;
             }
 
-            Chisel(const Eigen::Vector3i& chunkSize, float voxelResolution, bool useColor, float minimumWeight, Vec3 mapOrigin = Vec3()) :
+            Chisel(const Eigen::Vector3i& chunkSize, float voxelResolution, bool useColor, float minimumWeight, Vec3 mapOrigin = Vec3(0,0,0)) :
               chunkManager(chunkSize, voxelResolution, useColor, minimumWeight, mapOrigin)
             {
               maxThreads = 4;
               threadTreshold = 500;
             }
 
-            Chisel(const Eigen::Vector3i& chunkSize, float voxelResolution, bool useColor, Vec3 mapOrigin = Vec3()) :
+            Chisel(const Eigen::Vector3i& chunkSize, float voxelResolution, bool useColor, Vec3 mapOrigin = Vec3(0,0,0)) :
               chunkManager(chunkSize, voxelResolution, useColor, 0.0f, mapOrigin)
             {
               maxThreads = 4;
@@ -299,10 +299,10 @@ namespace chisel
 
     };
 
-    template<class VoxelType>
+    template<class VoxelType = DistVoxel>
     using ChiselPtr = boost::shared_ptr<Chisel<VoxelType>>;
 
-    template<class VoxelType>
+    template<class VoxelType = DistVoxel>
     using ChiselConstPtr = boost::shared_ptr<const Chisel<VoxelType>>;
 
 

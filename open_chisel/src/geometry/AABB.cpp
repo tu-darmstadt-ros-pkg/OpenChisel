@@ -24,7 +24,8 @@
 namespace chisel
 {
 
-    AABB::AABB()
+    AABB::AABB() :
+        min(Vec3(0,0,0)), max(Vec3(0,0,0))
     {
 
     }
@@ -69,6 +70,17 @@ namespace chisel
         return Plane::IntersectionType::Inside;
 
     }
+
+    void AABB::ExtendToInclude(const AABB& aabb)
+    {
+        if(min.x() > aabb.min.x()) min.x() = aabb.min.x();
+        if(min.y() > aabb.min.y()) min.y() = aabb.min.y();
+        if(min.z() > aabb.min.z()) min.z() = aabb.min.z();
+        if(max.x() < aabb.max.x()) max.x() = aabb.max.x();
+        if(max.y() < aabb.max.y()) max.y() = aabb.max.y();
+        if(max.z() < aabb.max.z()) max.z() = aabb.max.z();
+    }
+
 
     AABB::~AABB()
     {

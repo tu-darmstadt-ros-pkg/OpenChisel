@@ -31,7 +31,7 @@
 namespace chisel
 {
 
-    class MultiDistVoxel : DistVoxel
+    class MultiDistVoxel : public DistVoxel
     {
         public:
             MultiDistVoxel();
@@ -41,12 +41,14 @@ namespace chisel
             // returns expanded sdf, level 0 is original sdf
             float GetExpandedSDF(int level) const;
             void SetExpandedSDF(std::vector<float> expanded_sdf);
+            void SetExpandedSDF(int level, float value);
+            void SetExpandedSDFSize(int n_level); //  n_level = 1 -> original sdf only
 
         protected:
 
            bool expanded;
            // stores expanded sdf data, expansion level increases with index
-           // index 0 contains first expanded level
+           // index 0 contains first expanded level 
            std::vector<float> expanded_sdf_;
     };
 

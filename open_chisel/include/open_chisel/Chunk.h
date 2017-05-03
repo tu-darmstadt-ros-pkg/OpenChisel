@@ -69,7 +69,7 @@ namespace chisel
             {
                 int totalNum = GetTotalNumVoxels();
                 voxels.clear();
-                voxels.resize(totalNum, DistVoxel());
+                voxels.resize(totalNum, VoxelType());
             }
 
             void AllocateColorVoxels()
@@ -169,6 +169,15 @@ namespace chisel
               return GetWorldCoords(voxelCoords);
             }
 
+            Point3 GetLocalCoords(const VoxelID& voxelID) const
+            {
+              Point3 voxelCoords(voxelID % numVoxels(0),
+                                 voxelID / numVoxels(0) % numVoxels(1),
+                                 voxelID / (numVoxels(0)*numVoxels(1)));
+
+              return voxelCoords;
+            }
+
             inline VoxelID GetVoxelID(const Vec3& relativePos) const
             {
                 return GetVoxelID(GetVoxelCoords(relativePos));
@@ -198,7 +207,7 @@ namespace chisel
             {
                 assert(stats != nullptr);
 
-                for (const DistVoxel& vox : voxels)
+                for (const VoxelType& vox : voxels)
                 {
                     float weight = vox.GetWeight();
                     if (weight > 0)
