@@ -1237,19 +1237,13 @@ public:
 
     void ComputeExpandedGrid(int n_level) //todo(kdaun) this function only works with MultDistVoxel, don't breal interface for DistVoxel
     {
-        //todo(kdaun) iterate over all voxel and set size
+        //todo(kdaun) iterate over all voxel and set size instead of relying on default constructor
 
         for(int level = 1; level < n_level; ++level)
         {
-            printf("LEVEL %i/%i \n",level, n_level);
+            printf("LEVEL %i/%i \n",level+1, n_level);
             for (auto& chunkTriple : *chunks) //ChunkID, ChunkPtr<VoxelType>, ChunkHasher
             {
-                if (!HasChunk(chunkTriple.first))
-                {
-                    printf("ComputeExpandedGrid !HasChunk(chunkTriple.first)\n"); //todo(kdaun) check and remove
-                    continue;
-                }
-                //ChunkPtr<VoxelType> chunk = GetChunk(chunkPair.first);
                 ChunkPtr<VoxelType> chunk = chunkTriple.second;
                 for (int voxel_idx = 0; voxel_idx < chunk->GetTotalNumVoxels(); voxel_idx++)
                 {
@@ -1261,12 +1255,12 @@ public:
                     Point3 voxel_coords_local = voxel_coords_local_int;
                     Vec3 voxel_coords_global = chunk->GetWorldCoords(voxel_idx);
                     int level_range = level > 1 ? std::pow(2,level-2) : 1;
-                    for(int dx = -level; dx <= level; ++dx)
+                    for(int dx = -level_range; dx <= level_range; ++dx)
                     {
                         //printf("current level: %f \n",(dx+level)*100./2.*level);
-                        for(int dy = -level; dy <= level; ++dy)
+                        for(int dy = -level_range; dy <= level_range; ++dy)
                         {
-                            for(int dz = -level; dz <= level; ++dz)
+                            for(int dz = -level_range; dz <= level_range; ++dz)
                             {
                                 Point3 d = Point3(dx,dy,dz);
                                 Vec3 d_global = Point3(dx,dy,dz).cast<float>()*voxelResolutionMeters;
@@ -1274,7 +1268,6 @@ public:
                                 if(chunk->IsCoordValid(voxel_coords_local.x() + dx,
                                                        voxel_coords_local.y() + dy, voxel_coords_local.z() + dz))
                                 {
-                                    //printf("a\n");
                                     Point3 shifted_voxel = voxel_coords_local + d;
                                     VoxelType& candidate_voxel= chunk->GetDistVoxelMutable(chunk->GetVoxelID(shifted_voxel));
                                     if(std::abs(candidate_voxel.GetExpandedSDF(level)) > std::abs(sdf))
@@ -1288,7 +1281,6 @@ public:
                                     VoxelType* candidate_voxel_ptr = GetDistanceVoxelMutable(voxel_coords_global + d_global);
                                     if(candidate_voxel_ptr)
                                     {
-                                        //printf("b\n");
                                         if(std::abs(candidate_voxel_ptr->GetExpandedSDF(level)) > std::abs(sdf))
                                         {
                                             candidate_voxel_ptr->SetExpandedSDF(level, sdf);
@@ -1296,22 +1288,11 @@ public:
                                     }
                                     else
                                     {
-
                                         const ChunkID& chunkID = GetIDAt(voxel_coords_global + d_global);
-
-
-                                        //dobule check HasChunk(chunkID)
-                                        if (HasChunk(chunkID))
-                                        {
-                                            //printf("ComputeExpandedGrid HasChunk(chunkID)\n"); //todo(kdaun) check and remove
-                                            continue;
-                                        }
                                         CreateChunk(chunkID);
-                                        //printf("generate new chunk\n"); //todo(kdaun) check and remove
                                         candidate_voxel_ptr = GetDistanceVoxelMutable(voxel_coords_global + d_global);
                                         if(candidate_voxel_ptr)
                                         {
-                                            //printf("c\n");
                                             if(std::abs(candidate_voxel_ptr->GetExpandedSDF(level)) > std::abs(sdf))
                                             {
                                                 candidate_voxel_ptr->SetExpandedSDF(level, sdf);
@@ -1319,7 +1300,7 @@ public:
                                         }
                                         else
                                         {
-                                            printf("Something wrong in expanded chunk creation\n"); //todo(kdaun) check and remove
+                                            printf("Something wrong in expanded chunk creation\n");
                                             continue;
                                         }
                                     }

@@ -29,7 +29,7 @@ namespace chisel
             DistVoxel(), expanded(false)
     {
 
-        expanded_sdf_.resize(8, 99999); //todo(kdaun) remove dummy initialization
+        expanded_sdf_.resize(4, 99999); //todo(kdaun) remove dummy initialization
         expanded = true;
 
     }
