@@ -24,6 +24,7 @@
 
 #include <limits>
 #include <stdint.h>
+#include <iostream>
 
 #include <open_chisel/FixedPointFloat.h>
 

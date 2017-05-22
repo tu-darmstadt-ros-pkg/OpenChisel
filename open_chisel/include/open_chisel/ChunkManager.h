@@ -1235,7 +1235,7 @@ public:
     inline void RememberUpdatedVoxel(ChunkPtr<VoxelType> chunk, const VoxelID& voxelID, const float weight_diff, const float sdf_diff) { incrementalChanges->RememberUpdatedVoxel(chunk, voxelID, weight_diff, sdf_diff); }
     inline void RememberCarvedVoxel(ChunkPtr<VoxelType> chunk, const VoxelID& voxelID) { incrementalChanges->RememberCarvedVoxel(chunk, voxelID); }
 
-    void ComputeExpandedGrid(int n_level) //todo(kdaun) this function only works with MultDistVoxel, don't breal interface for DistVoxel
+    void ComputeExpandedGrid(int n_level) //todo(kdaun) this function only works with MultDistVoxel, don't break interface for DistVoxel
     {
         //todo(kdaun) iterate over all voxel and set size instead of relying on default constructor
 
@@ -1248,7 +1248,7 @@ public:
                 for (int voxel_idx = 0; voxel_idx < chunk->GetTotalNumVoxels(); voxel_idx++)
                 {
                     VoxelType voxel = chunk->GetDistVoxel(voxel_idx);
-                    float sdf = voxel.GetExpandedSDF(level - 1);
+                    float sdf = 0.; //voxel.GetExpandedSDF(level - 1); todo(kdaun) reenable wit MultiDistVoxel
                     if(sdf == 99999)
                         continue;
                     Point3 voxel_coords_local_int = chunk->GetLocalCoords(voxel_idx);
@@ -1270,9 +1270,9 @@ public:
                                 {
                                     Point3 shifted_voxel = voxel_coords_local + d;
                                     VoxelType& candidate_voxel= chunk->GetDistVoxelMutable(chunk->GetVoxelID(shifted_voxel));
-                                    if(std::abs(candidate_voxel.GetExpandedSDF(level)) > std::abs(sdf))
+                                    if(/*std::abs(candidate_voxel.GetExpandedSDF(level))*/ 0. > std::abs(sdf)) //todo(kdaun) reenable wit MultiDistVoxel
                                     {
-                                        candidate_voxel.SetExpandedSDF(level, sdf);
+                                        //candidate_voxel.SetExpandedSDF(level, sdf); todo(kdaun) reenable wit MultiDistVoxel
                                     }
                                 }
                                 else
@@ -1281,10 +1281,10 @@ public:
                                     VoxelType* candidate_voxel_ptr = GetDistanceVoxelMutable(voxel_coords_global + d_global);
                                     if(candidate_voxel_ptr)
                                     {
-                                        if(std::abs(candidate_voxel_ptr->GetExpandedSDF(level)) > std::abs(sdf))
+                                        /*if(std::abs(candidate_voxel_ptr->GetExpandedSDF(level)) > std::abs(sdf))
                                         {
                                             candidate_voxel_ptr->SetExpandedSDF(level, sdf);
-                                        }
+                                        }*/ // todo(kdaun) reenable wit MultiDistVoxel
                                     }
                                     else
                                     {
@@ -1293,10 +1293,10 @@ public:
                                         candidate_voxel_ptr = GetDistanceVoxelMutable(voxel_coords_global + d_global);
                                         if(candidate_voxel_ptr)
                                         {
-                                            if(std::abs(candidate_voxel_ptr->GetExpandedSDF(level)) > std::abs(sdf))
+                                            /*if(std::abs(candidate_voxel_ptr->GetExpandedSDF(level)) > std::abs(sdf))
                                             {
                                                 candidate_voxel_ptr->SetExpandedSDF(level, sdf);
-                                            }
+                                            }*///todo(kdaun) reenable wit MultiDistVoxel
                                         }
                                         else
                                         {
