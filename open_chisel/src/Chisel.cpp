@@ -28,16 +28,23 @@ namespace chisel
 
   Chisel::Chisel()
   {
-    // TODO Auto-generated constructor stub
     maxThreads = 4;
     threadTreshold = 500;
+    chunkManager = boost::make_shared<ChunkManager>();
   }
 
-  Chisel::Chisel(const Eigen::Vector3i& chunkSize, float voxelResolution, bool useColor) :
-    chunkManager(chunkSize, voxelResolution, useColor)
+  Chisel::Chisel(const Eigen::Vector3i& chunkSize, float voxelResolution, bool useColor, float minimumWeight)
   {
     maxThreads = 4;
     threadTreshold = 500;
+    chunkManager = boost::make_shared<ChunkManager>(chunkSize, voxelResolution, useColor, minimumWeight);
+  }
+
+  Chisel::Chisel(const Eigen::Vector3i& chunkSize, float voxelResolution, bool useColor)
+  {
+    maxThreads = 4;
+    threadTreshold = 500;
+    chunkManager = boost::make_shared<ChunkManager>(chunkSize, voxelResolution, useColor, 0.0f);
   }
 
   Chisel::~Chisel()
@@ -47,13 +54,13 @@ namespace chisel
 
   void Chisel::Reset()
   {
-    chunkManager.Reset();
+    chunkManager->Reset();
     meshesToUpdate.clear();
   }
 
   void Chisel::UpdateMeshes()
   {
-    chunkManager.RecomputeMeshes(meshesToUpdate);
+    chunkManager->RecomputeMeshes(meshesToUpdate);
     meshesToUpdate.clear();
   }
 
@@ -61,7 +68,7 @@ namespace chisel
   {
     for (const ChunkID& chunkID : chunks)
       {
-        chunkManager.RemoveChunk(chunkID);
+        chunkManager->RemoveChunk(chunkID);
       }
   }
 
@@ -72,7 +79,7 @@ namespace chisel
     chisel::MeshPtr fullMesh(new chisel::Mesh());
 
     size_t v = 0;
-    for (const std::pair<ChunkID, MeshPtr>& it : chunkManager.GetAllMeshes())
+    for (const std::pair<ChunkID, MeshPtr>& it : chunkManager->GetAllMeshes())
       {
         for (const Vec3& vert : it.second->vertices)
           {
@@ -106,50 +113,50 @@ namespace chisel
   //Integrate pointcloud after transforming to target frame using a given sensor pose
   void Chisel::IntegratePointCloud(const ProjectionIntegrator& integrator, const PointCloud& cloud, const Transform& extrinsic, const Vec3& sensorOrigin, float minDist, float maxDist)
   {
-    ChunkSet updatedChunks;
+    ChunkVoxelMap updatedVoxels;
 
     //TODO: parallelize
     for (const Vec3& point : cloud.GetPoints())
     {
         Vec3 point_transformed = extrinsic * point;
-        IntegrateRay(integrator, updatedChunks, sensorOrigin, point_transformed, minDist, maxDist);
+        IntegrateRay(integrator, updatedVoxels, sensorOrigin, point_transformed, minDist, maxDist);
     }
 
-    DetermineMeshesToUpdate(updatedChunks);
+    DetermineUpdatedChunks(updatedVoxels);
   }
 
   //Integrate pointcloud after transforming to target frame
   void Chisel::IntegratePointCloud(const ProjectionIntegrator& integrator, const PointCloud& cloud, const Transform& extrinsic, float minDist, float maxDist)
   {
-    ChunkSet updatedChunks;
+    ChunkVoxelMap updatedVoxels;
     const Vec3& start = extrinsic.translation();
 
     //TODO: parallelize
     for (const Vec3& point : cloud.GetPoints())
     {
         Vec3 point_transformed = extrinsic * point;
-        IntegrateRay(integrator, updatedChunks, start, point_transformed, minDist, maxDist);
+        IntegrateRay(integrator, updatedVoxels, start, point_transformed, minDist, maxDist);
     }
 
-    DetermineMeshesToUpdate(updatedChunks);
+    DetermineUpdatedChunks(updatedVoxels);
   }
 
   //Integrate pointcloud already transformed to target frame
   void Chisel::IntegratePointCloud(const ProjectionIntegrator& integrator, const PointCloud& cloud, const Vec3& sensorOrigin, float minDist, float maxDist)
   {
-    ChunkSet updatedChunks;
+    ChunkVoxelMap updatedVoxels;
 
     //TODO: parallelize
     for (const Vec3& point : cloud.GetPoints())
     {
-        IntegrateRay(integrator, updatedChunks, sensorOrigin, point, minDist, maxDist);
+        IntegrateRay(integrator, updatedVoxels, sensorOrigin, point, minDist, maxDist);
     }
 
-    DetermineMeshesToUpdate(updatedChunks);
+    DetermineUpdatedChunks(updatedVoxels);
   }
 
   //Integrate ray already transformed to target frame
-  void Chisel::IntegrateRay(const ProjectionIntegrator& integrator, ChunkSet& updatedChunks, const Vec3& startPoint, const Vec3& endPoint, float minDist, float maxDist)
+  void Chisel::IntegrateRay(const ProjectionIntegrator& integrator, ChunkVoxelMap& updatedVoxels, const Vec3& startPoint, const Vec3& endPoint, float minDist, float maxDist)
   {
     const Vec3 difference = endPoint - startPoint;
 
@@ -181,20 +188,19 @@ namespace chisel
 
         //apply truncation offset towards sensor origin
         truncatedPositiveEnd -= truncationOffset * direction;
-
-        chunkManager.ClearPassedVoxels(startPoint, truncatedPositiveEnd, updatedChunks);
+        chunkManager->ClearPassedVoxels(startPoint, truncatedPositiveEnd, integrator.GetVoxelCarvingResetTresh(), &updatedVoxels);
     }
 
     if (integrateRay)
-      integrator.IntegratePoint(startPoint, endPoint, difference, distance, chunkManager, &updatedChunks);
+      integrator.IntegratePoint(startPoint, endPoint, difference, distance, *chunkManager, &updatedVoxels);
   }
 
-  void Chisel::DetermineMeshesToUpdate(ChunkSet& updatedChunks)
+  void Chisel::DetermineUpdatedChunks(ChunkVoxelMap& updatedVoxels)
   {
-    for (const auto& entry : updatedChunks)
+    for (const auto& entry : updatedVoxels)
     {
-      ChunkPtr chunk = chunkManager.GetChunk(entry.first);
-      chunkManager.RememberUpdatedChunk(chunk, meshesToUpdate);
+      ChunkPtr chunk = chunkManager->GetChunk(entry.first);
+      chunkManager->RememberUpdatedChunk(chunk, meshesToUpdate);
     }
   }
 

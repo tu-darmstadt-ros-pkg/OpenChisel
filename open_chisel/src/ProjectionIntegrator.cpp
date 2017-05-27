@@ -21,17 +21,18 @@
 
 #include <open_chisel/ProjectionIntegrator.h>
 #include <open_chisel/geometry/Raycast.h>
+
 namespace chisel
 {
-
-  ProjectionIntegrator::ProjectionIntegrator()
+  ProjectionIntegrator::ProjectionIntegrator():
+    minimumWeight(0.0f), maximumWeight(std::numeric_limits<float>::max()), carvingDist(0.1f), enableVoxelCarving(false), rememberAllUpdatedVoxels(true)
   {
     // TODO Auto-generated constructor stub
 
   }
 
-  ProjectionIntegrator::ProjectionIntegrator(const TruncatorPtr& t, const WeighterPtr& w, const float maxWeight, float crvDist, bool enableCrv, const Vec3List& centers) :
-    truncator(t), weighter(w), maximumWeight(maxWeight), carvingDist(crvDist), enableVoxelCarving(enableCrv), centroids(centers)
+  ProjectionIntegrator::ProjectionIntegrator(const TruncatorPtr& t, const WeighterPtr& w, const float minWeight, const float maxWeight, float crvDist, bool enableCrv, const Vec3List& centers, bool rememberAllUpdatedVoxels) :
+    truncator(t), weighter(w), minimumWeight(minWeight), maximumWeight(maxWeight), carvingDist(crvDist), enableVoxelCarving(enableCrv), centroids(centers), rememberAllUpdatedVoxels(rememberAllUpdatedVoxels)
   {
 
   }
@@ -92,7 +93,7 @@ namespace chisel
               }
             else if (enableVoxelCarving && u > truncation + carvingDist)
               {
-                if (distVoxel.GetWeight() > 0)
+                if (distVoxel.IsValid())
                   {
                     distVoxel.Carve();
                     updated = true;
@@ -103,7 +104,7 @@ namespace chisel
     return updated;
   }
 
-  void ProjectionIntegrator::IntegratePoint(const Vec3& sensorOrigin, const Vec3& point, const Vec3& direction, float distance, ChunkManager& chunkManager, ChunkSet* updatedChunks) const
+  void ProjectionIntegrator::IntegratePoint(const Vec3& sensorOrigin, const Vec3& point, const Vec3& direction, float distance, ChunkManager& chunkManager, ChunkVoxelMap* updatedChunks) const
   {
     const float resolution = chunkManager.GetResolution();
     const float roundingFactor = 1.0f / resolution;
@@ -117,7 +118,6 @@ namespace chisel
     const Vec3 end = (point + truncationOffset) * roundingFactor;
 
     Point3List raycastVoxels;
-
     Raycast(start, end, raycastVoxels);
 
     for (const Point3& voxelCoords : raycastVoxels)
@@ -137,9 +137,17 @@ namespace chisel
         float weight = weighter->GetWeight(u, truncation);
         if (fabs(u) < maxSurfaceDist)
         {
+          float weight_diff = - distVoxel.GetWeight();
+          float sdf_diff = - distVoxel.GetSDF();
           distVoxel.Integrate(u, weight, maximumWeight);
-          updatedChunks->emplace(chunkID, chunk->GetOrigin());
-          chunkManager.RememberUpdatedVoxel(chunk, voxelID);
+          weight_diff += distVoxel.GetWeight();
+          sdf_diff += distVoxel.GetSDF();
+
+          if(rememberAllUpdatedVoxels || distVoxel.IsValid(minimumWeight))
+            chunkManager.RememberUpdatedVoxel(chunk, voxelID, weight_diff, sdf_diff);
+
+          if (updatedChunks)
+            (*updatedChunks)[chunkID].insert(std::make_pair(chunk, voxelID));
         }
     }
   }
@@ -190,7 +198,7 @@ namespace chisel
               }
             else if (enableVoxelCarving && u > truncation + carvingDist)
               {
-                if (distVoxel.GetWeight() > 0)
+                if (distVoxel.IsValid())
                   {
                     distVoxel.Carve();
                     updated = true;
@@ -214,7 +222,7 @@ namespace chisel
         DistVoxel& voxel = chunk->GetDistVoxelMutable(i);
         DistVoxel voxelToIntegrate = chunkToIntegrate->GetDistVoxel(i);
 
-        if (voxelToIntegrate.GetWeight() > 0 && voxelToIntegrate.GetSDF() <99999)
+        if (voxelToIntegrate.IsValid())
         {
           voxel.Integrate(voxelToIntegrate.GetSDF(), voxelToIntegrate.GetWeight(), maximumWeight);
           updated = true;
@@ -246,7 +254,7 @@ namespace chisel
         const DistVoxel& distVoxelToIntegrate = chunkToIntegrate->GetDistVoxel(i);
         const ColorVoxel& colorVoxelToIntegrate = chunkToIntegrate->GetColorVoxel(i);
 
-        if (distVoxelToIntegrate.GetWeight() > 0 && distVoxelToIntegrate.GetSDF() <99999)
+        if (distVoxelToIntegrate.IsValid())
         {
           distVoxel.Integrate(distVoxelToIntegrate.GetSDF(), distVoxelToIntegrate.GetWeight(), maximumWeight);
           colorVoxel.Integrate((uint8_t) colorVoxelToIntegrate.GetRed(), (uint8_t) colorVoxelToIntegrate.GetGreen(), (uint8_t)  colorVoxelToIntegrate.GetBlue(), colorVoxelToIntegrate.GetWeight());

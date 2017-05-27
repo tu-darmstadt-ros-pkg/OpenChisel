@@ -42,12 +42,12 @@ namespace chisel
   {
   public:
     ProjectionIntegrator();
-    ProjectionIntegrator(const TruncatorPtr& t, const WeighterPtr& w, const float maxWeight, float carvingDist, bool enableCarving, const Vec3List& centroids);
+    ProjectionIntegrator(const TruncatorPtr& t, const WeighterPtr& w, const float minWeight, const float maxWeight, float carvingDist, bool enableCarving, const Vec3List& centroids, bool rememberAllUpdatedVoxels);
     virtual ~ProjectionIntegrator();
 
     bool Integrate(const PointCloud& cloud, const Transform& cameraPose, Chunk* chunk) const;
     bool IntegratePointCloud(const PointCloud& cloud, const Transform& cameraPose, Chunk* chunk) const;
-    void IntegratePoint(const Vec3& sensorOrigin, const Vec3& point, const Vec3& direction, float distance, ChunkManager& chunkManager, ChunkSet* updatedChunks) const;
+    void IntegratePoint(const Vec3& sensorOrigin, const Vec3& point, const Vec3& direction, float distance, ChunkManager& chunkManager, ChunkVoxelMap* updatedChunks) const;
     bool IntegrateColorPointCloud(const PointCloud& cloud, const Transform& cameraPose, Chunk* chunk) const;
     bool IntegrateChunk(const Chunk* chunkToIntegrate, Chunk* chunk) const;
     bool IntegrateColorChunk(const Chunk* chunkToIntegrate, Chunk* chunk) const;
@@ -104,8 +104,15 @@ namespace chisel
 
             //mutex.unlock();
               DistVoxel& voxel = chunk->GetDistVoxelMutable(i);
+              float weight_diff = - voxel.GetWeight();
+              float sdf_diff = - voxel.GetSDF();
               voxel.Integrate(surfaceDist, weighter->GetWeight(surfaceDist, truncation), maximumWeight);
-              chunkManager.RememberUpdatedVoxel(chunk, i);
+              weight_diff += voxel.GetWeight();
+              sdf_diff += voxel.GetSDF();
+
+              if(rememberAllUpdatedVoxels || voxel.IsValid(minimumWeight))
+                chunkManager.RememberUpdatedVoxel(chunk, i, weight_diff, sdf_diff);
+
               updated = true;
             }
           else if (enableVoxelCarving && surfaceDist > truncation + carvingDist)
@@ -122,8 +129,8 @@ namespace chisel
               DistVoxel& voxel = chunk->GetDistVoxelMutable(i);
               if (voxel.GetWeight() > 0)
                 {
-                  voxel.Carve();
-                  chunkManager.RememberCarvedVoxel(chunk, i);
+                  if (voxel.Carve(voxelCarvingResetTresh))
+                    chunkManager.RememberCarvedVoxel(chunk, i);
                   updated = true;
                 }
             }
@@ -198,8 +205,15 @@ namespace chisel
                 }
 
               DistVoxel& voxel = chunk->GetDistVoxelMutable(i);
+              float weight_diff = - voxel.GetWeight();
+              float sdf_diff = - voxel.GetSDF();
               voxel.Integrate(surfaceDist, weighter->GetWeight(surfaceDist, truncation), maximumWeight);
-              chunkManager.RememberUpdatedVoxel(chunk, i);
+
+              weight_diff += voxel.GetWeight();
+              sdf_diff += voxel.GetSDF();
+
+              if(rememberAllUpdatedVoxels || voxel.IsValid(minimumWeight))
+                chunkManager.RememberUpdatedVoxel(chunk, i, weight_diff, sdf_diff);
 
               updated = true;
             }
@@ -216,8 +230,8 @@ namespace chisel
               DistVoxel& voxel = chunk->GetDistVoxelMutable(i);
               if (voxel.GetWeight() > 0)
                 {
-                  voxel.Carve();
-                  chunkManager.RememberCarvedVoxel(chunk, i);
+                  if (voxel.Carve(voxelCarvingResetTresh))
+                    chunkManager.RememberCarvedVoxel(chunk, i);
                   updated = true;
                 }
             }
@@ -246,6 +260,15 @@ namespace chisel
     inline void SetCentroids(const Vec3List& c) { centroids = c; }
 
     inline void SetMaximumWeight(const float maxWeight){ maximumWeight = maxWeight; }
+    inline float GetMaxVoxelWeight() const { return maximumWeight; }
+
+    inline void SetMinimumWeight(const float minWeight){ minimumWeight = minWeight; }
+    inline float GetMinVoxelWeight() const { return minimumWeight; }
+
+    inline void SetVoxelCarvingResetTresh(const float tresh){ voxelCarvingResetTresh = tresh; }
+    inline float GetVoxelCarvingResetTresh() const { return voxelCarvingResetTresh; }
+
+    inline float RememberAllUpdatedVoxels(bool remember){ rememberAllUpdatedVoxels = remember; }
 
   protected:
     TruncatorPtr truncator;
@@ -253,7 +276,10 @@ namespace chisel
     float carvingDist;
     bool enableVoxelCarving;
     Vec3List centroids;
+    float minimumWeight;
     float maximumWeight;
+    float voxelCarvingResetTresh;
+    bool rememberAllUpdatedVoxels;
   };
 
 } // namespace chisel 

@@ -9,6 +9,7 @@ add_message_files(FILES
   ChunkListMessage.msg
   IncrementalChangesMessage.msg
   ChunkIDMessage.msg
+  VolumeMessage.msg
 )
 
 add_service_files(FILES
