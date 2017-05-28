@@ -728,7 +728,7 @@ namespace chisel
 
     void ChunkManager::ClearPassedVoxels(const Vec3& start, const Vec3& end, float voxelCarvingResetTresh, ChunkVoxelMap* carvedVoxels)
     {
-        float roundingFactor = 1/voxelResolutionMeters;
+        float invRes = 1/voxelResolutionMeters;
 
         Point3List passedChunks;
         GetChunkIDsIntersecting(start, end, passedChunks);
@@ -746,21 +746,12 @@ namespace chisel
             if (!chunk)
               continue;
 
-            //printf("chunk id: %d %d %d \n" ,passedChunk(0), passedChunk(1), passedChunk(2));
-
             GetRayChunkIntersect(start, dir, chunk->GetOrigin(), chunk->GetOrigin() + GetChunkDimensions(), tMin, tMax);
 
             Point3List passedVoxels;
 
-            const Vec3 startRounded = (start + tMin * dir) * roundingFactor;
-            Vec3 endRounded = (start + tMax * dir) * roundingFactor;
-
-            if (i == passedChunks.size() -1)
-              endRounded = end * roundingFactor;
-
-            //printf("start: %f %f %f \n", startRounded(0), startRounded(1), startRounded(2));
-            //printf("endRounded: %f %f %f \n", endRounded(0), endRounded(1), endRounded(2));
-
+            const Vec3 startRounded = (start + tMin * dir + voxelShift) * invRes;
+            Vec3 endRounded = (start + tMax * dir + voxelShift) * invRes;
 
             Raycast(startRounded, endRounded, passedVoxels);
 
