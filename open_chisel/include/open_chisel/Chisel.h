@@ -41,40 +41,40 @@ namespace chisel
         public:
             Chisel()
             {
-              // TODO Auto-generated constructor stub
+              chunkManager = boost::make_shared<ChunkManager<VoxelType>>();
               maxThreads = 4;
               threadTreshold = 500;
             }
 
-            Chisel(const Eigen::Vector3i& chunkSize, float voxelResolution, bool useColor, float minimumWeight, Vec3 mapOrigin = Vec3(0,0,0)) :
-              chunkManager(chunkSize, voxelResolution, useColor, minimumWeight, mapOrigin)
+            Chisel(const Eigen::Vector3i& chunkSize, float voxelResolution, bool useColor, float minimumWeight, Vec3 mapOrigin = Vec3(0,0,0))
             {
+              chunkManager = boost::make_shared<ChunkManager<VoxelType>>(chunkSize, voxelResolution, useColor, minimumWeight, mapOrigin);
               maxThreads = 4;
               threadTreshold = 500;
             }
 
-            Chisel(const Eigen::Vector3i& chunkSize, float voxelResolution, bool useColor, Vec3 mapOrigin = Vec3(0,0,0)) :
-              chunkManager(chunkSize, voxelResolution, useColor, 0.0f, mapOrigin)
+            Chisel(const Eigen::Vector3i& chunkSize, float voxelResolution, bool useColor, Vec3 mapOrigin = Vec3(0,0,0))
             {
+              chunkManager = boost::make_shared<ChunkManager<VoxelType>>(chunkSize, voxelResolution, useColor, 0.0f, mapOrigin);
               maxThreads = 4;
               threadTreshold = 500;
             }
             virtual ~Chisel(){}
 
-            inline const ChunkManager<VoxelType>& GetChunkManager() const { return chunkManager; }
-            inline ChunkManager<VoxelType>& GetMutableChunkManager() { return chunkManager; }
-            inline void SetChunkManager(const ChunkManager<VoxelType>& manager) { chunkManager = manager; }
+            inline const ChunkManager<VoxelType>& GetChunkManager() const { return *chunkManager; }
+            inline ChunkManager<VoxelType>& GetMutableChunkManager() { return *chunkManager; }
+            inline void SetChunkManager(const ChunkManagerPtr<VoxelType> manager) { if (manager) chunkManager = manager; }
 
             //Integrate pointcloud after transforming to target frame using a given sensor pose
             void IntegratePointCloud(const ProjectionIntegrator& integrator, const PointCloud& cloud, const Transform& extrinsic, const Vec3& sensorOrigin, float minDist, float maxDist)
             {
               ChunkVoxelMap<VoxelType> updatedVoxels;
 
-              Vec3 sensorOriginTransformed = sensorOrigin - chunkManager.GetOrigin();
+              Vec3 sensorOriginTransformed = sensorOrigin - chunkManager->GetOrigin();
               //TODO: parallelize
               for (const Vec3& point : cloud.GetPoints())
               {
-                  Vec3 point_transformed = extrinsic * point - chunkManager.GetOrigin();
+                  Vec3 point_transformed = extrinsic * point - chunkManager->GetOrigin();
                   IntegrateRay(integrator, updatedVoxels, sensorOriginTransformed, point_transformed, minDist, maxDist);
               }
 
@@ -85,12 +85,12 @@ namespace chisel
             void IntegratePointCloud(const ProjectionIntegrator& integrator, const PointCloud& cloud, const Transform& extrinsic, float minDist, float maxDist)
             {
               ChunkVoxelMap<VoxelType> updatedVoxels;
-              const Vec3& start = extrinsic.translation() - chunkManager.GetOrigin();
+              const Vec3& start = extrinsic.translation() - chunkManager->GetOrigin();
 
               //TODO: parallelize
               for (const Vec3& point : cloud.GetPoints())
               {
-                  Vec3 point_transformed = extrinsic * point - chunkManager.GetOrigin();
+                  Vec3 point_transformed = extrinsic * point - chunkManager->GetOrigin();
                   IntegrateRay(integrator, updatedVoxels, start, point_transformed, minDist, maxDist);
               }
 
@@ -103,10 +103,10 @@ namespace chisel
               ChunkVoxelMap<VoxelType> updatedVoxels;
 
               //TODO: parallelize
-              Vec3 sensorOriginTransformed = sensorOrigin - chunkManager.GetOrigin();
+              Vec3 sensorOriginTransformed = sensorOrigin - chunkManager->GetOrigin();
               for (const Vec3& point : cloud.GetPoints())
               {
-                  Vec3 point_transformed = point - chunkManager.GetOrigin();
+                  Vec3 point_transformed = point - chunkManager->GetOrigin();
                   IntegrateRay(integrator, updatedVoxels, sensorOriginTransformed, point_transformed, minDist, maxDist);
               }
 
@@ -146,11 +146,11 @@ namespace chisel
 
                   //apply truncation offset towards sensor origin
                   truncatedPositiveEnd -= truncationOffset * direction;
-                  chunkManager.ClearPassedVoxels(startPoint, truncatedPositiveEnd, integrator.GetVoxelCarvingResetTresh(), &updatedVoxels);
+                  chunkManager->ClearPassedVoxels(startPoint, truncatedPositiveEnd, integrator.GetVoxelCarvingResetTresh(), &updatedVoxels);
               }
 
               if (integrateRay)
-                integrator.IntegratePoint(startPoint, endPoint, difference, distance, chunkManager, &updatedVoxels);
+                integrator.IntegratePoint(startPoint, endPoint, difference, distance, *chunkManager, &updatedVoxels);
             }
 
             template <class DataType> void IntegrateDepthScan(const ProjectionIntegrator& integrator, const boost::shared_ptr<const DepthImage<DataType> >& depthImage, const Transform& extrinsic, const PinholeCamera& camera)
@@ -159,7 +159,7 @@ namespace chisel
                     camera.SetupFrustum(extrinsic, &frustum);
 
                     ChunkIDList chunksIntersecting;
-                    chunkManager.GetChunkIDsIntersecting(frustum, &chunksIntersecting);
+                    chunkManager->GetChunkIDsIntersecting(frustum, &chunksIntersecting);
 
                     Transform inverseExtrinsic = extrinsic.inverse();
 
@@ -168,13 +168,13 @@ namespace chisel
                     for(const ChunkID& chunkID : chunksIntersecting)
                     //parallel_for(chunksIntersecting.begin(), chunksIntersecting.end(), [&](const ChunkID& chunkID)
                     {
-                        bool needsUpdate = integrator.Integrate(depthImage, camera, inverseExtrinsic, chunkManager, chunkID);
+                        bool needsUpdate = integrator.Integrate(depthImage, camera, inverseExtrinsic, *chunkManager, chunkID);
 
                         mutex.lock();
                         if (needsUpdate)
                         {
-                            ChunkPtr<VoxelType> chunk = chunkManager.GetChunk(chunkID);
-                            chunkManager.RememberUpdatedChunk(chunk, meshesToUpdate);
+                            ChunkPtr<VoxelType> chunk = chunkManager->GetChunk(chunkID);
+                            chunkManager->RememberUpdatedChunk(chunk, meshesToUpdate);
                         }
 
                         mutex.unlock();
@@ -192,19 +192,19 @@ namespace chisel
                     Transform inverseColorExtrinsic = colorExtrinsic.inverse();
 
                     ChunkIDList chunksIntersecting;
-                    chunkManager.GetChunkIDsIntersecting(frustum, &chunksIntersecting);
+                    chunkManager->GetChunkIDsIntersecting(frustum, &chunksIntersecting);
                     std::mutex mutex;
                     //ChunkIDList garbageChunks;
                     for ( const ChunkID& chunkID : chunksIntersecting)
                     //parallel_for(chunksIntersecting.begin(), chunksIntersecting.end(), [&](const ChunkID& chunkID)
                     {
-                        bool needsUpdate = integrator.IntegrateColor(depthImage, depthCamera, inverseDepthExtrinsic, colorImage, colorCamera, inverseColorExtrinsic, chunkManager, chunkID);
+                        bool needsUpdate = integrator.IntegrateColor(depthImage, depthCamera, inverseDepthExtrinsic, colorImage, colorCamera, inverseColorExtrinsic, *chunkManager, chunkID);
 
                         mutex.lock();
                         if (needsUpdate)
                         {
-                            ChunkPtr<VoxelType> chunk = chunkManager.GetChunk(chunkID);
-                            chunkManager.RememberUpdatedChunk(chunk, meshesToUpdate);
+                            ChunkPtr<VoxelType> chunk = chunkManager->GetChunk(chunkID);
+                            chunkManager->RememberUpdatedChunk(chunk, meshesToUpdate);
                         }
                         mutex.unlock();
                     }//, maxThreads, threadTreshold
@@ -217,20 +217,20 @@ namespace chisel
               this->maxThreads = maxThreads;
               this->threadTreshold = threadTreshold;
 
-              chunkManager.SetThreadingParameters(maxThreads, threadTreshold);
+              chunkManager->SetThreadingParameters(maxThreads, threadTreshold);
             }
 
             void GarbageCollect(const ChunkIDList& chunks)
             {
               for (const ChunkID& chunkID : chunks)
                 {
-                  chunkManager.RemoveChunk(chunkID);
+                  chunkManager->RemoveChunk(chunkID);
                 }
             }
 
             void UpdateMeshes()
             {
-              chunkManager.RecomputeMeshes(meshesToUpdate);
+              chunkManager->RecomputeMeshes(meshesToUpdate);
               meshesToUpdate.clear();
             }
 
@@ -241,7 +241,7 @@ namespace chisel
               chisel::MeshPtr fullMesh(new chisel::Mesh());
 
               size_t v = 0;
-              for (const std::pair<ChunkID, MeshPtr>& it : chunkManager.GetAllMeshes())
+              for (const std::pair<ChunkID, MeshPtr>& it : chunkManager->GetAllMeshes())
                 {
                   for (const Vec3& vert : it.second->vertices)
                     {
@@ -274,14 +274,14 @@ namespace chisel
 
             void Reset()
             {
-              chunkManager.Reset();
+              chunkManager->Reset();
               meshesToUpdate.clear();
             }
 
             const ChunkSet& GetMeshesToUpdate() const { return meshesToUpdate; }
 
         protected:
-            ChunkManager<VoxelType> chunkManager;
+            ChunkManagerPtr<VoxelType> chunkManager;
             ChunkSet meshesToUpdate;
             unsigned int maxThreads;
             unsigned int threadTreshold;
@@ -291,8 +291,8 @@ namespace chisel
             {
               for (const auto& entry : updatedVoxels)
               {
-                ChunkPtr<VoxelType> chunk = chunkManager.GetChunk(entry.first);
-                chunkManager.RememberUpdatedChunk(chunk, meshesToUpdate);
+                ChunkPtr<VoxelType> chunk = chunkManager->GetChunk(entry.first);
+                chunkManager->RememberUpdatedChunk(chunk, meshesToUpdate);
               }
             }
 
