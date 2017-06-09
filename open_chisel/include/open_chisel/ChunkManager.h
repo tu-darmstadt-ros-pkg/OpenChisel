@@ -359,7 +359,7 @@ public:
         roundingFactor = chunkSizeMeters.cwiseInverse();
     }
 
-    ChunkManager(const Eigen::Vector3i& chunkSize, float voxelResolution, bool color, float minWeight, const Vec3& mapOrigin) :
+    ChunkManager(const Eigen::Vector3i& chunkSize, float voxelResolution, bool color, float minWeight, const Vec3& mapOrigin = Vec3::Zero()) :
         chunkSize(chunkSize), voxelResolutionMeters(voxelResolution), useColor(color), minimumWeight(minWeight), origin(mapOrigin), volumeBoundingBox()
     {
         chunkSizeMeters = chunkSize.cast<float>() * voxelResolutionMeters;
