@@ -49,8 +49,8 @@ struct ChunkHasher
 {
     // Three large primes are used for spatial hashing.
     static constexpr size_t p1 = 73856093;
-    static constexpr size_t p2 = 19349663;
-    static constexpr size_t p3 = 8349279;
+            static constexpr size_t p2 = 19349669;
+            static constexpr size_t p3 = 83492791;
 
     std::size_t operator()(const ChunkID& key) const
     {
@@ -382,6 +382,7 @@ public:
     inline void SetChunksPointer(boost::shared_ptr<ChunkMap<VoxelType>> data) {chunks = data; }
 
     inline const Vec3& GetRoundingFactor() const { return roundingFactor; }
+            inline const Vec3& GetChunkDimensions() const { return chunkDimensions; }
 
     inline bool HasChunk(const ChunkID& chunk) const
     {
@@ -426,6 +427,16 @@ public:
         return GetChunk(GetIDAt(pos));
     }
 
+    inline ChunkPtr<VoxelType> GetOrCreateChunk(const ChunkID& chunkID)
+    {
+      ChunkPtr<VoxelType> chunk = GetChunk(chunkID);
+
+      if (chunk)
+        return chunk;
+      else
+        return CreateChunk(chunkID);
+    }
+
     inline ChunkID GetIDAt(const Vec3& pos) const
     {
         return ChunkID(static_cast<int>(std::floor(pos(0) * roundingFactor(0))),
@@ -455,6 +466,8 @@ public:
     VoxelType* GetDistanceVoxelMutable(const Vec3& pos)
     {
         ChunkPtr<VoxelType> chunk = GetChunkAt(pos);
+            void GetChunkIDsIntersecting(const Vec3& start, const Vec3& end, ChunkIDList& chunkList);
+
 
         if (chunk)
         {
@@ -1313,6 +1326,8 @@ public:
         }
     }
 
+            inline const Vec3& GetVoxelShift(){ return voxelShift; }
+
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
     protected:
         boost::shared_ptr<ChunkMap<VoxelType>> chunks;
@@ -1332,6 +1347,9 @@ public:
 
 private:
     Vec3 roundingFactor;
+            Vec3 chunkDimensions;
+            Vec3 voxelShift;
+
 };
 
 
