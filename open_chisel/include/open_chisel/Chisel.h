@@ -71,10 +71,16 @@ namespace chisel
               ChunkVoxelMap<VoxelType> updatedVoxels;
 
               Vec3 sensorOriginTransformed = sensorOrigin - chunkManager->GetOrigin();
+
               //TODO: parallelize
-              for (const Vec3& point : cloud.GetPoints())
+              bool has_color = !cloud.GetColors().empty();
+              assert(!has_color || cloud.GetPoints().size() == cloud.GetColors().size());
+              for (size_t i = 0; i < cloud.GetPoints().size(); i++)
               {
-                  Vec3 point_transformed = extrinsic * point - chunkManager->GetOrigin();
+                Vec3 point_transformed = extrinsic * cloud.GetPoints().at(i) - chunkManager->GetOrigin();
+                if (has_color)
+                  IntegrateRay(integrator, updatedVoxels, sensorOriginTransformed, point_transformed, minDist, maxDist, cloud.GetColors().at(i));
+                else
                   IntegrateRay(integrator, updatedVoxels, sensorOriginTransformed, point_transformed, minDist, maxDist);
               }
 
@@ -84,37 +90,17 @@ namespace chisel
             //Integrate pointcloud after transforming to target frame
             void IntegratePointCloud(const ProjectionIntegrator& integrator, const PointCloud& cloud, const Transform& extrinsic, float minDist, float maxDist)
             {
-              ChunkVoxelMap<VoxelType> updatedVoxels;
-              const Vec3& start = extrinsic.translation() - chunkManager->GetOrigin();
-
-              //TODO: parallelize
-              for (const Vec3& point : cloud.GetPoints())
-              {
-                  Vec3 point_transformed = extrinsic * point - chunkManager->GetOrigin();
-                  IntegrateRay(integrator, updatedVoxels, start, point_transformed, minDist, maxDist);
-              }
-
-              DetermineUpdatedChunks(updatedVoxels);
+              IntegratePointCloud(integrator, cloud, extrinsic, extrinsic.translation(), minDist, maxDist);
             }
 
             //Integrate pointcloud already transformed to target frame
             void IntegratePointCloud(const ProjectionIntegrator& integrator, const PointCloud& cloud, const Vec3& sensorOrigin, float minDist, float maxDist)
             {
-              ChunkVoxelMap<VoxelType> updatedVoxels;
-
-              //TODO: parallelize
-              Vec3 sensorOriginTransformed = sensorOrigin - chunkManager->GetOrigin();
-              for (const Vec3& point : cloud.GetPoints())
-              {
-                  Vec3 point_transformed = point - chunkManager->GetOrigin();
-                  IntegrateRay(integrator, updatedVoxels, sensorOriginTransformed, point_transformed, minDist, maxDist);
-              }
-
-              DetermineUpdatedChunks(updatedVoxels);
+              IntegratePointCloud(integrator, cloud, Transform::Identity(), sensorOrigin, minDist, maxDist);
             }
 
             //Integrate ray already transformed to target frame
-            void IntegrateRay(const ProjectionIntegrator& integrator, ChunkVoxelMap<VoxelType>& updatedVoxels, const Vec3& startPoint, const Vec3& endPoint, float minDist, float maxDist)
+            void IntegrateRay(const ProjectionIntegrator& integrator, ChunkVoxelMap<VoxelType>& updatedVoxels, const Vec3& startPoint, const Vec3& endPoint, float minDist, float maxDist, Vec3 color = Vec3(1.0f, 1.0f, 1.0f))
             {
               const Vec3 difference = endPoint - startPoint;
 
@@ -150,7 +136,7 @@ namespace chisel
               }
 
               if (integrateRay)
-                integrator.IntegratePoint(startPoint, endPoint, difference, distance, *chunkManager, &updatedVoxels);
+                integrator.Integrate(startPoint, endPoint, difference, distance, color, *chunkManager, &updatedVoxels);
             }
 
             template <class DataType> void IntegrateDepthScan(const ProjectionIntegrator& integrator, const boost::shared_ptr<const DepthImage<DataType> >& depthImage, const Transform& extrinsic, const PinholeCamera& camera)

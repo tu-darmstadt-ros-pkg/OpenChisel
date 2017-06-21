@@ -82,7 +82,7 @@ namespace chisel_ros
         }
     }
 
-    inline void PclColorPointCloudToChisel(const pcl::PointCloud<pcl::PointXYZRGB>& cloudIn, chisel::PointCloud* cloudOut)
+    inline void PclPointCloudToChisel(const pcl::PointCloud<pcl::PointXYZRGB>& cloudIn, chisel::PointCloud* cloudOut)
     {
         assert(!!cloudOut);
         cloudOut->GetMutablePoints().resize(cloudIn.points.size());
@@ -127,7 +127,7 @@ namespace chisel_ros
             //remove NAN points from the cloud
             std::vector<int> indices;
             pcl::removeNaNFromPointCloud(pclCloud, pclCloud, indices);
-            PclColorPointCloudToChisel(pclCloud, cloudOut);
+            PclPointCloudToChisel(pclCloud, cloudOut);
         }
     }
 
