@@ -466,8 +466,6 @@ public:
     VoxelType* GetDistanceVoxelMutable(const Vec3& pos)
     {
         ChunkPtr<VoxelType> chunk = GetChunkAt(pos);
-            void GetChunkIDsIntersecting(const Vec3& start, const Vec3& end, ChunkIDList& chunkList);
-
 
         if (chunk)
         {
@@ -533,6 +531,26 @@ public:
             Vec3 rel = (pos - chunk->GetOrigin());
             return &(chunk->GetColorVoxelMutable(chunk->GetVoxelID(rel)));
         }
+        else
+            return nullptr;
+    }
+
+    VoxelType* GetVoxelMutable(const ChunkID& chunk_id, VoxelID voxel_id)
+    {
+        ChunkPtr<VoxelType> chunk = GetChunk(chunk_id);
+
+        if (chunk)
+            return &(chunk->GetDistVoxelMutable(voxel_id));
+        else
+            return nullptr;
+    }
+
+    const VoxelType* GetVoxel(const ChunkID& chunk_id, VoxelID voxel_id)
+    {
+        ChunkPtr<VoxelType> chunk = GetChunk(chunk_id);
+
+        if (chunk)
+          return &(chunk->GetDistVoxelMutable(voxel_id));
         else
             return nullptr;
     }
@@ -652,6 +670,7 @@ public:
         volumeBoundingBox.ExtendToInclude(chunk->ComputeBoundingBox());
         return chunk;
     }
+
     void ClearPassedVoxels(const Vec3& start, const Vec3& end, float voxelCarvingResetTresh = std::numeric_limits<float>::max(), ChunkVoxelMap<VoxelType>* carvedVoxels = nullptr)
     {
         float roundingFactor = 1/voxelResolutionMeters;
