@@ -125,7 +125,7 @@ namespace chisel
               if (integrator.IsCarvingEnabled())
               {
                   float truncation = integrator.ComputeTruncationDistance(distance);
-                  const Vec3 direction = difference.normalized();
+                  const Vec3 direction = difference / distance;
 
                   Vec3 truncatedPositiveEnd(endPoint);
                   float truncationOffset = integrator.GetCarvingDist() + truncation;

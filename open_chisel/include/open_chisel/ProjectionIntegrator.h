@@ -59,7 +59,7 @@ namespace chisel
       const float halfDiag = 0.5 * sqrt(3.0f) * resolution;
 
       const float truncation = truncator->GetTruncationDistance(distance);
-      const Vec3 truncationOffset = direction.normalized() * truncation;
+      const Vec3 truncationOffset = direction * (truncation/distance);
       const Vec3 start = (point - truncationOffset) * roundingFactor;
       const Vec3 end = (point + truncationOffset) * roundingFactor;
 
@@ -73,14 +73,10 @@ namespace chisel
           Vec3 voxelPos = voxelCoords.cast<float>() * resolution +  voxelShift;
           const ChunkID& chunkID = chunkManager.GetIDAt(voxelPos);
 
-          if (!chunkManager.HasChunk(chunkID))
-            chunkManager.CreateChunk(chunkID);
-
-          ChunkPtr<VoxelType> chunk = chunkManager.GetChunk(chunkID);
+          ChunkPtr<VoxelType> chunk = chunkManager.GetOrCreateChunk(chunkID);
           const Vec3& origin = chunk->GetOrigin();
 
-          voxelPos -= origin;
-          VoxelID voxelID = chunk->GetVoxelID(voxelPos);
+          VoxelID voxelID = chunk->GetVoxelID(Vec3(voxelPos-origin));
 
           VoxelType& distVoxel = chunk->GetDistVoxelMutable(voxelID);
           const Vec3& centroid = centroids[voxelID] + origin;
@@ -118,7 +114,6 @@ namespace chisel
       const Vec3 origin(numVoxels(0) * chunkID(0) * resolution, numVoxels(1) * chunkID(1) * resolution, numVoxels(2) * chunkID(2) * resolution);
 
       ChunkPtr<VoxelType> chunk;
-      bool gotChunkPointer = false;
 
       float diag = 2.0 * sqrt(3.0f) * resolution;
       Vec3 voxelCenter;
@@ -145,15 +140,7 @@ namespace chisel
 
           if (fabs(surfaceDist) < truncation + diag)
             {
-
-            if (!gotChunkPointer)
-            {
-              if (!chunkManager.HasChunk(chunkID))
-                chunkManager.CreateChunk(chunkID);
-
-              chunk = chunkManager.GetChunk(chunkID);
-              gotChunkPointer = true;
-            }
+            chunk = chunkManager.GetOrCreateChunk(chunkID);
 
             //mutex.unlock();
               VoxelType& voxel = chunk->GetDistVoxelMutable(i);
@@ -170,15 +157,7 @@ namespace chisel
             }
           else if (enableVoxelCarving && surfaceDist > truncation + carvingDist)
             {
-
-            if (!gotChunkPointer)
-            {
-              if (!chunkManager.HasChunk(chunkID))
-                chunkManager.CreateChunk(chunkID);
-
-              chunk = chunkManager.GetChunk(chunkID);
-              gotChunkPointer = true;
-            }
+            chunk = chunkManager.GetOrCreateChunk(chunkID);
               VoxelType& voxel = chunk->GetDistVoxelMutable(i);
               if (voxel.GetWeight() > 0)
                 {
